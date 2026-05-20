@@ -1,0 +1,9 @@
+lead_type,Seller_Count,Total_GMV,Avg_GMV,Avg_Order_Count,Avg_Score
+industry,123,36708.27,298.44,1.93,1.39
+offline,104,24903.43,239.46,1.29,1.21
+online_beginner,57,26081.95,457.58,2.75,1.5
+online_big,126,328548.25,2607.53,13.73,2.62
+online_medium,332,242969.71,731.84,5.27,2.24
+online_small,77,60573.87,786.67,5.1,1.65
+online_top,14,9473.17,676.66,5.07,1.87
+other,3,0.0,0.0,0.0,0.0

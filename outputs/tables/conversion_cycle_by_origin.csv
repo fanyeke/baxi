@@ -1,0 +1,11 @@
+origin,Count,Mean_Days,Median_Days
+organic_search,270,50.19,14.5
+paid_search,195,56.6,15.0
+unknown,179,41.29,11.0
+social,75,60.96,30.0
+direct_traffic,56,31.12,10.0
+referral,24,32.54,18.5
+email,15,52.2,21.0
+display,6,10.33,8.5
+other,4,15.25,9.0
+other_publicities,3,39.33,35.0

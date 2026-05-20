@@ -1,0 +1,6 @@
+Payment Type,Order Count,Percentage,Total Amount (R$),Mean Amount (R$),Median Amount (R$)
+credit_card,76132,76.56,2869361.27,145.03,93.89
+boleto,19784,19.9,12680972.81,166.57,109.07
+voucher,1994,2.01,217939.79,142.72,89.3
+debit_card,1527,1.54,0.0,0.0,0.0
+not_defined,3,0.0,240598.25,120.66,77.25

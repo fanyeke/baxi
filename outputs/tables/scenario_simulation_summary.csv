@@ -1,0 +1,5 @@
+scenario_id,scenario_name,input_variable,baseline_value,simulated_value,primary_impact_metric,primary_impact_baseline,primary_impact_raw,primary_impact_calibrated,score_clamped,conservative_cap,evidence_level,confidence,validity_bounded,validity_extrapolation,validity_denominator
+S01,Late Delivery Optimization,late_delivery_rate,8.11,4.0,review_score,4.16,4.265,4.265,False,,OBSERVATIONAL_CORRELATION,MEDIUM,True,True,LOW - No denominator ambiguity
+S02,Delivery Time Reduction,delivery_total_days,12.56,10.0,review_score,4.16,5.015,4.46,False,0.3,OBSERVATIONAL_CORRELATION,HIGH,True,True,LOW - No denominator ambiguity
+S07,Regional Logistics Improvement,high_late_states_late_rate,15.0,8.0,regional_states_score,15.0,8.0,8.0,False,,EXPERIENTIAL_ESTIMATE,MEDIUM,True,False,MEDIUM - State order weights estimated
+S08,Seller Activation Rate Improvement,seller_activation_rate,45.1,55.0,seller_activation_rate,45.1,55.0,55.0,False,,ARITHMETIC_CALCULATION,HIGH,True,False,HIGH - Must distinguish closed seller GMV vs platform GMV

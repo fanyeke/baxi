@@ -1,0 +1,11 @@
+Origin,Sellers,Active_Sellers,Total_GMV,Avg_GMV,Activation%,Conversion%,Classification
+direct_traffic,56,31,27549.8,491.96,55.36,11.22,High Conversion + Low Value
+display,6,2,1207.95,201.32,33.33,5.08,Low Conversion + Low Value
+email,15,6,9122.41,608.16,40.0,3.04,Low Conversion + Low Value
+organic_search,271,113,235956.58,870.69,41.7,11.8,High Conversion + High Value
+other,4,2,8766.63,2191.66,50.0,2.67,Low Sample Size
+other_publicities,3,0,0.0,0.0,0.0,4.62,Low Conversion + Low Value
+paid_search,195,101,182000.06,933.33,51.79,12.3,High Conversion + High Value
+referral,24,9,19687.84,820.33,37.5,8.45,High Conversion + High Value
+social,75,31,51363.47,684.85,41.33,5.56,Low Conversion + Low Value
+unknown,179,81,238763.4,1333.87,45.25,16.29,Data Missing (Excluded from Top)

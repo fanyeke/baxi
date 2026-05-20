@@ -1,0 +1,1038 @@
+{
+  "version": 1,
+  "installedAt": "2026-05-20T16:18:41.690Z",
+  "items": [
+    {
+      "id": "01-doc-processing/docx",
+      "name": "docx",
+      "category": "文档处理",
+      "source": "01-doc-processing/docx",
+      "target": ".claude/skills/docx",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "01-doc-processing/pdf",
+      "name": "pdf",
+      "category": "文档处理",
+      "source": "01-doc-processing/pdf",
+      "target": ".claude/skills/pdf",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "01-doc-processing/pptx",
+      "name": "pptx",
+      "category": "文档处理",
+      "source": "01-doc-processing/pptx",
+      "target": ".claude/skills/pptx",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "01-doc-processing/xlsx",
+      "name": "xlsx",
+      "category": "文档处理",
+      "source": "01-doc-processing/xlsx",
+      "target": ".claude/skills/xlsx",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-approval",
+      "name": "lark-approval",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-approval",
+      "target": ".claude/skills/lark-approval",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-attendance",
+      "name": "lark-attendance",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-attendance",
+      "target": ".claude/skills/lark-attendance",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-base",
+      "name": "lark-base",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-base",
+      "target": ".claude/skills/lark-base",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-calendar",
+      "name": "lark-calendar",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-calendar",
+      "target": ".claude/skills/lark-calendar",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-contact",
+      "name": "lark-contact",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-contact",
+      "target": ".claude/skills/lark-contact",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-doc",
+      "name": "lark-doc",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-doc",
+      "target": ".claude/skills/lark-doc",
+      "installedAt": "2026-05-20T14:10:41.981Z"
+    },
+    {
+      "id": "02-lark-suite/lark-drive",
+      "name": "lark-drive",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-drive",
+      "target": ".claude/skills/lark-drive",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-event",
+      "name": "lark-event",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-event",
+      "target": ".claude/skills/lark-event",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-im",
+      "name": "lark-im",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-im",
+      "target": ".claude/skills/lark-im",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-mail",
+      "name": "lark-mail",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-mail",
+      "target": ".claude/skills/lark-mail",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-markdown",
+      "name": "lark-markdown",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-markdown",
+      "target": ".claude/skills/lark-markdown",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-minutes",
+      "name": "lark-minutes",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-minutes",
+      "target": ".claude/skills/lark-minutes",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-okr",
+      "name": "lark-okr",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-okr",
+      "target": ".claude/skills/lark-okr",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-openapi-explorer",
+      "name": "lark-openapi-explorer",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-openapi-explorer",
+      "target": ".claude/skills/lark-openapi-explorer",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-shared",
+      "name": "lark-shared",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-shared",
+      "target": ".claude/skills/lark-shared",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-sheets",
+      "name": "lark-sheets",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-sheets",
+      "target": ".claude/skills/lark-sheets",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-skill-maker",
+      "name": "lark-skill-maker",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-skill-maker",
+      "target": ".claude/skills/lark-skill-maker",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-slides",
+      "name": "lark-slides",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-slides",
+      "target": ".claude/skills/lark-slides",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-task",
+      "name": "lark-task",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-task",
+      "target": ".claude/skills/lark-task",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-vc",
+      "name": "lark-vc",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-vc",
+      "target": ".claude/skills/lark-vc",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-vc-agent",
+      "name": "lark-vc-agent",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-vc-agent",
+      "target": ".claude/skills/lark-vc-agent",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-whiteboard",
+      "name": "lark-whiteboard",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-whiteboard",
+      "target": ".claude/skills/lark-whiteboard",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-wiki",
+      "name": "lark-wiki",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-wiki",
+      "target": ".claude/skills/lark-wiki",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-workflow-meeting-summary",
+      "name": "lark-workflow-meeting-summary",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-workflow-meeting-summary",
+      "target": ".claude/skills/lark-workflow-meeting-summary",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "02-lark-suite/lark-workflow-standup-report",
+      "name": "lark-workflow-standup-report",
+      "category": "飞书协作",
+      "source": "02-lark-suite/lark-workflow-standup-report",
+      "target": ".claude/skills/lark-workflow-standup-report",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/brainstorming",
+      "name": "brainstorming",
+      "category": "开发方法",
+      "source": "03-superpowers/brainstorming",
+      "target": ".claude/skills/brainstorming",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/dispatching-parallel-agents",
+      "name": "dispatching-parallel-agents",
+      "category": "开发方法",
+      "source": "03-superpowers/dispatching-parallel-agents",
+      "target": ".claude/skills/dispatching-parallel-agents",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/executing-plans",
+      "name": "executing-plans",
+      "category": "开发方法",
+      "source": "03-superpowers/executing-plans",
+      "target": ".claude/skills/executing-plans",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/finishing-a-development-branch",
+      "name": "finishing-a-development-branch",
+      "category": "开发方法",
+      "source": "03-superpowers/finishing-a-development-branch",
+      "target": ".claude/skills/finishing-a-development-branch",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/receiving-code-review",
+      "name": "receiving-code-review",
+      "category": "开发方法",
+      "source": "03-superpowers/receiving-code-review",
+      "target": ".claude/skills/receiving-code-review",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/requesting-code-review",
+      "name": "requesting-code-review",
+      "category": "开发方法",
+      "source": "03-superpowers/requesting-code-review",
+      "target": ".claude/skills/requesting-code-review",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/subagent-driven-development",
+      "name": "subagent-driven-development",
+      "category": "开发方法",
+      "source": "03-superpowers/subagent-driven-development",
+      "target": ".claude/skills/subagent-driven-development",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/systematic-debugging",
+      "name": "systematic-debugging",
+      "category": "开发方法",
+      "source": "03-superpowers/systematic-debugging",
+      "target": ".claude/skills/systematic-debugging",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/test-driven-development",
+      "name": "test-driven-development",
+      "category": "开发方法",
+      "source": "03-superpowers/test-driven-development",
+      "target": ".claude/skills/test-driven-development",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/using-git-worktrees",
+      "name": "using-git-worktrees",
+      "category": "开发方法",
+      "source": "03-superpowers/using-git-worktrees",
+      "target": ".claude/skills/using-git-worktrees",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/using-superpowers",
+      "name": "using-superpowers",
+      "category": "开发方法",
+      "source": "03-superpowers/using-superpowers",
+      "target": ".claude/skills/using-superpowers",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/verification-before-completion",
+      "name": "verification-before-completion",
+      "category": "开发方法",
+      "source": "03-superpowers/verification-before-completion",
+      "target": ".claude/skills/verification-before-completion",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/writing-plans",
+      "name": "writing-plans",
+      "category": "开发方法",
+      "source": "03-superpowers/writing-plans",
+      "target": ".claude/skills/writing-plans",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "03-superpowers/writing-skills",
+      "name": "writing-skills",
+      "category": "开发方法",
+      "source": "03-superpowers/writing-skills",
+      "target": ".claude/skills/writing-skills",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/ab-test-analysis",
+      "name": "ab-test-analysis",
+      "category": "产品管理",
+      "source": "04-pm-skills/ab-test-analysis",
+      "target": ".claude/skills/ab-test-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/analyze-feature-requests",
+      "name": "analyze-feature-requests",
+      "category": "产品管理",
+      "source": "04-pm-skills/analyze-feature-requests",
+      "target": ".claude/skills/analyze-feature-requests",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/ansoff-matrix",
+      "name": "ansoff-matrix",
+      "category": "产品管理",
+      "source": "04-pm-skills/ansoff-matrix",
+      "target": ".claude/skills/ansoff-matrix",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/beachhead-segment",
+      "name": "beachhead-segment",
+      "category": "产品管理",
+      "source": "04-pm-skills/beachhead-segment",
+      "target": ".claude/skills/beachhead-segment",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/brainstorm-experiments-existing",
+      "name": "brainstorm-experiments-existing",
+      "category": "产品管理",
+      "source": "04-pm-skills/brainstorm-experiments-existing",
+      "target": ".claude/skills/brainstorm-experiments-existing",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/brainstorm-experiments-new",
+      "name": "brainstorm-experiments-new",
+      "category": "产品管理",
+      "source": "04-pm-skills/brainstorm-experiments-new",
+      "target": ".claude/skills/brainstorm-experiments-new",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/brainstorm-ideas-existing",
+      "name": "brainstorm-ideas-existing",
+      "category": "产品管理",
+      "source": "04-pm-skills/brainstorm-ideas-existing",
+      "target": ".claude/skills/brainstorm-ideas-existing",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/brainstorm-ideas-new",
+      "name": "brainstorm-ideas-new",
+      "category": "产品管理",
+      "source": "04-pm-skills/brainstorm-ideas-new",
+      "target": ".claude/skills/brainstorm-ideas-new",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/brainstorm-okrs",
+      "name": "brainstorm-okrs",
+      "category": "产品管理",
+      "source": "04-pm-skills/brainstorm-okrs",
+      "target": ".claude/skills/brainstorm-okrs",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/business-model",
+      "name": "business-model",
+      "category": "产品管理",
+      "source": "04-pm-skills/business-model",
+      "target": ".claude/skills/business-model",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/cohort-analysis",
+      "name": "cohort-analysis",
+      "category": "产品管理",
+      "source": "04-pm-skills/cohort-analysis",
+      "target": ".claude/skills/cohort-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/competitive-battlecard",
+      "name": "competitive-battlecard",
+      "category": "产品管理",
+      "source": "04-pm-skills/competitive-battlecard",
+      "target": ".claude/skills/competitive-battlecard",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/competitor-analysis",
+      "name": "competitor-analysis",
+      "category": "产品管理",
+      "source": "04-pm-skills/competitor-analysis",
+      "target": ".claude/skills/competitor-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/create-prd",
+      "name": "create-prd",
+      "category": "产品管理",
+      "source": "04-pm-skills/create-prd",
+      "target": ".claude/skills/create-prd",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/customer-journey-map",
+      "name": "customer-journey-map",
+      "category": "产品管理",
+      "source": "04-pm-skills/customer-journey-map",
+      "target": ".claude/skills/customer-journey-map",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/draft-nda",
+      "name": "draft-nda",
+      "category": "产品管理",
+      "source": "04-pm-skills/draft-nda",
+      "target": ".claude/skills/draft-nda",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/dummy-dataset",
+      "name": "dummy-dataset",
+      "category": "产品管理",
+      "source": "04-pm-skills/dummy-dataset",
+      "target": ".claude/skills/dummy-dataset",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/grammar-check",
+      "name": "grammar-check",
+      "category": "产品管理",
+      "source": "04-pm-skills/grammar-check",
+      "target": ".claude/skills/grammar-check",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/growth-loops",
+      "name": "growth-loops",
+      "category": "产品管理",
+      "source": "04-pm-skills/growth-loops",
+      "target": ".claude/skills/growth-loops",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/gtm-motions",
+      "name": "gtm-motions",
+      "category": "产品管理",
+      "source": "04-pm-skills/gtm-motions",
+      "target": ".claude/skills/gtm-motions",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/gtm-strategy",
+      "name": "gtm-strategy",
+      "category": "产品管理",
+      "source": "04-pm-skills/gtm-strategy",
+      "target": ".claude/skills/gtm-strategy",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/ideal-customer-profile",
+      "name": "ideal-customer-profile",
+      "category": "产品管理",
+      "source": "04-pm-skills/ideal-customer-profile",
+      "target": ".claude/skills/ideal-customer-profile",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/identify-assumptions-existing",
+      "name": "identify-assumptions-existing",
+      "category": "产品管理",
+      "source": "04-pm-skills/identify-assumptions-existing",
+      "target": ".claude/skills/identify-assumptions-existing",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/identify-assumptions-new",
+      "name": "identify-assumptions-new",
+      "category": "产品管理",
+      "source": "04-pm-skills/identify-assumptions-new",
+      "target": ".claude/skills/identify-assumptions-new",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/interview-script",
+      "name": "interview-script",
+      "category": "产品管理",
+      "source": "04-pm-skills/interview-script",
+      "target": ".claude/skills/interview-script",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/job-stories",
+      "name": "job-stories",
+      "category": "产品管理",
+      "source": "04-pm-skills/job-stories",
+      "target": ".claude/skills/job-stories",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/lean-canvas",
+      "name": "lean-canvas",
+      "category": "产品管理",
+      "source": "04-pm-skills/lean-canvas",
+      "target": ".claude/skills/lean-canvas",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/market-segments",
+      "name": "market-segments",
+      "category": "产品管理",
+      "source": "04-pm-skills/market-segments",
+      "target": ".claude/skills/market-segments",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/market-sizing",
+      "name": "market-sizing",
+      "category": "产品管理",
+      "source": "04-pm-skills/market-sizing",
+      "target": ".claude/skills/market-sizing",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/marketing-ideas",
+      "name": "marketing-ideas",
+      "category": "产品管理",
+      "source": "04-pm-skills/marketing-ideas",
+      "target": ".claude/skills/marketing-ideas",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/metrics-dashboard",
+      "name": "metrics-dashboard",
+      "category": "产品管理",
+      "source": "04-pm-skills/metrics-dashboard",
+      "target": ".claude/skills/metrics-dashboard",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/monetization-strategy",
+      "name": "monetization-strategy",
+      "category": "产品管理",
+      "source": "04-pm-skills/monetization-strategy",
+      "target": ".claude/skills/monetization-strategy",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/north-star-metric",
+      "name": "north-star-metric",
+      "category": "产品管理",
+      "source": "04-pm-skills/north-star-metric",
+      "target": ".claude/skills/north-star-metric",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/opportunity-solution-tree",
+      "name": "opportunity-solution-tree",
+      "category": "产品管理",
+      "source": "04-pm-skills/opportunity-solution-tree",
+      "target": ".claude/skills/opportunity-solution-tree",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/outcome-roadmap",
+      "name": "outcome-roadmap",
+      "category": "产品管理",
+      "source": "04-pm-skills/outcome-roadmap",
+      "target": ".claude/skills/outcome-roadmap",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/pestle-analysis",
+      "name": "pestle-analysis",
+      "category": "产品管理",
+      "source": "04-pm-skills/pestle-analysis",
+      "target": ".claude/skills/pestle-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/porters-five-forces",
+      "name": "porters-five-forces",
+      "category": "产品管理",
+      "source": "04-pm-skills/porters-five-forces",
+      "target": ".claude/skills/porters-five-forces",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/positioning-ideas",
+      "name": "positioning-ideas",
+      "category": "产品管理",
+      "source": "04-pm-skills/positioning-ideas",
+      "target": ".claude/skills/positioning-ideas",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/pre-mortem",
+      "name": "pre-mortem",
+      "category": "产品管理",
+      "source": "04-pm-skills/pre-mortem",
+      "target": ".claude/skills/pre-mortem",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/pricing-strategy",
+      "name": "pricing-strategy",
+      "category": "产品管理",
+      "source": "04-pm-skills/pricing-strategy",
+      "target": ".claude/skills/pricing-strategy",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/prioritization-frameworks",
+      "name": "prioritization-frameworks",
+      "category": "产品管理",
+      "source": "04-pm-skills/prioritization-frameworks",
+      "target": ".claude/skills/prioritization-frameworks",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/prioritize-assumptions",
+      "name": "prioritize-assumptions",
+      "category": "产品管理",
+      "source": "04-pm-skills/prioritize-assumptions",
+      "target": ".claude/skills/prioritize-assumptions",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/prioritize-features",
+      "name": "prioritize-features",
+      "category": "产品管理",
+      "source": "04-pm-skills/prioritize-features",
+      "target": ".claude/skills/prioritize-features",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/privacy-policy",
+      "name": "privacy-policy",
+      "category": "产品管理",
+      "source": "04-pm-skills/privacy-policy",
+      "target": ".claude/skills/privacy-policy",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/product-name",
+      "name": "product-name",
+      "category": "产品管理",
+      "source": "04-pm-skills/product-name",
+      "target": ".claude/skills/product-name",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/product-strategy",
+      "name": "product-strategy",
+      "category": "产品管理",
+      "source": "04-pm-skills/product-strategy",
+      "target": ".claude/skills/product-strategy",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/product-vision",
+      "name": "product-vision",
+      "category": "产品管理",
+      "source": "04-pm-skills/product-vision",
+      "target": ".claude/skills/product-vision",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/release-notes",
+      "name": "release-notes",
+      "category": "产品管理",
+      "source": "04-pm-skills/release-notes",
+      "target": ".claude/skills/release-notes",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/retro",
+      "name": "retro",
+      "category": "产品管理",
+      "source": "04-pm-skills/retro",
+      "target": ".claude/skills/retro",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/review-resume",
+      "name": "review-resume",
+      "category": "产品管理",
+      "source": "04-pm-skills/review-resume",
+      "target": ".claude/skills/review-resume",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/sentiment-analysis",
+      "name": "sentiment-analysis",
+      "category": "产品管理",
+      "source": "04-pm-skills/sentiment-analysis",
+      "target": ".claude/skills/sentiment-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/sprint-plan",
+      "name": "sprint-plan",
+      "category": "产品管理",
+      "source": "04-pm-skills/sprint-plan",
+      "target": ".claude/skills/sprint-plan",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/sql-queries",
+      "name": "sql-queries",
+      "category": "产品管理",
+      "source": "04-pm-skills/sql-queries",
+      "target": ".claude/skills/sql-queries",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/stakeholder-map",
+      "name": "stakeholder-map",
+      "category": "产品管理",
+      "source": "04-pm-skills/stakeholder-map",
+      "target": ".claude/skills/stakeholder-map",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/startup-canvas",
+      "name": "startup-canvas",
+      "category": "产品管理",
+      "source": "04-pm-skills/startup-canvas",
+      "target": ".claude/skills/startup-canvas",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/summarize-interview",
+      "name": "summarize-interview",
+      "category": "产品管理",
+      "source": "04-pm-skills/summarize-interview",
+      "target": ".claude/skills/summarize-interview",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/summarize-meeting",
+      "name": "summarize-meeting",
+      "category": "产品管理",
+      "source": "04-pm-skills/summarize-meeting",
+      "target": ".claude/skills/summarize-meeting",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/swot-analysis",
+      "name": "swot-analysis",
+      "category": "产品管理",
+      "source": "04-pm-skills/swot-analysis",
+      "target": ".claude/skills/swot-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/test-scenarios",
+      "name": "test-scenarios",
+      "category": "产品管理",
+      "source": "04-pm-skills/test-scenarios",
+      "target": ".claude/skills/test-scenarios",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/user-personas",
+      "name": "user-personas",
+      "category": "产品管理",
+      "source": "04-pm-skills/user-personas",
+      "target": ".claude/skills/user-personas",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/user-segmentation",
+      "name": "user-segmentation",
+      "category": "产品管理",
+      "source": "04-pm-skills/user-segmentation",
+      "target": ".claude/skills/user-segmentation",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/user-stories",
+      "name": "user-stories",
+      "category": "产品管理",
+      "source": "04-pm-skills/user-stories",
+      "target": ".claude/skills/user-stories",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/value-prop-statements",
+      "name": "value-prop-statements",
+      "category": "产品管理",
+      "source": "04-pm-skills/value-prop-statements",
+      "target": ".claude/skills/value-prop-statements",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/value-proposition",
+      "name": "value-proposition",
+      "category": "产品管理",
+      "source": "04-pm-skills/value-proposition",
+      "target": ".claude/skills/value-proposition",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "04-pm-skills/wwas",
+      "name": "wwas",
+      "category": "产品管理",
+      "source": "04-pm-skills/wwas",
+      "target": ".claude/skills/wwas",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "05-ui-ux/banner-design",
+      "name": "ckm:banner-design",
+      "category": "前端设计",
+      "source": "05-ui-ux/banner-design",
+      "target": ".claude/skills/banner-design",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "05-ui-ux/brand",
+      "name": "ckm:brand",
+      "category": "前端设计",
+      "source": "05-ui-ux/brand",
+      "target": ".claude/skills/brand",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "05-ui-ux/design",
+      "name": "ckm:design",
+      "category": "前端设计",
+      "source": "05-ui-ux/design",
+      "target": ".claude/skills/design",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "05-ui-ux/design-system",
+      "name": "ckm:design-system",
+      "category": "前端设计",
+      "source": "05-ui-ux/design-system",
+      "target": ".claude/skills/design-system",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "05-ui-ux/slides",
+      "name": "ckm:slides",
+      "category": "前端设计",
+      "source": "05-ui-ux/slides",
+      "target": ".claude/skills/slides",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "05-ui-ux/ui-styling",
+      "name": "ckm:ui-styling",
+      "category": "前端设计",
+      "source": "05-ui-ux/ui-styling",
+      "target": ".claude/skills/ui-styling",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/capture-screen",
+      "name": "capture-screen",
+      "category": "实用工具",
+      "source": "06-daymade/capture-screen",
+      "target": ".claude/skills/capture-screen",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/cli-demo-generator",
+      "name": "cli-demo-generator",
+      "category": "实用工具",
+      "source": "06-daymade/cli-demo-generator",
+      "target": ".claude/skills/cli-demo-generator",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/competitors-analysis",
+      "name": "competitors-analysis",
+      "category": "实用工具",
+      "source": "06-daymade/competitors-analysis",
+      "target": ".claude/skills/competitors-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/debugging-network-issues",
+      "name": "debugging-network-issues",
+      "category": "实用工具",
+      "source": "06-daymade/debugging-network-issues",
+      "target": ".claude/skills/debugging-network-issues",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/deep-research",
+      "name": "deep-research",
+      "category": "实用工具",
+      "source": "06-daymade/deep-research",
+      "target": ".claude/skills/deep-research",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/excel-automation",
+      "name": "excel-automation",
+      "category": "实用工具",
+      "source": "06-daymade/excel-automation",
+      "target": ".claude/skills/excel-automation",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/fact-checker",
+      "name": "fact-checker",
+      "category": "实用工具",
+      "source": "06-daymade/fact-checker",
+      "target": ".claude/skills/fact-checker",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/product-analysis",
+      "name": "product-analysis",
+      "category": "实用工具",
+      "source": "06-daymade/product-analysis",
+      "target": ".claude/skills/product-analysis",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/prompt-optimizer",
+      "name": "prompt-optimizer",
+      "category": "实用工具",
+      "source": "06-daymade/prompt-optimizer",
+      "target": ".claude/skills/prompt-optimizer",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/promptfoo-evaluation",
+      "name": "promptfoo-evaluation",
+      "category": "实用工具",
+      "source": "06-daymade/promptfoo-evaluation",
+      "target": ".claude/skills/promptfoo-evaluation",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/qa-expert",
+      "name": "qa-expert",
+      "category": "实用工具",
+      "source": "06-daymade/qa-expert",
+      "target": ".claude/skills/qa-expert",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/scrapling-skill",
+      "name": "scrapling-skill",
+      "category": "实用工具",
+      "source": "06-daymade/scrapling-skill",
+      "target": ".claude/skills/scrapling-skill",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/slides-creator",
+      "name": "slides-creator",
+      "category": "实用工具",
+      "source": "06-daymade/slides-creator",
+      "target": ".claude/skills/slides-creator",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/ui-designer",
+      "name": "ui-designer",
+      "category": "实用工具",
+      "source": "06-daymade/ui-designer",
+      "target": ".claude/skills/ui-designer",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    },
+    {
+      "id": "06-daymade/video-comparer",
+      "name": "video-comparer",
+      "category": "实用工具",
+      "source": "06-daymade/video-comparer",
+      "target": ".claude/skills/video-comparer",
+      "installedAt": "2026-05-20T14:10:41.982Z"
+    }
+  ]
+}

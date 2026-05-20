@@ -1,0 +1,13 @@
+parameter_id,scenario_id,input_field_label,input_field_key,data_type,input_unit,baseline_value,simulated_value,editable_by_waker,default_value,min_value,max_value,validation_rule,param_description
+P_S01_01,S01,Late Delivery Rate (Current),late_delivery_rate_current,number,percentage,8.11,8.11,true,8.11,0,100,Must be 0-100,Current platform wide late delivery rate (8.11%)
+P_S01_02,S01,Late Delivery Rate (Target),late_delivery_rate_target,number,percentage,8.11,4.0,true,4.0,0,100,Must be 0-100 and < current rate,Target late delivery rate after optimization
+P_S02_01,S02,Avg Delivery Days (Current),delivery_days_current,number,days,12.56,12.56,true,12.56,0,100,Must be positive number,Current mean delivery time in days (12.56)
+P_S02_02,S02,Avg Delivery Days (Target),delivery_days_target,number,days,12.56,10.0,true,10.0,0,100,Must be positive number and < current,Target mean delivery time in days (10.0)
+P_S02_03,S02,Conservative Cap,conservative_cap,number,points,0.3,0.3,true,0.3,0,2.0,Max score increase allowed,Maximum allowed score improvement cap (0.3 pts)
+P_S07_01,S07,Worst State Late Rate (Current),worst_state_late_current,number,percentage,15.0,15.0,true,15.0,0,100,Must be positive number,Average late delivery rate in 5 worst states (15%)
+P_S07_02,S07,Target State Late Rate,worst_state_late_target,number,percentage,15.0,8.0,true,8.0,0,100,Must be 0-100 and < current,Target late delivery rate for worst states (8%)
+P_S07_03,S07,State Order Weight,state_order_weight,number,percentage,18,18,true,18,0,100,Must be 0-100,Estimated percentage of total orders in affected states (18%)
+P_S08_01,S08,Current Activation Rate,activation_rate_current,number,percentage,45.1,45.1,true,45.1,0,100,Must be 0-100,Current seller activation rate from closed deals (45.1%)
+P_S08_02,S08,Target Activation Rate,activation_rate_target,number,percentage,45.1,55.0,true,55.0,0,100,Must be 0-100 and > current,Target seller activation rate (55%)
+P_S08_03,S08,Total Closed Sellers,total_closed_sellers,integer,count,842,842,false,842,0,999999,Must be positive integer,Total number of closed deals/sellers in dataset
+P_S08_04,S08,Avg GMV per Active Seller,avg_gmv_per_seller,number,BRL,2041.62,2041.62,true,2041.62,0,999999.99,Must be positive number,Average GMV generated per activated seller (R$2041.62)

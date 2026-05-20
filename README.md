@@ -1,0 +1,389 @@
+# Olist 巴西电商数据分析项目
+
+## 项目概述
+
+本项目对巴西电商 Olist 的公开数据集进行探索性分析，旨在理解数据结构、识别数据质量问题，并挖掘业务洞察。
+
+## 数据集介绍
+
+本项目包含两个互补的数据集：
+
+### 1. 主数据集：Brazilian E-Commerce by Olist
+
+包含 2016 年至 2018 年间巴西多个城市的电商订单信息，涵盖客户、订单、产品、卖家、支付、评价等多个维度的数据。
+
+- **数据集**: [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+- **时间范围**: 2016-09 至 2018-10
+- **记录数量**: 约 100,000 条订单
+- **文件数量**: 9 个 CSV 文件
+
+### 2. 营销漏斗数据集：Marketing Funnel by Olist ⏳
+
+记录 Olist 如何获取卖家（商家）以及这些卖家的转化过程，是理解 Olist 商业模式的关键数据。
+
+- **数据集**: [Marketing Funnel Dataset](https://www.kaggle.com/datasets/olistbr/marketing-funnel)
+- **记录数量**: 约 8,000 条营销线索
+- **文件数量**: 2 个 CSV 文件
+- **状态**: **待下载**（见 `docs/marketing_funnel_guide.md`）
+
+**关联关系**: Marketing Funnel 数据集通过 `seller_id` 与主数据集的卖家表关联，形成完整的"营销 → 转化 → 销售"业务链路。
+
+## 项目阶段
+
+### 第一阶段：原始数据理解 ✅
+
+本阶段完成时间：2026-05-20
+
+#### 目标
+
+- 自动识别所有原始 CSV 文件，不修改原始数据
+- 对每张表进行基础画像分析
+- 初步判断表之间的关联关系
+- 产出可复现的分析代码和结果文档
+
+#### 数据文件
+
+本项目包含以下 9 个数据文件：
+
+1. **olist_customers_dataset.csv** - 客户数据（99,441 行）
+2. **olist_geolocation_dataset.csv** - 地理位置数据（1,000,163 行）
+3. **olist_order_items_dataset.csv** - 订单商品数据（112,650 行）
+4. **olist_order_payments_dataset.csv** - 订单支付数据（103,886 行）
+5. **olist_order_reviews_dataset.csv** - 订单评价数据（99,224 行）
+6. **olist_orders_dataset.csv** - 订单主数据（99,441 行）
+7. **olist_products_dataset.csv** - 产品数据（32,951 行）
+8. **olist_sellers_dataset.csv** - 卖家数据（3,095 行）
+9. **product_category_name_translation.csv** - 产品类别翻译（71 行）
+
+#### 产出文件
+
+##### 1. 数据画像汇总
+- **文件**: `outputs/data_profile_summary.csv`
+- **内容**: 每张表的字段级统计信息
+- **指标**: 行数、列数、数据类型、缺失率、唯一值数、主键/外键推断等
+
+##### 2. 数据字典
+- **文件**: `docs/data_dictionary.md`
+- **内容**: 每张表的详细字段说明
+- **包括**: 字段类型、缺失情况、日期范围、可能的主键和外键
+
+##### 3. 表关系说明
+- **文件**: `docs/table_relationship_notes.md`
+- **内容**: 表之间的关联关系分析
+- **包括**: 外键关系推断、数据质量说明
+
+#### 关键发现
+
+##### 数据质量
+
+1. **重复数据**:
+   - `olist_geolocation_dataset` 存在 261,831 行重复数据（26.18%）
+
+2. **缺失值**:
+   - `olist_order_reviews_dataset`:
+     - `review_comment_title`: 87,656 条缺失（88.34%）
+     - `review_comment_message`: 58,247 条缺失（58.70%）
+   - `olist_orders_dataset`:
+     - `order_approved_at`: 160 条缺失（0.16%）
+     - `order_delivered_carrier_date`: 1,783 条缺失（1.79%）
+     - `order_delivered_customer_date`: 2,965 条缺失（2.98%）
+   - `olist_products_dataset`:
+     - 多个字段存在 610 条缺失（1.85%）
+     - 产品尺寸字段存在 2 条缺失（0.01%）
+
+##### 主键识别
+
+- `olist_customers_dataset`: `customer_id` (唯一值)
+- `olist_orders_dataset`: `order_id` (唯一值)
+- `olist_products_dataset`: `product_id` (唯一值)
+- `olist_sellers_dataset`: `seller_id` (唯一值)
+
+##### 表关系
+
+核心关联结构：
+```
+olist_customers (客户)
+    ↓ customer_id
+olist_orders (订单)
+    ↓ order_id
+    ├── olist_order_items (订单商品)
+    │       ↓ product_id
+    │   olist_products (产品)
+    │       ↓ seller_id
+    │   olist_sellers (卖家)
+    ├── olist_order_payments (支付信息)
+    └── olist_order_reviews (订单评价)
+
+olist_geolocation (地理位置) ← 通过 zip_code_prefix 关联
+```
+
+#### 分析脚本
+
+- **文件**: `explore_data.py`
+- **功能**: 自动扫描所有 CSV 文件并生成完整的数据画像
+- **可复现性**: 运行脚本即可重新生成所有分析结果
+
+#### 运行方法
+
+```bash
+# 安装依赖
+pip install pandas
+
+# 运行数据探索脚本（主数据集）
+python3 explore_data.py
+
+# 运行扩展脚本（包含 Marketing Funnel 数据集）
+python3 explore_data_extended.py
+```
+
+### 第一阶段补充：Marketing Funnel 数据集分析 ⏳
+
+#### 状态说明
+
+Marketing Funnel 数据集尚未下载到项目中。下载完成后，将自动补充分析。
+
+#### 补充内容
+
+添加 Marketing Funnel 数据集后，将分析以下两个表：
+
+1. **olist_marketing_qualified_leads_dataset.csv** (MQL)
+   - 营销合格线索记录
+   - 约 8,000 条数据
+   - 字段包括：mql_id、first_contact_date、landing_page、origin 等
+
+2. **olist_closed_deals_dataset.csv** (Closed Deals)
+   - 成交交易记录
+   - 记录成功转化为平台卖家的数据
+   - 通过 seller_id 关联主数据集
+
+#### 下载指引
+
+详细的下载步骤请参考：**docs/marketing_funnel_guide.md**
+
+快速下载：
+```bash
+# 从 Kaggle 下载（需要 Kaggle 账号）
+# https://www.kaggle.com/datasets/olistbr/marketing-funnel
+
+# 或使用 Kaggle API
+kaggle datasets download -d olistbr/marketing-funnel
+unzip marketing-funnel.zip
+
+# 确保文件位于项目根目录
+ls olist_marketing_qualified_leads_dataset.csv
+ls olist_closed_deals_dataset.csv
+```
+
+#### 补充分析后的产出
+
+下载并运行 `python3 explore_data_extended.py` 后，将更新：
+
+1. **outputs/data_profile_summary.csv** - 新增约 20 行营销漏斗字段分析
+2. **docs/data_dictionary.md** - 新增营销漏斗数据集章节
+3. **docs/table_relationship_notes.md** - 新增跨数据集关联关系
+4. **README.md** - 更新数据集统计和关联说明
+
+#### 业务价值补充
+
+Marketing Funnel 数据集将建立完整的业务链路分析：
+
+```
+营销获客 (MQL)
+    ↓ mql_id
+成交转化 (Closed Deals)
+    ↓ seller_id
+卖家入驻 (Sellers)
+    ↓ seller_id
+订单销售 (Order Items)
+    ↓ product_id
+产品交付 (Products + Orders)
+```
+
+这将支持：
+- 营销渠道效果分析
+- 线索转化率评估
+- landing page 优化建议
+- 营销投入与销售业绩关联分析
+
+### 第二阶段：核心数据模型搭建 ✅
+
+本阶段完成时间：2026-05-20
+
+#### 目标
+
+- 验证关键关联关系，检查 join 后的数据完整性
+- 输出正式 ER 关系说明与图谱
+- 构建标准化分析基础表
+- 说明表粒度、字段来源、适用场景
+
+#### 关键产出
+
+##### 1. 关系验证结果
+
+验证了 7 个关键 join 关系，记录完整的输入输出统计：
+
+| 关系 | 左表行数 | 右表行数 | 输出行数 | 放大倍数 |
+|------|---------|---------|---------|---------|
+| customers → orders | 99,441 | 99,441 | 99,441 | 1.00x |
+| orders → order_items | 99,441 | 112,650 | 113,425 | 1.14x |
+| order_items → products | 112,650 | 32,951 | 112,650 | 1.00x |
+| order_items → sellers | 112,650 | 3,095 | 112,650 | 1.00x |
+| orders → payments | 99,441 | 103,886 | 103,887 | 1.04x |
+| orders → reviews | 99,441 | 99,224 | 99,992 | 1.01x |
+| products → category_translation | 32,951 | 71 | 32,951 | 1.00x |
+
+**关键发现**：
+- orders → order_items 正常放大 1.14x（多商品订单）
+- orders → payments 正常放大 1.04x（组合支付）
+- orders → reviews 正常放大 1.01x（多条评价）
+- 无数据丢失，主表数据完整保留
+
+##### 2. ER 关系说明
+
+- **文件**: `docs/entity_relationships.md` (243 行)
+- **内容**: 完整的表关系详细说明
+- **图谱**: `outputs/erd.mmd` (Mermaid ER 图，81 行)
+
+**星型模型结构**：
+- 事实表：ORDERS（订单中心）
+- 维度表：CUSTOMERS, PRODUCTS, SELLERS
+- 明细表：ORDER_ITEMS
+- 辅助表：PAYMENTS, REVIEWS
+
+##### 3. 分析基础表
+
+#### order_level_base.csv
+
+- **路径**: `data/interim/order_level_base.csv`
+- **粒度**: 一行一个订单
+- **行数**: 99,441 行 × 22 列 (35 MB)
+- **来源**: orders + customers + payments汇总 + reviews最新
+
+**适用场景**：
+- 订单转化分析（订单状态、交付时间）
+- 支付方式分析（支付类型、分期情况）
+- 客户满意度分析（评价分数分布）
+- 客户行为分析（复购率、购买频次）
+
+#### item_level_base.csv
+
+- **路径**: `data/interim/item_level_base.csv`
+- **粒度**: 一行一个订单商品项
+- **行数**: 112,650 行 × 36 列 (51 MB)
+- **来源**: order_items + products + sellers + 订单信息
+
+**适用场景**：
+- 产品销售分析（销量排名、品类分布）
+- 卖家绩效分析（销售额、评价分数）
+- 价格与运费分析（价格分布、运费占比）
+- 商品组合分析（客单价、商品数量）
+
+##### 4. 基础表说明文档
+
+- **文件**: `docs/analysis_base_tables.md` (212 行)
+- **内容**: 粒度、字段来源、适用场景、使用限制
+- **对比**: 两张表的差异与选择建议
+
+#### 分析脚本
+
+- **文件**: `build_data_model.py` (数据模型构建)
+- **文件**: `generate_docs.py` (文档生成)
+- **可复现性**: 运行脚本即可重新生成所有结果
+
+#### 运行方法
+
+```bash
+# 构建数据模型（包含验证和基础表）
+python3 build_data_model.py
+
+# 生成补充文档（如果主脚本中断）
+python3 generate_docs.py
+```
+
+## 后续计划
+
+### 第二阶段：数据清洗与预处理（计划中）
+
+- 处理重复数据
+- 填充或删除缺失值
+- 数据类型转换和标准化
+- 创建统一的数据模型
+
+### 第三阶段：业务分析（计划中）
+
+### 第四阶段：可视化与报告（计划中）
+
+- 创建交互式仪表板
+- 生成业务洞察报告
+
+## 技术栈
+
+- **Python 3.x** - 主要编程语言
+- **Pandas** - 数据处理和分析
+- **Markdown** - 文档记录
+
+## 项目结构
+
+```
+.
+├── archive.zip                          # 原始数据压缩包（主数据集）
+├── explore_data.py                      # 主数据集探索脚本（第一阶段）
+├── explore_data_extended.py             # 扩展探索脚本（含 Marketing Funnel）
+├── build_data_model.py                  # 数据模型构建脚本（第二阶段）
+├── generate_docs.py                     # 文档生成脚本（第二阶段）
+├── validate_outputs.py                  # 产出验证脚本
+├── README.md                            # 项目说明文档
+├── docs/
+│   ├── data_dictionary.md              # 数据字典（第一阶段）
+│   ├── table_relationship_notes.md     # 表关系说明（第一阶段）
+│   ├── entity_relationships.md         # ER 关系详细说明（第二阶段）
+│   ├── analysis_base_tables.md         # 分析基础表说明（第二阶段）
+│   ├── marketing_funnel_guide.md       # Marketing Funnel 下载指引
+│   └── marketing_funnel_status.md      # Marketing Funnel 状态报告
+├── doc/
+│   └── 数据分析.md                      # 项目规划文档
+├── outputs/
+│   ├── data_profile_summary.csv        # 数据画像汇总（第一阶段）
+│   ├── erd.mmd                         # ER 关系图谱（第二阶段）
+│   └── join_validation_results.json    # Join 验证结果（第二阶段）
+├── data/
+│   └ interim/
+│       ├── order_level_base.csv        # 订单级别基础表（第二阶段）
+│       └── item_level_base.csv         # 商品级别基础表（第二阶段）
+└── [原始 CSV 文件]
+    ├── [主数据集 - 9个文件]
+    │   ├── olist_customers_dataset.csv
+    │   ├── olist_geolocation_dataset.csv
+    │   ├── olist_order_items_dataset.csv
+    │   ├── olist_order_payments_dataset.csv
+    │   ├── olist_order_reviews_dataset.csv
+    │   ├── olist_orders_dataset.csv
+    │   ├── olist_products_dataset.csv
+    │   ├── olist_sellers_dataset.csv
+    │   └── product_category_name_translation.csv
+    └── [营销漏斗数据集 - 待下载]
+        ├── olist_marketing_qualified_leads_dataset.csv
+        └── olist_closed_deals_dataset.csv
+```
+
+## 参考资源
+
+### 数据集
+
+- [Brazilian E-Commerce Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) - 主数据集
+- [Marketing Funnel Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/marketing-funnel) - 营销漏斗数据集
+- [Olist Documentation](https://olist.com/) - 官方文档
+
+### 分析工具
+
+- [Claude Code](https://claude.ai/code) - AI 辅助编程工具
+- [Pandas Documentation](https://pandas.pydata.org/) - 数据处理库
+
+## 许可证
+
+本项目使用的数据集遵循 Olist 的使用条款，仅供学习和研究使用。
+
+---
+
+**最后更新**: 2026-05-20
+**分析工具**: Claude Code + Python

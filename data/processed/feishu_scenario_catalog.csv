@@ -1,0 +1,5 @@
+scenario_id,scenario_name,scenario_display_name,category,priority,status,created_by,created_at,last_simulated_at,description,corresponding_script
+S01,Late Delivery Optimization,S01 延迟率优化,Fulfillment,HIGH,ACTIVE,analyst,2026-05-20,2026-05-20T23:54:00,Reduce late delivery rate from 8.11% to 4.0% to improve customer satisfaction scores,phase7_calibration_revision.py
+S02,Delivery Time Reduction,S02 配送时长缩短,Fulfillment,HIGH,ACTIVE,analyst,2026-05-20,2026-05-20T23:54:00,Reduce average delivery time from 12.56 to 10.0 days (-20.4%) to improve satisfaction,phase7_calibration_revision.py
+S07,Regional Logistics Improvement,S07 区域物流改善,Regional,MEDIUM,ACTIVE,analyst,2026-05-20,2026-05-20T23:54:00,Reduce late delivery rate in 5 worst states (AL/MA/PI/CE/SE) from 15% to 8%,phase7_calibration_revision.py
+S08,Seller Activation Rate Improvement,S08 商家激活率提升,Activation,HIGH,ACTIVE,analyst,2026-05-20,2026-05-20T23:54:00,Increase seller activation rate from 45.1% to 55.0% (+9.9pp) to boost closed seller GMV,phase7_calibration_revision.py

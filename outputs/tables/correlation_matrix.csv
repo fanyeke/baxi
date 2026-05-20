@@ -1,0 +1,5 @@
+,total_delivery_days,delivery_diff_days,total_freight,review_score
+total_delivery_days,1.0,0.607,0.167,-0.334
+delivery_diff_days,0.607,1.0,-0.05,-0.267
+total_freight,0.167,-0.05,1.0,-0.09
+review_score,-0.334,-0.267,-0.09,1.0

@@ -1,0 +1,16 @@
+Finding
+Average total delivery time: 12.56 days (median: 10.22 days)
+Order approval is fast: average 0.43 days from purchase
+Shipping stage takes longest: average 2.80 days from approval to carrier
+"Delivery reliability: 8.11% late deliveries, 91.88% early deliveries"
+"Customer satisfaction: 78.40% high scores (4-5), 12.71% low scores (1-2)"
+Overall average review score: 4.16/5.0
+Negative correlation between delivery days and score: -0.334 (longer delivery → lower score)
+Negative correlation between delay days and score: -0.267 (late delivery → lower score)
+Delivery time impact: Low scores avg 20.21 days vs high scores 11.09 days
+Late delivery impact: Low scores have 33.75% late rate vs high scores 3.50%
+"High late rate states: AL, MA, PI, CE, SE (>15% late deliveries)"
+High sales but low score categories: 8 categories with >100 orders and avg score <4.0
+High sales but low score sellers: 98 sellers with >50 orders and avg score <4.0
+Weak correlation between freight and score: -0.090 (freight has minimal impact on satisfaction)
+"Score variability: Median 5.00 close to mean 4.16, but 12.71% dissatisfied customers signal experience gaps"

@@ -1,0 +1,11 @@
+origin,mql_count,conversion_count,conversion_rate,gmv_per_seller,is_high_conversion,is_high_value,category
+unknown,1099,179,0.16287534121929026,1333.8737430167598,True,True,High Conversion & High Value
+paid_search,1586,195,0.12295081967213115,933.333641025641,True,True,High Conversion & High Value
+organic_search,2296,271,0.11803135888501742,870.6884870848708,True,True,High Conversion & High Value
+referral,284,24,0.08450704225352113,820.3266666666667,True,True,High Conversion & High Value
+direct_traffic,499,56,0.11222444889779559,491.9607142857143,True,False,High Conversion & Low Value
+other,150,4,0.02666666666666667,2191.6575000000003,False,True,Low Conversion & High Value
+social,1350,75,0.05555555555555555,684.8462666666667,False,False,Low Conversion & Low Value
+display,118,6,0.05084745762711865,201.32500000000002,False,False,Low Conversion & Low Value
+other_publicities,65,3,0.046153846153846156,0.0,False,False,Low Conversion & Low Value
+email,493,15,0.030425963488843813,608.1606666666667,False,False,Low Conversion & Low Value
