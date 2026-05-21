@@ -1,0 +1,13 @@
+app_token: "YOUR_APP_TOKEN"
+
+tables:
+  daily_metrics:
+    table_id: "YOUR_TABLE_ID_1"
+  alert_events:
+    table_id: "YOUR_TABLE_ID_2"
+  strategy_recommendations:
+    table_id: "YOUR_TABLE_ID_3"
+  action_tasks:
+    table_id: "YOUR_TABLE_ID_4"
+  review_retro:
+    table_id: "YOUR_TABLE_ID_5"

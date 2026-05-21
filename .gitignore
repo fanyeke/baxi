@@ -27,3 +27,8 @@ outputs/*_partial.html
 # OS files
 .DS_Store
 Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+!.env.example

@@ -91,6 +91,8 @@ def transform_metric_alerts(schema, field_mapping):
 
     for src, tgt in col_map.items():
         if src in df.columns and tgt in field_ids:
+            if tgt in df.columns and src != tgt:
+                df = df.drop(columns=[tgt])
             df = df.rename(columns={src: tgt})
 
     available = [f for f in field_ids if f in df.columns]
