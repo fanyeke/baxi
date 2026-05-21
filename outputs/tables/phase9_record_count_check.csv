@@ -1,0 +1,5 @@
+table_name,csv_expected_rows,feishu_actual_rows,match_status,scenario_ids_found
+scenario_catalog,4,4,PASS,S01;S02;S07;S08
+scenario_parameters,12,12,PASS,S01(2);S02(3);S07(3);S08(4)
+scenario_simulation_results,10,10,PASS,S01(2);S02(3);S07(2);S08(3)
+simulation_validity_checks,12,12,PASS,S01(3);S02(3);S07(3);S08(3)

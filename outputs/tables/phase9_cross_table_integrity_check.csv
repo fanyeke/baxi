@@ -1,0 +1,5 @@
+scenario_id,in_catalog,in_parameters,in_results,in_validity,orphan_records,missing_records,status
+S01,yes(1),yes(2),yes(2),yes(3),no,no,PASS
+S02,yes(1),yes(3),yes(3),yes(3),no,no,PASS
+S07,yes(1),yes(3),yes(2),yes(3),no,no,PASS
+S08,yes(1),yes(4),yes(3),yes(3),no,no,PASS

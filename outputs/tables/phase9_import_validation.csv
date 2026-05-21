@@ -1,0 +1,6 @@
+table_name,csv_rows,imported_rows,success_rate,failed_rows,retry_count,status
+scenario_catalog,4,4,100.0%,0,少量,SUCCESS
+scenario_parameters,12,12,100.0%,0,0,SUCCESS
+scenario_simulation_results,10,10,100.0%,0,0,SUCCESS
+simulation_validity_checks,12,12,100.0%,0,0,SUCCESS
+total,38,38,100.0%,0,-,SUCCESS
