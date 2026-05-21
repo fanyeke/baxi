@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-VALID_TABLES = ["daily_metrics", "metric_alerts", "strategy_recommendations", "action_tasks", "execution_reviews"]
+VALID_TABLES = ["daily_metrics", "alert_events", "strategy_recommendations", "action_tasks", "review_retro"]
 
 
 def load_yaml(path: str):
