@@ -1,13 +1,22 @@
-app_token: "YOUR_APP_TOKEN"
+base:
+  app_token: UgJsb1eP7aklX1sjjkhcyYw0nWc
+  name: "Olist 经营仪表盘"
+  url: "https://qcnwqbyu8d94.feishu.cn/base/UgJsb1eP7aklX1sjjkhcyYw0nWc"
+  time_zone: Asia/Shanghai
 
 tables:
   daily_metrics:
-    table_id: "YOUR_TABLE_ID_1"
+    table_id: tblRyl4a52dcOJf1
+    name: "每日经营指标"
   alert_events:
-    table_id: "YOUR_TABLE_ID_2"
+    table_id: tbluDh9RvvTlOcNb
+    name: "异常事件表"
   strategy_recommendations:
-    table_id: "YOUR_TABLE_ID_3"
+    table_id: tblBppsrIkfqRvHA
+    name: "策略建议表"
   action_tasks:
-    table_id: "YOUR_TABLE_ID_4"
+    table_id: tblMeHjwva6WzWlt
+    name: "负责人任务表"
   review_retro:
-    table_id: "YOUR_TABLE_ID_5"
+    table_id: tblYf8VfLb7wnKkU
+    name: "执行复盘表"
