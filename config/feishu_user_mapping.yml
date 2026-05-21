@@ -1,0 +1,22 @@
+# Feishu user mapping: owner_role -> feishu user_id
+# If feishu_user_id is empty, sync script writes 负责人角色 only, skips 负责人 user field.
+
+business_ops:
+  role_name: "总体经营"
+  feishu_user_id: ""
+
+seller_ops:
+  role_name: "卖家治理"
+  feishu_user_id: ""
+
+category_ops:
+  role_name: "品类运营"
+  feishu_user_id: ""
+
+logistics_ops:
+  role_name: "履约物流"
+  feishu_user_id: ""
+
+marketing_ops:
+  role_name: "营销渠道"
+  feishu_user_id: ""

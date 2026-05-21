@@ -16,6 +16,7 @@ from scripts.config import (
     FEISHU_DIR,
     FEISHU_BASE_SCHEMA_FILE,
     FEISHU_FIELD_MAPPING_FILE,
+    FEISHU_USER_MAPPING_FILE,
     SYSTEM_DIR,
     ensure_dirs_exist,
 )
@@ -68,21 +69,58 @@ def load_csv_for_table(table_id: str) -> pd.DataFrame:
     return df
 
 
-def records_to_dicts(df: pd.DataFrame) -> list[dict]:
+# Fields that are Feishu user-type but may contain role strings in local CSV
+USER_TYPE_FIELDS = {"owner_role", "owner"}
+
+# Fields that should be percentage (0-1 range) in the Feishu schema
+PERCENTAGE_FIELDS = {"low_review_rate", "late_delivery_rate", "cancel_rate"}
+
+
+def load_user_mapping():
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "feishu_user_mapping.yml")
+    if os.path.exists(path):
+        return load_yaml(path)
+    return {}
+
+
+def records_to_dicts(df: pd.DataFrame, table_id: str) -> list[dict]:
+    user_mapping = load_user_mapping()
     records = []
     for _, row in df.iterrows():
         rec = {}
         for col in df.columns:
             val = row[col]
             if pd.isna(val):
-                rec[col] = ""
-            elif isinstance(val, (int, float)):
-                if pd.isna(val):
-                    rec[col] = ""
+                val = ""
+
+            # Handle user-type fields: role strings -> skip, valid user_id -> keep
+            if col in USER_TYPE_FIELDS and val and not str(val).startswith("ou_"):
+                # Write to 负责人角色 text field if available, skip user field
+                role_col = "owner_role"
+                if "owner_role" in df.columns and col == "owner_role":
+                    pass  # owner_role written as text
                 else:
-                    rec[col] = val
+                    continue  # skip unknown user field
+
+            # Handle percentage fields: ensure 0-1 range
+            if col in PERCENTAGE_FIELDS and isinstance(val, (int, float)) and val > 1:
+                val = val / 100.0
+
+            if isinstance(val, (int, float)) and not pd.isna(val):
+                rec[col] = val
             else:
-                rec[col] = str(val)
+                rec[col] = str(val) if val != "" else ""
+
+        # Map owner_role to 负责人角色 if present
+        if "owner_role" in rec and rec["owner_role"]:
+            role_val = rec["owner_role"]
+            mapping = user_mapping.get(role_val, {})
+            if mapping.get("role_name"):
+                rec["owner_role"] = mapping["role_name"]
+            feishu_user_id = mapping.get("feishu_user_id", "")
+            if "负责人" not in rec and feishu_user_id:
+                rec["负责人"] = feishu_user_id
+
         records.append(rec)
     return records
 
@@ -147,7 +185,7 @@ def sync_table(
         )
         return 0, 0, 0
 
-    records = records_to_dicts(df)
+    records = records_to_dicts(df, table_id)
     source_file = f"{table_id}_for_feishu.csv"
 
     if dry_run:
