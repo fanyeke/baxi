@@ -1,8 +1,3 @@
-"""
-Reads alert_rules.yml and daily_metrics.csv, detects anomalies based on rules,
-and writes metric_alerts.csv (appends if exists, avoids duplicates by alert_id).
-"""
-
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -10,9 +5,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts.config import *
 import pandas as pd
 import yaml
+import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,24 +17,40 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def load_ingestion_state():
+    with open(INGESTION_STATE_FILE, 'r') as f:
+        state = json.load(f)
+
+    if state.get('last_completed_simulated_date'):
+        as_of_date = pd.Timestamp(state['last_completed_simulated_date'])
+    elif state.get('next_simulated_date'):
+        as_of_date = pd.Timestamp(state['next_simulated_date']) - pd.Timedelta(days=1)
+    elif state.get('current_simulated_date'):
+        as_of_date = pd.Timestamp(state['current_simulated_date'])
+    else:
+        raise ValueError("ingestion_state.json has no usable date field")
+
+    logger.info(f"as_of_date = {as_of_date.date()} (from {list(state.keys())})")
+    return as_of_date
+
+
 def load_alert_rules():
-    """Load alert rules from YAML config."""
     with open(ALERT_RULES_FILE, 'r') as f:
         config = yaml.safe_load(f)
     return config['rules']
 
 
-def load_daily_metrics():
-    """Load daily metrics CSV, sorted by simulated_date."""
+def load_daily_metrics(as_of_date):
     df = pd.read_csv(DAILY_METRICS_FILE, parse_dates=['simulated_date'])
+    df = df[df['simulated_date'] <= as_of_date]
     df = df.sort_values('simulated_date').reset_index(drop=True)
-    # Convert numeric columns, coerce errors to NaN
     numeric_cols = ['gmv', 'order_count', 'customer_count', 'seller_count',
                     'avg_order_value', 'freight_value', 'avg_review_score',
                     'low_review_rate', 'late_delivery_rate', 'cancel_rate',
                     'payment_installment_rate', 'marketing_seller_share']
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+    logger.info(f"Loaded {len(df)} daily metric rows (filtered to <= {as_of_date.date()})")
     return df
 
 
@@ -52,7 +64,9 @@ def get_rolling_avg(series, window):
 
 def check_gmv_drop(rule, metrics_df):
     """Check: current 7-day avg GMV vs previous 14-day avg GMV.
-    Alert if current_7d_avg < prev_14d_avg * 0.85"""
+    Alert if current_7d_avg < prev_14d_avg * 0.85.
+    Evaluates at the last available date in filtered data.
+    """
     alerts = []
     gmv = metrics_df['gmv'].copy()
 
@@ -60,13 +74,11 @@ def check_gmv_drop(rule, metrics_df):
         logger.info(f"Rule {rule['rule_id']}: insufficient data ({len(gmv.dropna())} rows), skipping")
         return alerts
 
-    # Evaluate from the last row backward
     current_7d = get_rolling_avg(gmv, 7)
     if current_7d is None or pd.isna(current_7d):
         logger.info(f"Rule {rule['rule_id']}: no valid current 7-day avg, skipping")
         return alerts
 
-    # Get the values before the last 7 days for the previous 14-day baseline
     non_null_dates = gmv.dropna().index.tolist()
     if len(non_null_dates) <= 7:
         logger.info(f"Rule {rule['rule_id']}: not enough data for 7+14 comparison, skipping")
@@ -144,8 +156,7 @@ def check_late_delivery_spike(rule, metrics_df):
 
 
 def check_review_score_drop(rule, metrics_df):
-    """Check: baseline_7d_avg - current > 0.3 and order_count >= 30.
-    Compares last row's avg_review_score against a 7-day rolling baseline (excluding last row)."""
+    """Check: baseline_7d_avg - current > 0.3 and order_count >= 30."""
     alerts = []
     score = metrics_df['avg_review_score'].copy()
     non_null = score.dropna()
@@ -166,7 +177,6 @@ def check_review_score_drop(rule, metrics_df):
         logger.info(f"Rule {rule['rule_id']}: insufficient order_count ({current_orders}), skipping")
         return alerts
 
-    # 7-day baseline excluding last row
     scores_without_last = score.iloc[:-1].dropna().tail(7)
     if len(scores_without_last) < 3:
         logger.info(f"Rule {rule['rule_id']}: insufficient baseline data for comparison, skipping")
@@ -215,7 +225,6 @@ def check_cancel_rate_spike(rule, metrics_df):
         logger.info(f"Rule {rule['rule_id']}: last row has missing cancel_rate, skipping")
         return alerts
 
-    # 7-day baseline excluding last row
     cancel_without_last = cancel.iloc[:-1].dropna().tail(7)
     if len(cancel_without_last) < 2:
         logger.info(f"Rule {rule['rule_id']}: insufficient baseline data, skipping")
@@ -224,7 +233,6 @@ def check_cancel_rate_spike(rule, metrics_df):
     baseline_rate = cancel_without_last.mean()
 
     if baseline_rate == 0:
-        # If baseline is 0, any non-zero current is an infinite increase
         if current_rate > 0.05:
             change_rate = float('inf')
         else:
@@ -257,7 +265,7 @@ def check_cancel_rate_spike(rule, metrics_df):
 
 def check_seller_activation_gap(rule, metrics_df):
     """Check: proportion of zero-order sellers > 0.5.
-    
+
     NOTE: This rule requires per-seller order data which is not available in the
     aggregated daily_metrics.csv. Logged and skipped.
     """
@@ -265,7 +273,6 @@ def check_seller_activation_gap(rule, metrics_df):
     return []
 
 
-# Map rule_id to handler function
 RULE_HANDLERS = {
     'gmv_drop': check_gmv_drop,
     'late_delivery_spike': check_late_delivery_spike,
@@ -275,34 +282,89 @@ RULE_HANDLERS = {
 }
 
 
-def append_alerts(alerts_df, output_path):
-    if os.path.exists(output_path):
-        existing = pd.read_csv(output_path, dtype={'alert_id': str})
-        existing_keys = set(zip(existing['rule_id'], existing['simulated_date']))
-        new_alerts = alerts_df[~alerts_df.apply(
+def load_existing_alerts():
+    if os.path.exists(METRIC_ALERTS_FILE):
+        df = pd.read_csv(METRIC_ALERTS_FILE, dtype={'alert_id': str})
+        return df
+    return pd.DataFrame()
+
+
+def append_alerts(new_alerts_df, existing_df, output_path):
+    if new_alerts_df.empty:
+        if not existing_df.empty:
+            return existing_df
+        columns = ['alert_id', 'real_run_date', 'simulated_date', 'rule_id', 'metric',
+                   'severity', 'dimension', 'object_type', 'object_id', 'current_value',
+                   'baseline_value', 'description', 'owner_role', 'status']
+        pd.DataFrame(columns=columns).to_csv(output_path, index=False)
+        return pd.DataFrame(columns=columns)
+
+    if not existing_df.empty:
+        existing_keys = set(zip(existing_df['rule_id'], existing_df['simulated_date']))
+        new_alerts_df = new_alerts_df[~new_alerts_df.apply(
             lambda r: (r['rule_id'], r['simulated_date']) in existing_keys, axis=1
         )]
-        if len(new_alerts) == 0:
-            logger.info("No new alerts to append")
-            return existing
-        combined = pd.concat([existing, new_alerts], ignore_index=True)
+        if new_alerts_df.empty:
+            logger.info("No new alerts to append (all deduplicated)")
+            return existing_df
+        combined = pd.concat([existing_df, new_alerts_df], ignore_index=True)
     else:
-        combined = alerts_df
+        combined = new_alerts_df
 
+    columns = ['alert_id', 'real_run_date', 'simulated_date', 'rule_id', 'metric',
+               'severity', 'dimension', 'object_type', 'object_id', 'current_value',
+               'baseline_value', 'description', 'owner_role', 'status']
+    combined = combined[columns]
     combined.to_csv(output_path, index=False)
     logger.info(f"Wrote {len(combined)} total alert(s) to {output_path}")
     return combined
 
 
+def append_run_manifest(as_of_date, alert_count, status='success', error_message=''):
+    now_str = datetime.now(timezone.utc).isoformat()
+    manifest = pd.DataFrame([{
+        'run_id': uuid.uuid4().hex,
+        'real_run_date': now_str,
+        'simulated_date': str(as_of_date.date()),
+        'pipeline_stage': 'alert_detection',
+        'input_row_count': 0,
+        'output_row_count': alert_count,
+        'status': status,
+        'error_message': error_message,
+        'started_at': now_str,
+        'finished_at': now_str,
+        'bundle_path': '',
+        'report_path': METRIC_ALERTS_FILE,
+    }])
+
+    if os.path.exists(RUN_MANIFEST_FILE):
+        existing = pd.read_csv(RUN_MANIFEST_FILE)
+        manifest = pd.concat([existing, manifest], ignore_index=True)
+    manifest.to_csv(RUN_MANIFEST_FILE, index=False)
+    logger.info(f"Appended alert_detection record to run_manifest.csv")
+
+
 def main():
     logger.info("Starting alert detection")
+
+    logger.info(f"Loading ingestion state from: {INGESTION_STATE_FILE}")
+    as_of_date = load_ingestion_state()
+
     logger.info(f"Loading rules from: {ALERT_RULES_FILE}")
     rules = load_alert_rules()
     logger.info(f"Loaded {len(rules)} rule(s): {[r['rule_id'] for r in rules]}")
 
     logger.info(f"Loading daily metrics from: {DAILY_METRICS_FILE}")
-    metrics_df = load_daily_metrics()
-    logger.info(f"Loaded {len(metrics_df)} daily metric rows (date range: {metrics_df['simulated_date'].min().date()} to {metrics_df['simulated_date'].max().date()})")
+    metrics_df = load_daily_metrics(as_of_date)
+
+    if metrics_df.empty:
+        logger.warning("No metrics data available for dates <= as_of_date, skipping")
+        append_run_manifest(as_of_date, 0, status='failed', error_message='No data')
+        return
+
+    existing_alerts_df = load_existing_alerts()
+    existing_count = len(existing_alerts_df)
+    logger.info(f"Loaded {existing_count} existing alert(s) for deduplication")
 
     all_alerts = []
     for rule in rules:
@@ -315,22 +377,10 @@ def main():
         alerts = handler(rule, metrics_df)
         all_alerts.extend(alerts)
 
-    if all_alerts:
-        alerts_df = pd.DataFrame(all_alerts)
-        # Ensure column order
-        columns = ['alert_id', 'real_run_date', 'simulated_date', 'rule_id', 'metric',
-                   'severity', 'dimension', 'object_type', 'object_id', 'current_value',
-                   'baseline_value', 'description', 'owner_role', 'status']
-        alerts_df = alerts_df[columns]
-        append_alerts(alerts_df, METRIC_ALERTS_FILE)
-    else:
-        logger.info("No alerts detected")
-        # Create empty file with headers if it doesn't exist
-        if not os.path.exists(METRIC_ALERTS_FILE):
-            pd.DataFrame(columns=['alert_id', 'real_run_date', 'simulated_date', 'rule_id',
-                                  'metric', 'severity', 'dimension', 'object_type', 'object_id',
-                                  'current_value', 'baseline_value', 'description', 'owner_role',
-                                  'status']).to_csv(METRIC_ALERTS_FILE, index=False)
+    new_alerts_df = pd.DataFrame(all_alerts) if all_alerts else pd.DataFrame()
+    combined = append_alerts(new_alerts_df, existing_alerts_df, METRIC_ALERTS_FILE)
+
+    append_run_manifest(as_of_date, len(combined) if not combined.empty else 0)
 
     logger.info("Alert detection complete")
 

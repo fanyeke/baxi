@@ -2,7 +2,8 @@
 Calculate 12 core daily metrics from intermediate tables.
 
 Reads order_level_base.csv and item_level_base.csv from data/interim/,
-computes daily metrics, and writes data/ads/daily_metrics.csv.
+computes daily metrics, filters to visible dates per ingestion_state.json,
+and writes data/ads/daily_metrics.csv. Also adds a manifest entry.
 """
 
 import sys
@@ -114,8 +115,59 @@ def calculate_metrics(order_df, item_df):
     return metrics
 
 
+def get_as_of_date():
+    """Read ingestion_state.json and return the cutoff date for filtering.
+
+    Priority: last_completed_simulated_date > next_simulated_date > current_simulated_date.
+    If no valid date is found or state file doesn't exist, return None (no output).
+    """
+    if not os.path.exists(INGESTION_STATE_FILE):
+        return None
+
+    with open(INGESTION_STATE_FILE, 'r') as f:
+        state = json.load(f)
+
+    for key in ('last_completed_simulated_date', 'next_simulated_date', 'current_simulated_date'):
+        val = state.get(key)
+        if val is not None and val != 'null':
+            return val
+
+    return None
+
+
+def filter_to_cutoff(metrics, as_of_date):
+    if as_of_date is None:
+        return metrics.iloc[0:0].copy()
+    return metrics[metrics['simulated_date'] <= as_of_date].copy()
+
+
+def add_manifest_entry(as_of_date, output_count):
+    manifest_path = RUN_MANIFEST_FILE
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    entry = pd.DataFrame([{
+        'run_timestamp': now,
+        'script': 'calculate_daily_metrics.py',
+        'as_of_date': as_of_date,
+        'rows_written': output_count,
+        'status': 'success'
+    }])
+
+    if os.path.exists(manifest_path):
+        existing = pd.read_csv(manifest_path)
+        combined = pd.concat([existing, entry], ignore_index=True)
+    else:
+        combined = entry
+
+    combined.to_csv(manifest_path, index=False)
+
+
 def main():
     ensure_dirs_exist()
+
+    as_of_date = get_as_of_date()
+    print(f"as_of_date from state: {as_of_date}")
+
     print("Loading intermediate tables...")
     order_df, item_df = load_data()
 
@@ -123,13 +175,25 @@ def main():
     order_df, item_df = prepare_timestamps(order_df, item_df)
 
     print("Calculating daily metrics...")
-    metrics = calculate_metrics(order_df, item_df)
+    all_metrics = calculate_metrics(order_df, item_df)
+    print(f"Total calculated: {len(all_metrics)} rows")
 
-    print(f"Writing {len(metrics)} rows to {DAILY_METRICS_FILE}...")
-    metrics.to_csv(DAILY_METRICS_FILE, index=False)
+    visible_metrics = filter_to_cutoff(all_metrics, as_of_date)
+    print(f"Visible after cut-off filter: {len(visible_metrics)} rows")
 
-    print(f"Columns: {list(metrics.columns)}")
-    print(f"Date range: {metrics['simulated_date'].min()} to {metrics['simulated_date'].max()}")
+    print(f"Writing {len(visible_metrics)} rows to {DAILY_METRICS_FILE}...")
+    visible_metrics.to_csv(DAILY_METRICS_FILE, index=False)
+
+    if len(visible_metrics) > 0:
+        print(f"Date range: {visible_metrics['simulated_date'].min()} to {visible_metrics['simulated_date'].max()}")
+    else:
+        print("No rows output (as_of_date is null or in the past).")
+
+    print(f"Columns: {list(visible_metrics.columns)}")
+
+    add_manifest_entry(as_of_date, len(visible_metrics))
+    print(f"Manifest entry added.")
+
     print("Done.")
 
 

@@ -25,7 +25,8 @@ def _init_state():
         with open(INGESTION_STATE_FILE, "r") as f:
             return json.load(f)
     state = {
-        "current_simulated_date": "2016-09-04",
+        "next_simulated_date": "2016-09-05",
+        "last_completed_simulated_date": None,
         "last_run_at": None,
         "last_loaded_order_count": 0,
         "status": "never_run",
@@ -90,7 +91,7 @@ def main():
     _init_manifest()
 
     run_id = uuid.uuid4().hex
-    sim_date = state["current_simulated_date"]
+    sim_date = state["next_simulated_date"]
     filter_date = pd.to_datetime(sim_date).date()
 
     if os.path.exists(RUN_MANIFEST_FILE):
@@ -121,7 +122,8 @@ def main():
         state["last_run_at"] = datetime.now(timezone.utc).isoformat()
         state["last_loaded_order_count"] = 0
         state["status"] = "success"
-        state["current_simulated_date"] = (filter_date + timedelta(days=1)).isoformat()
+        state["last_completed_simulated_date"] = sim_date
+        state["next_simulated_date"] = (filter_date + timedelta(days=1)).isoformat()
         _save_state(state)
         print(f"[EMPTY] No orders for {sim_date}. Wrote empty {output_filename}")
         return
@@ -135,7 +137,8 @@ def main():
     state["last_run_at"] = datetime.now(timezone.utc).isoformat()
     state["last_loaded_order_count"] = order_count
     state["status"] = "success"
-    state["current_simulated_date"] = (filter_date + timedelta(days=1)).isoformat()
+    state["last_completed_simulated_date"] = sim_date
+    state["next_simulated_date"] = (filter_date + timedelta(days=1)).isoformat()
     _save_state(state)
 
     print(f"[OK] Loaded {order_count} orders for {sim_date} -> {output_filename}")

@@ -59,6 +59,7 @@ AIP_METRICS_FILE = os.path.join(AIP_DIR, 'aip_metrics.json')
 AIP_EVENTS_FILE = os.path.join(AIP_DIR, 'aip_events.json')
 AIP_ACTION_RECOMMENDATIONS_FILE = os.path.join(AIP_DIR, 'aip_action_recommendations.json')
 AIP_CONTEXT_BUNDLE_FILE = os.path.join(AIP_DIR, 'aip_context_bundle.json')
+AIP_CONTEXT_BUNDLE_LATEST_FILE = os.path.join(AIP_DIR, 'aip_context_bundle_latest.json')
 
 # Key intermediate tables
 ORDER_LEVEL_BASE_FILE = os.path.join(INTERIM_DIR, 'order_level_base.csv')
