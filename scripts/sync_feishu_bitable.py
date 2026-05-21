@@ -99,12 +99,9 @@ def records_to_dicts(df: pd.DataFrame, table_id: str) -> list[dict]:
 
             # Handle user-type fields: role strings -> skip, valid user_id -> keep
             if col in USER_TYPE_FIELDS and val and not str(val).startswith("ou_"):
-                # Write to 负责人角色 text field if available, skip user field
-                role_col = "owner_role"
-                if "owner_role" in df.columns and col == "owner_role":
-                    pass  # owner_role written as text
-                else:
-                    continue  # skip unknown user field
+                role_col = col
+                if role_col in ("owner_role", "owner") and col == role_col:
+                    pass
 
             # Handle percentage fields: ensure 0-1 range
             if col in PERCENTAGE_FIELDS and isinstance(val, (int, float)) and val > 1:
@@ -115,15 +112,16 @@ def records_to_dicts(df: pd.DataFrame, table_id: str) -> list[dict]:
             else:
                 rec[col] = str(val) if val != "" else ""
 
-        # Map owner_role to 负责人角色 if present
-        if "owner_role" in rec and rec["owner_role"]:
-            role_val = rec["owner_role"]
-            mapping = user_mapping.get(role_val, {})
-            if mapping.get("role_name"):
-                rec["owner_role"] = mapping["role_name"]
-            feishu_user_id = mapping.get("feishu_user_id", "")
-            if "负责人" not in rec and feishu_user_id:
-                rec["负责人"] = feishu_user_id
+        # Map owner/owner_role to responsible person if present
+        for role_key in ("owner_role", "owner"):
+            if role_key in rec and rec[role_key]:
+                role_val = str(rec[role_key])
+                mapping = user_mapping.get(role_val, {})
+                if mapping.get("role_name"):
+                    rec[role_key] = mapping["role_name"]
+                feishu_user_id = mapping.get("feishu_user_id", "")
+                if feishu_user_id and "负责人" not in rec:
+                    rec["负责人"] = feishu_user_id
 
         records.append(rec)
     return records

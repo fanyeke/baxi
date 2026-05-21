@@ -177,6 +177,7 @@ def transform_action_tasks(schema, field_mapping):
 
     col_map = {
         'feedback': 'feedback',
+        'owner_role': 'owner',
     }
     for src, tgt in col_map.items():
         if src in df.columns and tgt in field_ids:
