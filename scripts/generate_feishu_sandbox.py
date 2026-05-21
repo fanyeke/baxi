@@ -110,11 +110,14 @@ def transform_strategy_recommendations(schema, field_mapping):
     field_ids = get_schema_fields(schema, 'recommendations')
     output_path = os.path.join(FEISHU_DIR, 'strategy_recommendations_for_feishu.csv')
 
-    if not os.path.exists(AIP_ACTION_RECOMMENDATIONS_FILE):
+    wake_source = os.path.join(OUTPUTS_DIR, 'wake', 'strategy_recommendations.json')
+    source = wake_source if os.path.exists(wake_source) else AIP_ACTION_RECOMMENDATIONS_FILE
+
+    if not os.path.exists(source):
         return make_empty_csv(output_path, field_ids)
 
     import json
-    with open(AIP_ACTION_RECOMMENDATIONS_FILE, 'r', encoding='utf-8') as f:
+    with open(source, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     if isinstance(data, list):
@@ -152,7 +155,7 @@ def transform_action_tasks(schema, field_mapping):
     field_ids = get_schema_fields(schema, 'action_tasks')
     output_path = os.path.join(FEISHU_DIR, 'action_tasks_for_feishu.csv')
 
-    source_path = os.path.join(OUTPUTS_DIR, 'action_tasks.json')
+    source_path = os.path.join(OUTPUTS_DIR, 'wake', 'action_tasks.json')
     if not os.path.exists(source_path):
         return make_empty_csv(output_path, field_ids)
 

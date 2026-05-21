@@ -14,6 +14,7 @@ from scripts.config import (
     METRIC_ALERTS_FILE,
     AIP_CONTEXT_BUNDLE_FILE,
     VALIDATION_RESULTS_FILE,
+    DATA_QUALITY_EXCEPTIONS_FILE,
     RUN_MANIFEST_FILE,
     SYSTEM_DIR,
 )
@@ -177,6 +178,28 @@ def main():
         },
         "results": results,
     }
+
+    t4_result = results[3]  # T4 is the 4th test (index 3)
+    if t4_result["status"] == "FAILED":
+        not_delivered = order_level_base["order_status"] != "delivered"
+        has_delivery = order_level_base.loc[not_delivered, "order_delivered_customer_date"].notna()
+        invalid_records = order_level_base[not_delivered & has_delivery]
+        detected_at = datetime.now(timezone.utc).isoformat()
+        exception_rows = []
+        for _, row in invalid_records.iterrows():
+            exception_rows.append({
+                "exception_id": uuid.uuid4().hex,
+                "run_id": "",
+                "table_name": "order_level_base",
+                "record_id": row["order_id"],
+                "rule_id": "T4",
+                "severity": "high",
+                "issue_description": "Non-delivered order has delivery date",
+                "treatment": "",
+                "detected_at": detected_at,
+            })
+        exceptions_df = pd.DataFrame(exception_rows)
+        exceptions_df.to_csv(DATA_QUALITY_EXCEPTIONS_FILE, index=False)
 
     with open(VALIDATION_RESULTS_FILE, 'w') as f:
         json.dump(output, f, indent=2)

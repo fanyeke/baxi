@@ -40,6 +40,7 @@ SCRIPTS_DIR = os.path.join(PROJECT_ROOT, 'scripts')
 INGESTION_STATE_FILE = os.path.join(SYSTEM_DIR, 'ingestion_state.json')
 RUN_MANIFEST_FILE = os.path.join(SYSTEM_DIR, 'run_manifest.csv')
 VALIDATION_RESULTS_FILE = os.path.join(SYSTEM_DIR, 'validation_results.json')
+DATA_QUALITY_EXCEPTIONS_FILE = os.path.join(SYSTEM_DIR, 'data_quality_exceptions.csv')
 
 # Config files
 DATA_QUALITY_RULES_FILE = os.path.join(CONFIG_DIR, 'data_quality_rules.yml')
