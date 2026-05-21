@@ -1,7 +1,8 @@
-# Phase 10: Waker 飞书沙盘只读接入 - 就绪评估
+# Phase 10: Waker 飞书决策沙盘只读接入 - 就绪评估
 
-**执行时间**: 2026-05-21  
-**Base**: [Olist经营模拟决策沙盘-Phase9](https://qcnwqbyu8d94.feishu.cn/base/P0m4bfs7da9Relsu2pKcvt6YnLb)  
+**执行时间**: 2026-05-21
+**Base**: [Olist经营模拟决策沙盘-Phase9](https://qcnwqbyu8d94.feishu.cn/base/P0m4bfs7da9Relsu2pKcvt6YnLb)
+**Base Token**: P0m4bfs7da9Relsu2pKcvt6YnLb
 
 ---
 
@@ -9,7 +10,7 @@
 
 **Waker 飞书沙盘只读接入状态**: ✅ **READY**
 
-所有读取验证通过，无阻塞问题。
+所有读取验证通过，无阻塞问题。所有操作为 read-only。
 
 ---
 
@@ -24,36 +25,55 @@
 | 参数表读取 | ✅ 通过 | 12 条记录完整 |
 | 结果表读取 | ✅ 通过 | 10 条记录完整 |
 | 有效性检查读取 | ✅ 通过 | 12 条记录完整 |
+| 只读操作 | ✅ 通过 | 所有操作为 +record-list，无任何写入 |
 
 ## 2. 数据完整性
 
-| 表 | 预期记录 | 实际记录 | 读取完整度 |
-|----|---------|---------|-----------|
+| 表 | 预期记录 | 实际读取记录 | 读取完整度 |
+|----|---------|-------------|-----------|
 | scenario_catalog | 4 | 4 | 100% |
 | scenario_parameters | 12 | 12 | 100% |
 | scenario_simulation_results | 10 | 10 | 100% |
 | simulation_validity_checks | 12 | 12 | 100% |
 
-## 3. 场景串联验证 (scenario_id)
+## 3. 记录数校验 (4/12/10/12)
 
-| 场景 | 目录 | 参数 | 结果 | 有效性检查 | 跨表一致 |
-|------|------|------|------|-----------|---------|
-| S02 | ✅ 1 | ✅ 3 | ✅ 3 | ✅ 3 | ✅ PASS |
-| S08 | ✅ 1 | ✅ 4 | ✅ 3 | ✅ 3 | ✅ PASS |
+| 表 | 预期 | 实际 | 状态 |
+|----|------|------|------|
+| scenario_catalog | 4 | 4 | PASS |
+| scenario_parameters | 12 | 12 | PASS |
+| scenario_simulation_results | 10 | 10 | PASS |
+| simulation_validity_checks | 12 | 12 | PASS |
 
 ## 4. 关键字段检查
 
-| 字段 | S02 | S08 | 状态 |
-|------|-----|-----|------|
-| scenario_id | ✅ 正常 | ✅ 正常 | 保持文本类型 |
-| raw_simulated_value | ✅ 5.015 | ✅ N/A (不适用) | PASS |
-| simulated_value | ✅ 4.46 | ✅ 945270.09 / 7.05 | PASS |
-| evidence_level | ✅ OBSERVATIONAL_CORRELATION | ✅ ARITHMETIC_CALCULATION | PASS |
-| causal_disclaimer | ✅ 有免责声明 | ✅ 有免责声明 | PASS |
-| change_value | ✅ 0.3 / -1.83 / -0.358 | ✅ 各指标完整 | PASS |
-| interpretation | ✅ 有解读说明 | ✅ 有解读说明 | PASS |
+| 字段 | S02 值 | S08 值 | 期望值 | 状态 |
+|------|--------|--------|--------|------|
+| raw_simulated_value | 5.015 | N/A | S02=5.015 | PASS |
+| simulated_value | 4.46 | 945270.09 / 7.05 | S02=4.460 | PASS |
+| evidence_level | OBSERVATIONAL_CORRELATION | ARITHMETIC_CALCULATION | 正确 | PASS |
+| causal_disclaimer | 有 | 有 | 有 | PASS |
+| change_value | 0.3 / -1.83 / -0.358 | 各指标完整 | 完整 | PASS |
 
-## 5. 发现的问题
+## 5. S08 双口径验证
+
+| 口径 | 指标 | 基准值 | 模拟值 | 变化 |
+|------|------|--------|--------|------|
+| 漏斗 GMV | closed_seller_GMV | 775815.63 | 945270.09 | +21.8% |
+| 全平台占比 | platform_GMV_pct | 5.78 | 7.05 | +1.26pp |
+
+S08 同时保留了漏斗 GMV 口径与全平台 GMV 占比口径。✅
+
+## 6. 场景串联验证 (scenario_id)
+
+| 场景 | 目录 | 参数 | 结果 | 有效性检查 | 跨表一致 |
+|------|------|------|------|-----------|---------|
+| S01 | 1 | 2 | 2 | 3 | PASS |
+| S02 | 1 | 3 | 3 | 3 | PASS |
+| S07 | 1 | 3 | 2 | 3 | PASS |
+| S08 | 1 | 4 | 3 | 3 | PASS |
+
+## 7. 发现的问题
 
 ### 无阻塞问题
 
@@ -63,11 +83,10 @@
 
 | 问题 | 等级 | 说明 |
 |------|------|------|
-| 部分字段仍为文本类型 | 低 | 飞书 CLI 不支持单选项转换，建议在 UI 中手动转换（见 Phase 9.5 报告） |
 | CLI 版本过时 | 低 | v1.0.31 → v1.0.35，建议更新 |
-| 字段排列顺序 | 低 | scenario_catalog 字段顺序与 CSV header 不完全一致，但不影响按字段名读取 |
+| 部分字段仍为文本类型 | 低 | 飞书 CLI 不支持单选项转换，建议在 UI 中手动转换 |
 
-## 6. Waker 可读性总结
+## 8. Waker 可读性总结
 
 | 能力 | 状态 |
 |------|------|
@@ -82,4 +101,4 @@
 
 ---
 
-**最终状态**: ✅ **READY** - Waker 可通过飞书 CLI 全量只读读取四张表数据，所有场景信息完整可读，证据等级和免责声明均保留。
+**最终状态**: ✅ **READY** — Waker 可通过飞书 CLI 全量只读读取四张表数据，记录数 4/12/10/12 全部匹配，S02 原始值 5.015 和校准值 4.460 正确，S08 双口径保留完整。

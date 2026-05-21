@@ -302,19 +302,60 @@ python3 generate_docs.py
 
 ## 后续计划
 
-### 第二阶段：数据清洗与预处理（计划中）
+### Phase 3：全局业务分析 ✅
 
-- 处理重复数据
-- 填充或删除缺失值
-- 数据类型转换和标准化
-- 创建统一的数据模型
+月度趋势分析（GMV/订单量/客户增长）、订单状态分布、支付方式分析、品类销售排名、卖家GMV排名、地域分析。
+- 脚本: `scripts/phase03_overall_business_analysis.py`
+- 报告: `reports/overall_business_analysis.md`
+- 产出: 12 CSV + 13 图表
 
-### 第三阶段：业务分析（计划中）
+### Phase 4：履约与客户体验分析 ✅
 
-### 第四阶段：可视化与报告（计划中）
+订单交付时效、评价分数影响、地域/品类/卖家交付表现对比。
+- 脚本: `scripts/phase04_fulfillment_experience_analysis.py`
+- 报告: `reports/fulfillment_customer_experience_analysis.md`
+- 产出: 14 CSV + 11 图表
 
-- 创建交互式仪表板
-- 生成业务洞察报告
+### Phase 5：营销漏斗 + 卖家绩效分析 ✅
+
+营销线索来源、渠道质量、卖家GMV排名、质量修订。
+- 脚本: `scripts/phase05_marketing_funnel_analysis.py`, `phase05_seller_performance_analysis.py`, `phase05_quality_revision.py`
+- 报告: `reports/marketing_funnel_seller_growth_analysis.md`
+
+### Phase 6：（跳过）
+
+### Phase 7：决策沙盘模拟器 ✅
+
+What-If 场景模拟，GMV/评分联动预测。
+- 脚本: `scripts/phase07_simulation_engine.py`, `phase07_calibration_revision.py`
+- 报告: `reports/scenario_simulation_analysis.md`, `reports/simulation_readiness_report.md`
+
+### Phase 8：飞书沙盘准备
+
+飞书多维表格 scenario 参数构建。
+- 产出: `data/processed/feishu_*.csv`
+
+### Phase 9：飞书沙盘集成与部署 ✅
+
+飞书部署、UI 验收、执行报告。
+- 文档: `docs/phase9_*.md`
+
+### Phase 10：Waker 只读验证 ✅
+
+读写契约验证。
+- 文档: `docs/waker_read_write_contract.md`, `docs/phase10_*.md`
+
+## 运行说明
+
+### 脚本状态：❄️ FROZEN
+
+所有分析脚本已集中至 `scripts/` 目录并重命名为 `phaseXX_*.py` 格式。由于原始数据文件已从根目录移至 `data/raw/`，**脚本中的硬编码路径已失效，不能直接运行**。
+
+详细说明见：[scripts/_FROZEN.md](scripts/_FROZEN.md)
+
+### Phase B 计划
+
+后续将创建 `scripts/config.py` 集中管理路径常量，更新所有脚本使其可直接运行。
 
 ## 技术栈
 
@@ -322,48 +363,53 @@ python3 generate_docs.py
 - **Pandas** - 数据处理和分析
 - **Markdown** - 文档记录
 
+## 项目结构概览
+
+| 目录 | 内容 | 文件数 |
+|------|------|--------|
+| `data/raw/` | 原始数据源 | 12 |
+| `data/interim/` | 中间分析表 | 3 |
+| `data/processed/` | 飞书沙盘产物 | 4 |
+| `scripts/` | 分析脚本 | 14 .py + 1 .md |
+| `outputs/charts/` | 分析图表 | ~34 .png |
+| `outputs/tables/` | 分析结果表 | ~47 .csv |
+| `outputs/validation/` | 验证产物 | 4 .csv |
+| `reports/` | 分析报告 | 6 .md |
+| `docs/` | 技术文档 | 18 文件 |
+
 ## 项目结构
 
 ```
 .
-├── archive.zip                          # 原始数据压缩包（主数据集）
-├── explore_data.py                      # 主数据集探索脚本（第一阶段）
-├── explore_data_extended.py             # 扩展探索脚本（含 Marketing Funnel）
-├── build_data_model.py                  # 数据模型构建脚本（第二阶段）
-├── generate_docs.py                     # 文档生成脚本（第二阶段）
-├── validate_outputs.py                  # 产出验证脚本
-├── README.md                            # 项目说明文档
-├── docs/
-│   ├── data_dictionary.md              # 数据字典（第一阶段）
-│   ├── table_relationship_notes.md     # 表关系说明（第一阶段）
-│   ├── entity_relationships.md         # ER 关系详细说明（第二阶段）
-│   ├── analysis_base_tables.md         # 分析基础表说明（第二阶段）
-│   ├── marketing_funnel_guide.md       # Marketing Funnel 下载指引
-│   └── marketing_funnel_status.md      # Marketing Funnel 状态报告
-├── doc/
-│   └── 数据分析.md                      # 项目规划文档
-├── outputs/
-│   ├── data_profile_summary.csv        # 数据画像汇总（第一阶段）
-│   ├── erd.mmd                         # ER 关系图谱（第二阶段）
-│   └── join_validation_results.json    # Join 验证结果（第二阶段）
+├── .gitignore                         # 忽略大型文件和产物
+├── README.md                          # 项目说明（含全部 10 个阶段）
 ├── data/
-│   └ interim/
-│       ├── order_level_base.csv        # 订单级别基础表（第二阶段）
-│       └── item_level_base.csv         # 商品级别基础表（第二阶段）
-└── [原始 CSV 文件]
-    ├── [主数据集 - 9个文件]
-    │   ├── olist_customers_dataset.csv
-    │   ├── olist_geolocation_dataset.csv
-    │   ├── olist_order_items_dataset.csv
-    │   ├── olist_order_payments_dataset.csv
-    │   ├── olist_order_reviews_dataset.csv
-    │   ├── olist_orders_dataset.csv
-    │   ├── olist_products_dataset.csv
-    │   ├── olist_sellers_dataset.csv
-    │   └── product_category_name_translation.csv
-    └── [营销漏斗数据集 - 待下载]
-        ├── olist_marketing_qualified_leads_dataset.csv
-        └── olist_closed_deals_dataset.csv
+│   ├── raw/                           # 原始数据源（11 个 CSV + archive.zip）
+│   │   └── olist_*.csv, archive.zip
+│   ├── interim/                       # 中间分析表
+│   │   ├── order_level_base.csv       # 订单级基础表
+│   │   ├── item_level_base.csv        # 商品级基础表
+│   │   └── channel_classification.csv
+│   └── processed/                     # 飞书沙盘产物
+│       └── feishu_*.csv
+├── scripts/                           # 全部 Python 脚本（❄️ FROZEN）
+│   ├── _FROZEN.md                     # 脚本状态说明
+│   ├── phase01_explore_data.py        # 数据探索
+│   ├── phase01_explore_data_extended.py
+│   ├── phase02_build_data_model.py    # 数据模型
+│   ├── phase02_generate_docs.py
+│   ├── ...
+│   └── phase07_simulation_engine.py   # 模拟引擎
+├── outputs/
+│   ├── charts/                        # 34 张分析图表 (PNG)
+│   ├── tables/                        # 47 张分析结果表 (CSV)
+│   ├── validation/                    # 验证产物 (phase9/10)
+│   ├── data_profile_summary.csv       # 数据画像
+│   ├── erd.mmd                        # ER 关系图谱
+│   ├── join_validation_results.json
+│   └── project_overview.html          # 项目全景导览
+├── reports/                           # 分析报告 (6 份)
+└── docs/                              # 技术文档 (18 份)
 ```
 
 ## 参考资源

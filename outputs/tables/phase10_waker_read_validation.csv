@@ -1,5 +1,0 @@
-table_name,expected_records,actual_records_read,read_success,S02_records,S08_records,status
-scenario_catalog,4,4,YES,1,1,PASS
-scenario_parameters,12,12,YES,3,4,PASS
-scenario_simulation_results,10,10,YES,3,3,PASS
-simulation_validity_checks,12,12,YES,3,3,PASS

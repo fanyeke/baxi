@@ -1,11 +1,11 @@
-origin,Seller_Count,Sellers_with_Orders,Total_GMV,Avg_GMV,Avg_Order_Count,Avg_Score,Activation_Rate%,Conversion_Rate%,GMV_per_Deal,High_Conversion,High_GMV,Channel_Type
-direct_traffic,56,31,27549.8,491.96,3.45,2.35,55.36,11.22244488977956,491.96,False,False,Low Conversion + Low Value
-display,6,2,1207.95,201.32,1.17,1.42,33.33,5.084745762711865,201.32,False,False,Low Conversion + Low Value
-email,15,6,9122.41,608.16,1.47,1.83,40.0,3.0425963488843815,608.16,False,False,Low Conversion + Low Value
-organic_search,271,113,235956.58,870.69,4.46,1.78,41.7,11.803135888501743,870.69,True,False,High Conversion + Low Value
-other,4,2,8766.63,2191.66,22.25,1.99,50.0,2.666666666666667,2191.66,False,True,Low Conversion + High Value
-other_publicities,3,0,0.0,0.0,0.0,0.0,0.0,4.615384615384616,0.0,False,False,Low Conversion + Low Value
-paid_search,195,101,182000.06,933.33,6.39,2.2,51.79,12.295081967213115,933.33,True,True,High Conversion + High Value
-referral,24,9,19687.84,820.33,2.88,1.63,37.5,8.450704225352112,820.33,False,False,Low Conversion + Low Value
-social,75,31,51363.47,684.85,5.23,1.77,41.33,5.555555555555555,684.85,False,False,Low Conversion + Low Value
-unknown,179,81,238763.4,1333.87,7.15,1.94,45.25,16.287534121929028,1333.87,True,True,High Conversion + High Value
+origin,Seller_Count,Sellers_with_Orders,Total_GMV,Avg_Order_Count,Avg_GMV,Activation_Rate%,Conversion_Rate%,High_Conversion,High_Value,Channel_Type
+direct_traffic,56,31,27549.8,6.23,491.96,55.36,11.22,True,False,High Conversion + Low Value
+display,6,2,1207.95,3.5,201.32,33.33,5.08,False,False,Low Conversion + Low Value
+email,15,6,9122.41,3.67,608.16,40.0,3.04,False,False,Low Conversion + Low Value
+organic_search,271,113,235956.58,10.69,870.69,41.7,11.8,True,True,High Conversion + High Value
+other,4,2,8766.63,44.5,2191.66,50.0,2.67,False,True,Low Sample Size
+other_publicities,3,0,0.0,,0.0,0.0,4.62,False,False,Low Conversion + Low Value
+paid_search,195,101,182000.06,12.35,933.33,51.79,12.3,True,True,High Conversion + High Value
+referral,24,9,19687.84,7.67,820.33,37.5,8.45,True,True,High Conversion + High Value
+social,75,31,51363.47,12.65,684.85,41.33,5.56,False,False,Low Conversion + Low Value
+unknown,179,81,238763.4,15.8,1333.87,45.25,16.29,True,True,Data Missing (Excluded from Top)

@@ -1,0 +1,29 @@
+# Source code / Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Raw data (too large for git, re-download from Kaggle if needed)
+*.csv
+*.zip
+
+# Build outputs
+outputs/charts/*.png
+outputs/*.html
+outputs/*.html.bak
+outputs/*_partial.html
+
+# Temporary / backup files
+*.bak
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
