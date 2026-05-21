@@ -56,11 +56,14 @@ def main():
             all_ok = False
             continue
 
+        # Auto-enable dry-run if credentials are placeholders
+        effective_dry = dry_run or args.app_id == "" or args.app_id == "YOUR_APP_ID"
+
         client = FeishuClient(
             app_id=args.app_id,
             app_secret=args.app_secret,
             app_token=base_app_token or args.app_token,
-            dry_run=False,
+            dry_run=effective_dry,
         )
 
         try:
