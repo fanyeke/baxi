@@ -53,6 +53,8 @@ STATUS_ENUMS_FILE = os.path.join(CONFIG_DIR, 'status_enums.yml')
 ACTION_REGISTRY_FILE = os.path.join(CONFIG_DIR, 'action_registry.yml')
 WAKE_IO_CONTRACT_FILE = os.path.join(CONFIG_DIR, 'wake_io_contract.yml')
 FEISHU_FIELD_MAPPING_FILE = os.path.join(CONFIG_DIR, 'feishu_field_mapping.yml')
+FEISHU_TABLE_IDS_FILE = os.path.join(CONFIG_DIR, 'feishu_table_ids.yml')
+FEISHU_APP_CONFIG_FILE = os.path.join(CONFIG_DIR, 'feishu_app.yml')
 
 # AIP output files
 AIP_BUSINESS_OBJECTS_FILE = os.path.join(AIP_DIR, 'aip_business_objects.json')

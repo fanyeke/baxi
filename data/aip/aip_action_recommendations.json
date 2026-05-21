@@ -1,0 +1,71 @@
+{
+  "recommendations": [
+    {
+      "recommendation_id": "rec_f47e6d6903a04999bba3fd391818527c",
+      "source_event_id": "f47e6d6903a04999bba3fd391818527c",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "f47e6d6903a04999bba3fd391818527c",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-02",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 1.0,
+        "baseline_value": 0.5,
+        "description": "Cancel rate (1.0000) changed 100.0% from baseline (0.5000), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    },
+    {
+      "recommendation_id": "rec_f9145dcb3adc47808f14aabaa002ff0d",
+      "source_event_id": "f9145dcb3adc47808f14aabaa002ff0d",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "f9145dcb3adc47808f14aabaa002ff0d",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-03",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.125,
+        "baseline_value": 0.6,
+        "description": "Cancel rate (0.1250) changed 79.2% from baseline (0.6000), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    },
+    {
+      "recommendation_id": "rec_8066d9fce1bf48af9b7fca7ee4e3d90d",
+      "source_event_id": "8066d9fce1bf48af9b7fca7ee4e3d90d",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "8066d9fce1bf48af9b7fca7ee4e3d90d",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-04",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0794,
+        "baseline_value": 0.5208,
+        "description": "Cancel rate (0.0794) changed 84.8% from baseline (0.5208), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    }
+  ],
+  "_generated_at": "2026-05-21 17:10:55.049579"
+}

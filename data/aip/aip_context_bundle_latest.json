@@ -1,0 +1,355 @@
+{
+  "snapshot_date": "2016-10-04",
+  "run_id": "f4e1629b77f91d84f7921d2c22cfe675",
+  "ingestion_state": {
+    "next_simulated_date": "2016-10-05",
+    "last_completed_simulated_date": "2016-10-04"
+  },
+  "time_windows": {
+    "current": {
+      "label": "最近7天",
+      "start": "2016-09-28",
+      "end": "2016-10-04"
+    },
+    "baseline": {
+      "label": "前14天",
+      "start": "2016-09-14",
+      "end": "2016-09-27"
+    }
+  },
+  "metric_summary": [
+    {
+      "metric_name": "avg_order_value",
+      "current_window_value": 105.2427,
+      "baseline_value": 134.97,
+      "change_pct": -0.2203,
+      "trend": "down"
+    },
+    {
+      "metric_name": "avg_review_score",
+      "current_window_value": 2.545,
+      "baseline_value": 1.0,
+      "change_pct": 1.545,
+      "trend": "up"
+    },
+    {
+      "metric_name": "cancel_rate",
+      "current_window_value": 0.4015,
+      "baseline_value": 0.0,
+      "change_pct": null,
+      "trend": "unknown"
+    },
+    {
+      "metric_name": "customer_count",
+      "current_window_value": 24.0,
+      "baseline_value": 1.0,
+      "change_pct": 23.0,
+      "trend": "up"
+    },
+    {
+      "metric_name": "freight_value",
+      "current_window_value": 498.5067,
+      "baseline_value": 8.49,
+      "change_pct": 57.7169,
+      "trend": "up"
+    },
+    {
+      "metric_name": "gmv",
+      "current_window_value": 3501.48,
+      "baseline_value": 134.97,
+      "change_pct": 24.9427,
+      "trend": "up"
+    },
+    {
+      "metric_name": "late_delivery_rate",
+      "current_window_value": 0.0185,
+      "baseline_value": 1.0,
+      "change_pct": -0.9815,
+      "trend": "down"
+    },
+    {
+      "metric_name": "low_review_rate",
+      "current_window_value": 0.5536,
+      "baseline_value": 1.0,
+      "change_pct": -0.4464,
+      "trend": "down"
+    },
+    {
+      "metric_name": "marketing_seller_share",
+      "current_window_value": 0.0,
+      "baseline_value": 0.0,
+      "change_pct": null,
+      "trend": "unknown"
+    },
+    {
+      "metric_name": "order_count",
+      "current_window_value": 24.0,
+      "baseline_value": 1.0,
+      "change_pct": 23.0,
+      "trend": "up"
+    },
+    {
+      "metric_name": "payment_installment_rate",
+      "current_window_value": 0.3836,
+      "baseline_value": 0.0,
+      "change_pct": null,
+      "trend": "unknown"
+    },
+    {
+      "metric_name": "seller_count",
+      "current_window_value": 15.6667,
+      "baseline_value": 1.0,
+      "change_pct": 14.6667,
+      "trend": "up"
+    }
+  ],
+  "new_events": [
+    {
+      "event_id": "f47e6d6903a04999bba3fd391818527c",
+      "event_type": "cancel_rate_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "f47e6d6903a04999bba3fd391818527c",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-02",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 1.0,
+        "baseline_value": 0.5,
+        "description": "Cancel rate (1.0000) changed 100.0% from baseline (0.5000), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    },
+    {
+      "event_id": "f9145dcb3adc47808f14aabaa002ff0d",
+      "event_type": "cancel_rate_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "f9145dcb3adc47808f14aabaa002ff0d",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-03",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.125,
+        "baseline_value": 0.6,
+        "description": "Cancel rate (0.1250) changed 79.2% from baseline (0.6000), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    },
+    {
+      "event_id": "8066d9fce1bf48af9b7fca7ee4e3d90d",
+      "event_type": "cancel_rate_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "8066d9fce1bf48af9b7fca7ee4e3d90d",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-04",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0794,
+        "baseline_value": 0.5208,
+        "description": "Cancel rate (0.0794) changed 84.8% from baseline (0.5208), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    }
+  ],
+  "active_events": [],
+  "recommendations": [
+    {
+      "recommendation_id": "rec_f47e6d6903a04999bba3fd391818527c",
+      "source_event_id": "f47e6d6903a04999bba3fd391818527c",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "f47e6d6903a04999bba3fd391818527c",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-02",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 1.0,
+        "baseline_value": 0.5,
+        "description": "Cancel rate (1.0000) changed 100.0% from baseline (0.5000), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    },
+    {
+      "recommendation_id": "rec_f9145dcb3adc47808f14aabaa002ff0d",
+      "source_event_id": "f9145dcb3adc47808f14aabaa002ff0d",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "f9145dcb3adc47808f14aabaa002ff0d",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-03",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.125,
+        "baseline_value": 0.6,
+        "description": "Cancel rate (0.1250) changed 79.2% from baseline (0.6000), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    },
+    {
+      "recommendation_id": "rec_8066d9fce1bf48af9b7fca7ee4e3d90d",
+      "source_event_id": "8066d9fce1bf48af9b7fca7ee4e3d90d",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "8066d9fce1bf48af9b7fca7ee4e3d90d",
+        "real_run_date": "2026-05-21",
+        "simulated_date": "2016-10-04",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0794,
+        "baseline_value": 0.5208,
+        "description": "Cancel rate (0.0794) changed 84.8% from baseline (0.5208), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new"
+      }
+    }
+  ],
+  "allowed_actions": {
+    "actions": {
+      "create_feishu_report": {
+        "description": "创建飞书日报/异常报告",
+        "risk_level": "low",
+        "requires_approval": false,
+        "allowed_by": [
+          "business_ops",
+          "seller_ops",
+          "category_ops",
+          "logistics_ops",
+          "marketing_ops"
+        ]
+      },
+      "notify_owner": {
+        "description": "通知负责人处理异常",
+        "risk_level": "low",
+        "requires_approval": false,
+        "allowed_by": [
+          "business_ops",
+          "seller_ops",
+          "category_ops",
+          "logistics_ops",
+          "marketing_ops"
+        ]
+      },
+      "create_followup_task": {
+        "description": "创建跟进任务",
+        "risk_level": "medium",
+        "requires_approval": true,
+        "allowed_by": [
+          "business_ops",
+          "seller_ops"
+        ]
+      },
+      "recommend_business_strategy": {
+        "description": "推荐业务策略",
+        "risk_level": "medium",
+        "requires_approval": true,
+        "allowed_by": [
+          "business_ops",
+          "category_ops",
+          "marketing_ops"
+        ]
+      },
+      "modify_business_policy": {
+        "description": "修改业务策略或规则",
+        "risk_level": "high",
+        "requires_approval": true,
+        "allowed_by": [
+          "business_ops"
+        ]
+      }
+    }
+  },
+  "owner_mapping": {
+    "owners": [
+      {
+        "owner_role": "business_ops",
+        "business_domain": "总体经营指标",
+        "metric_scope": [
+          "gmv",
+          "order_count",
+          "avg_order_value"
+        ],
+        "dimension_scope": "overall",
+        "feishu_user_type": "manager_group",
+        "priority_rule": "high severity -> immediate notification"
+      },
+      {
+        "owner_role": "seller_ops",
+        "business_domain": "卖家治理",
+        "metric_scope": [
+          "late_delivery_rate",
+          "avg_review_score",
+          "cancel_rate"
+        ],
+        "dimension_scope": "seller",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "high severity -> task created within 1h"
+      },
+      {
+        "owner_role": "category_ops",
+        "business_domain": "品类运营",
+        "metric_scope": [
+          "gmv",
+          "avg_review_score"
+        ],
+        "dimension_scope": "category",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "medium severity -> daily digest"
+      },
+      {
+        "owner_role": "logistics_ops",
+        "business_domain": "履约物流",
+        "metric_scope": [
+          "late_delivery_rate",
+          "freight_value"
+        ],
+        "dimension_scope": "region",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "high severity -> immediate notification"
+      },
+      {
+        "owner_role": "marketing_ops",
+        "business_domain": "营销渠道",
+        "metric_scope": [
+          "marketing_seller_share"
+        ],
+        "dimension_scope": "origin",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "medium severity -> weekly review"
+      }
+    ]
+  }
+}

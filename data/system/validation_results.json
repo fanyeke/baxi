@@ -1,0 +1,68 @@
+{
+  "validation_timestamp": "2026-05-21T17:10:51.761608",
+  "summary": {
+    "total_tests": 8,
+    "passed": 6,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 1
+  },
+  "results": [
+    {
+      "test_id": "T1",
+      "test_name": "order_level_base.order_id no duplicates",
+      "status": "PASSED",
+      "message": "",
+      "timestamp": "2026-05-21T17:10:51.757121"
+    },
+    {
+      "test_id": "T2",
+      "test_name": "order_level_base.order_purchase_timestamp not null",
+      "status": "PASSED",
+      "message": "",
+      "timestamp": "2026-05-21T17:10:51.757268"
+    },
+    {
+      "test_id": "T3",
+      "test_name": "item_level_base.price >= 0",
+      "status": "PASSED",
+      "message": "",
+      "timestamp": "2026-05-21T17:10:51.757516"
+    },
+    {
+      "test_id": "T4",
+      "test_name": "Only delivered orders have delivery time computed",
+      "status": "FAILED",
+      "message": "Found 6 non-delivered orders with delivery date",
+      "timestamp": "2026-05-21T17:10:51.758553"
+    },
+    {
+      "test_id": "T5",
+      "test_name": "review_score values in {1-5} when not null",
+      "status": "PASSED",
+      "message": "",
+      "timestamp": "2026-05-21T17:10:51.760182"
+    },
+    {
+      "test_id": "T6",
+      "test_name": "daily_metrics.csv simulated_date is unique",
+      "status": "PASSED",
+      "message": "",
+      "timestamp": "2026-05-21T17:10:51.760930"
+    },
+    {
+      "test_id": "T7",
+      "test_name": "metric_alerts.csv alert_id is unique",
+      "status": "PASSED",
+      "message": "",
+      "timestamp": "2026-05-21T17:10:51.761589"
+    },
+    {
+      "test_id": "T8",
+      "test_name": "aip_context_bundle.json has required keys",
+      "status": "SKIPPED",
+      "message": "aip_context_bundle.json not found",
+      "timestamp": "2026-05-21T17:10:51.761603"
+    }
+  ]
+}

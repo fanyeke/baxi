@@ -38,10 +38,10 @@ def load_yaml(path: str):
 def get_primary_key(table_id: str) -> str:
     mapping = {
         "daily_metrics": "simulated_date",
-        "metric_alerts": "alert_id",
+        "alert_events": "alert_id",
         "strategy_recommendations": "recommendation_id",
         "action_tasks": "task_id",
-        "execution_reviews": "review_id",
+        "review_retro": "review_id",
     }
     return mapping.get(table_id, "record_id")
 

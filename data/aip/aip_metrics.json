@@ -1,0 +1,537 @@
+{
+  "metrics": [
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "gmv",
+      "value": 72.89,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "order_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "customer_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "seller_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "avg_order_value",
+      "value": 72.89,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "freight_value",
+      "value": 63.34,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "avg_review_score",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "low_review_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "cancel_rate",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "payment_installment_rate",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-04",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "gmv",
+      "value": 59.5,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "order_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "customer_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "seller_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "avg_order_value",
+      "value": 59.5,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "freight_value",
+      "value": 15.56,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "avg_review_score",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "low_review_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "cancel_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "payment_installment_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-05",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "order_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "customer_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "avg_review_score",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "low_review_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "cancel_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "payment_installment_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-13",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "gmv",
+      "value": 134.97,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "order_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "customer_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "seller_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "avg_order_value",
+      "value": 134.97,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "freight_value",
+      "value": 8.49,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "avg_review_score",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "low_review_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "late_delivery_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "cancel_rate",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "payment_installment_rate",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-09-15",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "gmv",
+      "value": 100.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "order_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "customer_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "seller_count",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "avg_order_value",
+      "value": 100.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "freight_value",
+      "value": 9.34,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "avg_review_score",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "low_review_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "cancel_rate",
+      "value": 1.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "payment_installment_rate",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-02",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "gmv",
+      "value": 463.48,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "order_count",
+      "value": 8.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "customer_count",
+      "value": 8.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "seller_count",
+      "value": 7.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "avg_order_value",
+      "value": 57.935,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "freight_value",
+      "value": 131.66,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "avg_review_score",
+      "value": 3.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "low_review_rate",
+      "value": 0.375,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "late_delivery_rate",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "cancel_rate",
+      "value": 0.125,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "payment_installment_rate",
+      "value": 0.5,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-03",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "gmv",
+      "value": 9940.96,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "order_count",
+      "value": 63.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "customer_count",
+      "value": 63.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "seller_count",
+      "value": 39.0,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "avg_order_value",
+      "value": 157.7930158730159,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "freight_value",
+      "value": 1354.52,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "avg_review_score",
+      "value": 3.634920634920635,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "low_review_rate",
+      "value": 0.2857142857142857,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "late_delivery_rate",
+      "value": 0.037037037037037,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "cancel_rate",
+      "value": 0.0793650793650793,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "payment_installment_rate",
+      "value": 0.6507936507936508,
+      "grain": "daily",
+      "dimensions": {}
+    },
+    {
+      "metric_date": "2016-10-04",
+      "metric_name": "marketing_seller_share",
+      "value": 0.0,
+      "grain": "daily",
+      "dimensions": {}
+    }
+  ],
+  "_generated_at": "2026-05-21 17:10:55.048187"
+}

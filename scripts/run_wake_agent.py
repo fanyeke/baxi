@@ -198,6 +198,7 @@ def main():
                             f'[status={ev.get("status", "active")}]')
         md_lines.append('')
 
+    md_lines.append('## 建议与行动项')
     md_lines.append('')
 
     action_items = []
