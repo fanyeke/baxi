@@ -1384,6 +1384,9 @@
         <a href="#phase7" class="nav-item" data-section="phase7">Phase 7：量化模拟引擎</a>
         <a href="#phase7-5" class="nav-item" data-section="phase7-5">Phase 7.5：校准修订</a>
         <a href="#phase8" class="nav-item" data-section="phase8">Phase 8：飞书沙盘结构</a>
+        <a href="#phase9" class="nav-item" data-section="phase9">Phase 9：飞书 Base 落地</a>
+        <a href="#phase9-5" class="nav-item" data-section="phase9-5">Phase 9.5：结构清理</a>
+        <a href="#phase10" class="nav-item" data-section="phase10">Phase 10：Waker 只读验证</a>
         <a href="#conclusions" class="nav-item" data-section="conclusions">核心结论</a>
         <a href="#value" class="nav-item" data-section="value">项目价值</a>
         <a href="#next-steps" class="nav-item" data-section="next-steps">下一步路线</a>
@@ -1423,19 +1426,19 @@
           </div>
           
           <div class="highlight-box info">
-            <strong>页面用途：</strong>本页面用于帮助未参与项目过程的读者，系统理解 Phase 1–8 的分析逻辑、阶段成果与业务价值。
+            <strong>页面用途：</strong>本页面用于帮助未参与项目过程的读者，系统理解 Phase 1–10 的分析逻辑、阶段成果与业务价值。
           </div>
 
           <div style="margin: var(--spacing-lg) 0;">
             <span class="badge badge-success">
               <span>✓</span>
-              <span>Phase 1–8 已完成</span>
+              <span>Phase 1–10 已完成</span>
             </span>
           </div>
 
           <div class="kpi-grid">
             <div class="kpi-card">
-              <div class="kpi-value">8</div>
+              <div class="kpi-value">10+</div>
               <div class="kpi-label">个阶段</div>
             </div>
             <div class="kpi-card">
@@ -1507,6 +1510,21 @@
             <div class="timeline-item" onclick="scrollToSection('phase8')" role="listitem" tabindex="0">
               <div class="phase-num">Phase 8</div>
               <div class="phase-name">飞书沙盘结构</div>
+            </div>
+            <span class="timeline-arrow">→</span>
+            <div class="timeline-item" onclick="scrollToSection('phase9')" role="listitem" tabindex="0">
+              <div class="phase-num">Phase 9</div>
+              <div class="phase-name">飞书 Base 落地</div>
+            </div>
+            <span class="timeline-arrow">→</span>
+            <div class="timeline-item" onclick="scrollToSection('phase9-5')" role="listitem" tabindex="0">
+              <div class="phase-num">Phase 9.5</div>
+              <div class="phase-name">结构清理</div>
+            </div>
+            <span class="timeline-arrow">→</span>
+            <div class="timeline-item" onclick="scrollToSection('phase10')" role="listitem" tabindex="0">
+              <div class="phase-num">Phase 10</div>
+              <div class="phase-name">Waker 只读验证</div>
             </div>
           </div>
 
@@ -2524,10 +2542,128 @@
           </div>
         </section>
 
-        <!-- Section 14: Core Conclusions -->
-        <section id="conclusions">
+        <!-- Section 14: Phase 9 -->
+        <section id="phase9">
           <h2>
             <span class="section-number">14</span>
+            Phase 9：飞书 Base 落地
+          </h2>
+          <div class="highlight-box info">
+            <strong>阶段目标：</strong>将 Phase 8 生成的 CSV 数据真实写入飞书多维表格，完成真实 Base 创建与数据导入。
+          </div>
+          <h3>执行过程</h3>
+          <div class="grid-3">
+            <div class="card" style="border-left: 4px solid var(--accent-green);">
+              <h4>✅ 创建 Base</h4>
+              <p>成功创建飞书多维表格"Olist经营模拟决策沙盘-Phase9"</p>
+              <p style="font-size:0.8rem;color:var(--text-muted);">Token: P0m4bfs7da9Relsu2pKcvt6YnLb</p>
+            </div>
+            <div class="card" style="border-left: 4px solid var(--accent-green);">
+              <h4>✅ 创建 4 张表</h4>
+              <p>scenario_catalog (4)</p>
+              <p>scenario_parameters (12)</p>
+              <p>scenario_simulation_results (10)</p>
+              <p>simulation_validity_checks (12)</p>
+            </div>
+            <div class="card" style="border-left: 4px solid var(--accent-green);">
+              <h4>✅ 验证通过</h4>
+              <p>记录数一致 4/12/10/12</p>
+              <p>S02 raw=5.015, sim=4.460</p>
+              <p>S08 21.8%/1.26% 口径完整</p>
+              <p>跨表关联无孤儿记录</p>
+            </div>
+          </div>
+          <div class="highlight-box success">
+            <strong>最终状态：</strong>SUCCESS — Base 创建成功，4 张表全部写入，38 条记录完整可用。
+          </div>
+        </section>
+
+        <!-- Section 15: Phase 9.5 -->
+        <section id="phase9-5">
+          <h2>
+            <span class="section-number">15</span>
+            Phase 9.5：结构清理
+          </h2>
+          <div class="highlight-box info">
+            <strong>阶段目标：</strong>删除默认空表，优化字段类型（CLI 无法转换的记录为人工项）。
+          </div>
+          <h3>清理结果</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>✅ 已完成</h4>
+              <p>• 删除默认空表"数据表"，仅保留 4 张业务表</p>
+              <p>• scenario_id 保持文本类型</p>
+              <p>• 所有业务数据未被修改</p>
+              <p>• 记录数仍为 4/12/10/12</p>
+            </div>
+            <div class="card" style="border-left: 4px solid var(--accent-amber);">
+              <h4>⚠️ 需人工处理</h4>
+              <p>• 10 个文本字段需在 UI 中改为单选型</p>
+              <p>• CLI 不支持字段类型转换操作</p>
+              <p>• 已在清理报告中记录完整操作指引</p>
+            </div>
+          </div>
+          <div class="highlight-box success">
+            <strong>最终状态：</strong>✅ 清理完成 — 4 张表结构正确，数据完整性全部通过。
+          </div>
+        </section>
+
+        <!-- Section 16: Phase 10 -->
+        <section id="phase10">
+          <h2>
+            <span class="section-number">16</span>
+            Phase 10：Waker 飞书沙盘只读验证
+          </h2>
+          <div class="highlight-box info">
+            <strong>阶段目标：</strong>通过飞书 CLI 只读访问 Base，验证 Waker 可读性与场景数据完整性。
+          </div>
+          <h3>S02 场景验证</h3>
+          <div class="card">
+            <div class="grid-3">
+              <div>
+                <p><strong>输入：</strong></p>
+                <p>配送时长 12.56 → 10 天</p>
+              </div>
+              <div>
+                <p><strong>校准：</strong></p>
+                <p>raw_simulated_value = 5.015</p>
+                <p>simulated_value = 4.460</p>
+              </div>
+              <div>
+                <p><strong>结论：</strong></p>
+                <p>相关性推演（r=-0.334）</p>
+                <p>不代表严格因果</p>
+              </div>
+            </div>
+          </div>
+          <h3>S08 场景验证</h3>
+          <div class="card">
+            <div class="grid-3">
+              <div>
+                <p><strong>输入：</strong></p>
+                <p>激活率 45.1% → 55%</p>
+              </div>
+              <div>
+                <p><strong>输出：</strong></p>
+                <p>漏斗商家 GMV +21.8%</p>
+                <p>全平台 GMV +1.26%</p>
+              </div>
+              <div>
+                <p><strong>风险：</strong></p>
+                <p>分母口径歧义（HIGH）</p>
+                <p>需区分两种口径汇报</p>
+              </div>
+            </div>
+          </div>
+          <div class="highlight-box success">
+            <strong>最终状态：</strong>✅ READY — Waker 可通过飞书 CLI 全量读取四张表数据，场景解释完整可读。
+          </div>
+        </section>
+
+        <!-- Section 17: Core Conclusions -->
+        <section id="conclusions">
+          <h2>
+            <span class="section-number">17</span>
             核心结论
           </h2>
           
@@ -2556,13 +2692,17 @@
               <div class="conclusion-icon">🏗️</div>
               <p class="conclusion-text">当前项目已具备接入飞书多维表格与 Waker 的结构基础</p>
             </div>
+            <div class="conclusion-card">
+              <div class="conclusion-icon">🎯</div>
+              <p class="conclusion-text">Phase 1-10 全部完成，真实飞书 Base 已创建并验证，Waker 可读性确认</p>
+            </div>
           </div>
         </section>
 
-        <!-- Section 15: Project Value -->
+        <!-- Section 18: Project Value -->
         <section id="value">
           <h2>
-            <span class="section-number">15</span>
+            <span class="section-number">18</span>
             项目价值
           </h2>
           
@@ -2588,10 +2728,10 @@
           </div>
         </section>
 
-        <!-- Section 16: Next Steps -->
+        <!-- Section 19: Next Steps -->
         <section id="next-steps">
           <h2>
-            <span class="section-number">16</span>
+            <span class="section-number">19</span>
             下一步路线
           </h2>
           
@@ -2599,26 +2739,34 @@
             <div class="step-item">
               <div class="step-number">1</div>
               <div class="step-content">
-                <div class="step-title">导入飞书</div>
-                <div class="step-desc">把 Phase 8 生成的 4 个 CSV 文件导入飞书多维表格，建立决策沙盘底座</div>
+                <div class="step-title">✅ 飞书 Base 落地（已完成）</div>
+                <div class="step-desc">Phase 9 已完成：Base P0m4bfs7da9Relsu2pKcvt6YnLb 创建成功，4 张表 38 条记录完整可用</div>
               </div>
-              <div class="step-timeline">即刻</div>
+              <div class="step-timeline">2026-05-21</div>
             </div>
             <div class="step-item">
               <div class="step-number">2</div>
               <div class="step-content">
-                <div class="step-title">Waker 接入</div>
-                <div class="step-desc">让 Waker 通过飞书 CLI 读取场景和结果，实现人机协同决策</div>
+                <div class="step-title">✅ Waker 只读验证（已完成）</div>
+                <div class="step-desc">Phase 10 已完成：S02/S08 场景数据回读成功，证据等级与免责声明完整可解释</div>
               </div>
-              <div class="step-timeline">1-2 周</div>
+              <div class="step-timeline">2026-05-21</div>
             </div>
             <div class="step-item">
               <div class="step-number">3</div>
               <div class="step-content">
-                <div class="step-title">智能决策</div>
-                <div class="step-desc">让 Waker 基于这些表做场景解释、经营建议、周报生成、新场景建议</div>
+                <div class="step-title">⚠️ 字段类型优化</div>
+                <div class="step-desc">在飞书 UI 中将 10 个文本字段改为单选型（category/priority/status 等）</div>
               </div>
-              <div class="step-timeline">2-4 周</div>
+              <div class="step-timeline">人工处理</div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <div class="step-title">智能决策</div>
+                <div class="step-desc">让 Waker 基于四张表做场景解释、经营建议、周报生成、新场景建议</div>
+              </div>
+              <div class="step-timeline">下一步</div>
             </div>
           </div>
         </section>
@@ -2626,7 +2774,7 @@
         <!-- Footer -->
         <footer style="text-align: center; padding: var(--spacing-2xl) 0; border-top: 1px solid var(--border-color); margin-top: var(--spacing-2xl);">
           <p style="color: var(--text-muted); font-size: 0.875rem;">
-            Olist 电商经营分析与决策沙盘项目 | Phase 1-8 完整交付
+            Olist 电商经营分析与决策沙盘项目 | Phase 1-10 完整交付
           </p>
           <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: var(--spacing-sm);">
             文档版本: v1.0 | 最后更新: 2026年5月
