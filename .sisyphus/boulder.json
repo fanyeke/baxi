@@ -1,0 +1,16 @@
+{
+  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/aip-data-product-upgrade.md",
+  "started_at": "2026-05-21T07:07:33.686Z",
+  "completed_at": "2026-05-21T15:36:24.000Z",
+  "session_ids": [
+    "ses_1b6cab832ffeP8teUpvm87T7gX",
+    "ses_1b68311f1ffew4iW5PCdIrVnkA",
+    "ses_1b67ec27bffebVfzjw15iFL4rF"
+  ],
+  "plan_name": "aip-data-product-upgrade",
+  "worktree_path": null,
+  "status": "completed",
+  "tasks_completed": 19,
+  "tasks_total": 19,
+  "task_sessions": {}
+}

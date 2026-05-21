@@ -1,0 +1,108 @@
+metrics:
+  gmv:
+    business_definition: "商品交易总额（Gross Merchandise Value），所有售出商品的价格总和"
+    source_expression: "item_level_base['price'].sum()"
+    grain: daily
+    dimensions: [date, category, seller, state]
+    owner_role: business_ops
+    window: [1d, 7d, 30d]
+    unit: "R$"
+
+  order_count:
+    business_definition: "去重订单数量"
+    source_expression: "order_level_base['order_id'].nunique()"
+    grain: daily
+    dimensions: [date, status, state]
+    owner_role: business_ops
+    window: [1d, 7d, 30d]
+    unit: "count"
+
+  customer_count:
+    business_definition: "去重客户数量（按 customer_unique_id）"
+    source_expression: "order_level_base['customer_unique_id'].nunique()"
+    grain: daily
+    dimensions: [date, state]
+    owner_role: business_ops
+    window: [1d, 7d, 30d]
+    unit: "count"
+
+  seller_count:
+    business_definition: "去重卖家数量"
+    source_expression: "item_level_base['seller_id'].nunique()"
+    grain: daily
+    dimensions: [date, state]
+    owner_role: seller_ops
+    window: [1d, 7d, 30d]
+    unit: "count"
+
+  avg_order_value:
+    business_definition: "客单价，GMV除以订单数"
+    source_expression: "metrics['gmv'] / metrics['order_count']"
+    grain: daily
+    dimensions: [date, category, seller]
+    owner_role: business_ops
+    window: [1d, 7d, 30d]
+    unit: "R$"
+
+  freight_value:
+    business_definition: "运费总和"
+    source_expression: "item_level_base['freight_value'].sum()"
+    grain: daily
+    dimensions: [date, category, seller, state]
+    owner_role: logistics_ops
+    window: [1d, 7d, 30d]
+    unit: "R$"
+
+  avg_review_score:
+    business_definition: "平均评分（1-5星）"
+    source_expression: "order_level_base['review_score'].dropna().mean()"
+    grain: daily
+    dimensions: [date, category, seller, state]
+    owner_role: category_ops
+    window: [1d, 7d, 30d]
+    unit: "score"
+
+  low_review_rate:
+    business_definition: "差评率，1-2星评价订单占比"
+    source_expression: "(order_level_base['review_score'] <= 2).sum() / order_level_base['review_score'].dropna().count()"
+    grain: daily
+    dimensions: [date, category, seller]
+    owner_role: category_ops
+    window: [1d, 7d, 30d]
+    unit: "rate"
+
+  late_delivery_rate:
+    business_definition: "延迟配送率，实际送达晚于预计送达的订单占比"
+    source_expression: "delivered_orders[actual > estimated].count() / delivered_orders.count()"
+    grain: daily
+    dimensions: [date, seller, category, state]
+    owner_role: seller_ops
+    window: [1d, 7d, 30d]
+    unit: "rate"
+
+  cancel_rate:
+    business_definition: "取消订单占比"
+    source_expression: "(order_level_base['order_status'] == 'canceled').sum() / order_level_base['order_id'].count()"
+    grain: daily
+    dimensions: [date, state]
+    owner_role: logistics_ops
+    window: [1d, 7d, 30d]
+    unit: "rate"
+
+  payment_installment_rate:
+    business_definition: "分期支付订单占比"
+    source_expression: "(order_level_base['payment_installments'] > 1).sum() / paid_orders.count()"
+    grain: daily
+    dimensions: [date, state]
+    owner_role: business_ops
+    window: [1d, 7d, 30d]
+    unit: "rate"
+
+  marketing_seller_share:
+    business_definition: "营销渠道获取卖家的GMV占平台总GMV比例"
+    source_expression: "marketing_seller_gmv / total_gmv"
+    grain: daily
+    dimensions: [date, origin]
+    owner_role: marketing_ops
+    window: [1d, 7d, 30d]
+    unit: "rate"

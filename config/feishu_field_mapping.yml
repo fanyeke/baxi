@@ -1,0 +1,87 @@
+daily_metrics:
+  local_table: data/ads/daily_metrics.csv
+  feishu_table: "每日经营指标"
+  primary_key: [simulated_date]
+  sync_frequency: daily
+  fields:
+    real_run_date: "执行日期"
+    simulated_date: "业务日期"
+    gmv: "GMV(R$)"
+    order_count: "订单数"
+    customer_count: "客户数"
+    seller_count: "卖家数"
+    avg_order_value: "客单价(R$)"
+    avg_review_score: "平均评分"
+    low_review_rate: "差评率"
+    late_delivery_rate: "延迟配送率"
+    cancel_rate: "取消率"
+    payment_installment_rate: "分期支付率"
+    marketing_seller_share: "营销卖家占比"
+
+metric_alerts:
+  local_table: data/ads/metric_alerts.csv
+  feishu_table: "异常事件表"
+  primary_key: [alert_id]
+  sync_frequency: on_alert
+  fields:
+    alert_id: "事件ID"
+    real_run_date: "执行日期"
+    simulated_date: "业务日期"
+    rule_id: "规则ID"
+    metric: "指标名称"
+    severity: "严重等级"
+    dimension: "维度"
+    object_type: "对象类型"
+    object_id: "对象ID"
+    current_value: "当前值"
+    baseline_value: "基线值"
+    description: "异常描述"
+    owner_role: "负责人角色"
+    status: "状态"
+
+strategy_recommendations:
+  local_table: data/aip/aip_action_recommendations.json
+  feishu_table: "策略建议表"
+  primary_key: [recommendation_id]
+  sync_frequency: on_recommendation
+  fields:
+    recommendation_id: "建议ID"
+    event_id: "关联事件ID"
+    title: "策略标题"
+    detail: "策略详情"
+    expected_impact: "预期影响"
+    risk_level: "风险等级"
+    requires_approval: "是否需要审批"
+    owner_role: "负责人"
+    status: "状态"
+
+action_tasks:
+  local_table: data/outputs/action_tasks.json
+  feishu_table: "负责人任务表"
+  primary_key: [task_id]
+  sync_frequency: on_task
+  fields:
+    task_id: "任务ID"
+    title: "任务标题"
+    description: "任务说明"
+    owner: "负责人"
+    source_event: "来源事件"
+    source_strategy: "来源策略"
+    priority: "优先级"
+    deadline: "截止时间"
+    status: "状态"
+    feedback: "反馈"
+
+execution_reviews:
+  local_table: data/feishu/execution_reviews_for_feishu.csv
+  feishu_table: "执行复盘表"
+  primary_key: [review_id]
+  sync_frequency: manual
+  fields:
+    review_id: "复盘ID"
+    strategy_id: "策略ID"
+    outcome: "执行结果"
+    actual_impact: "实际影响"
+    is_effective: "是否有效"
+    lessons_learned: "经验总结"
+    promote_to_rule: "是否沉淀为规则"

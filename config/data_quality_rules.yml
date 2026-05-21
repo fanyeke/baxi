@@ -1,0 +1,30 @@
+rules:
+  - rule_id: geo_dedup
+    table: olist_geolocation_dataset
+    issue: "同一 zip_code_prefix 多坐标，261831行重复（26.18%）"
+    treatment: "按 zip_code_prefix 聚合，经纬度取均值"
+    affected_rows: 261831
+
+  - rule_id: missing_delivery_date
+    table: olist_orders_dataset
+    issue: "2965条订单缺失签收时间（2.98%），非delivered状态"
+    treatment: "仅 order_status='delivered' 的订单参与配送时效计算"
+    affected_rows: 2965
+
+  - rule_id: abnormal_shipping_limit_date
+    table: olist_order_items_dataset
+    issue: "shipping_limit_date 出现2020年数据（超出主时间范围2016-2018）"
+    treatment: "标记为 abnormal，不直接删除，排除在时效分析外"
+    affected_rows: null
+
+  - rule_id: missing_product_category
+    table: olist_products_dataset
+    issue: "610个产品缺少品类信息（1.85%）"
+    treatment: "填充为 'unknown_category'"
+    affected_rows: 610
+
+  - rule_id: duplicated_reviews
+    table: olist_order_reviews_dataset
+    issue: "547个订单有多条评价记录"
+    treatment: "取 review_answer_timestamp 最新的一条作为有效评价"
+    affected_rows: 547
