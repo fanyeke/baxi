@@ -128,8 +128,8 @@ def main():
     wake_dir = os.path.join(OUTPUTS_DIR, 'wake')
     os.makedirs(wake_dir, exist_ok=True)
 
-    tw_current = time_windows.get('current', {})
-    tw_baseline = time_windows.get('baseline', {})
+    tw_current = (time_windows or {}).get('current') or {}
+    tw_baseline = (time_windows or {}).get('baseline') or {}
 
     md_lines = []
     md_lines.append('# Olist 每日经营分析报告')
