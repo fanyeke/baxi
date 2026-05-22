@@ -61,7 +61,7 @@ class TaskItem(BaseModel):
 
     task_id: str
     task_title: str
-    task_description: str = ""
+    task_description: Optional[str] = None
     status: str = "todo"
     priority: str = "medium"
     owner_role: str = ""
