@@ -14,7 +14,6 @@ class DispatchRequest(BaseModel):
 
     channel: Optional[str] = None
     limit: int = 100
-    dry_run: bool = True
     apply: bool = False
 
 
@@ -120,3 +119,125 @@ class ErrorResponse(BaseModel):
     message: str
     diagnosis: str
     suggested_action: str
+
+
+# ── v0.5.1 Logs models ───────────────────────────────────────────────────
+
+
+class ErrorLogEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ts: str
+    level: str = "ERROR"
+    message: str = ""
+    request_id: str = ""
+    error_code: str = ""
+    diagnosis: str = ""
+    suggested_action: str = ""
+    actor: str = "unknown"
+
+
+class ErrorLogListResponse(BaseModel):
+    items: list[ErrorLogEntry]
+    total: int
+
+
+class RecentLogEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ts: str
+    level: str = ""
+    message: str = ""
+    request_id: str = ""
+    method: str = ""
+    path: str = ""
+    actor: str = "unknown"
+
+
+class RecentLogListResponse(BaseModel):
+    items: list[RecentLogEntry]
+    total: int
+
+
+class AuditLogEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    timestamp: str = ""
+    outbox_id: str = ""
+    target_channel: str = ""
+    adapter_name: str = ""
+    mode: Optional[str] = None
+    status: Optional[str] = None
+    external_ref: Optional[str] = None
+    error: Optional[str] = None
+    request_id: Optional[str] = None
+    source: str = "api"
+
+
+class AuditLogListResponse(BaseModel):
+    items: list[AuditLogEntry]
+    total: int
+
+
+# ── v0.5.1 Feishu models ──────────────────────────────────────────────────
+
+
+class FeishuExportRequest(BaseModel):
+    tables: Optional[list[str]] = None
+    apply: bool = False
+
+
+class FeishuTableResult(BaseModel):
+    name: str
+    status: str = ""
+    rows: int = 0
+    file: str = ""
+    created: int = 0
+    updated: int = 0
+    pulled: int = 0
+    imported: int = 0
+    skipped: int = 0
+
+
+class FeishuExportResponse(BaseModel):
+    status: str
+    message: str = ""
+    tables: list[FeishuTableResult] = []
+
+
+class FeishuSyncRequest(BaseModel):
+    tables: Optional[list[str]] = None
+    apply: bool = False
+
+
+class FeishuSyncResponse(BaseModel):
+    status: str
+    message: str = ""
+    tables: list[FeishuTableResult] = []
+
+
+class FeishuStatusImportRequest(BaseModel):
+    tables: Optional[list[str]] = None
+    apply: bool = False
+
+
+class FeishuStatusImportResponse(BaseModel):
+    status: str
+    message: str = ""
+    tables: list[FeishuTableResult] = []
+
+
+# ── v0.5.1 Pipeline models ────────────────────────────────────────────────
+
+
+class PipelineRunRequest(BaseModel):
+    pipeline_type: str = "daily"
+
+
+class PipelineRunResponse(BaseModel):
+    command: str
+    pipeline_type: str
+    estimated_duration: str = ""
+    required_env_vars: list[str] = []
+    warnings: list[str] = []
+    description: str = ""

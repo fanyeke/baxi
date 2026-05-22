@@ -32,3 +32,12 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+*.db
+*.log
+
+# Feishu configuration (contains app tokens and table IDs)
+config/feishu_table_ids.yml
+
+# Frontend / Node
+node_modules/
+frontend/dist/

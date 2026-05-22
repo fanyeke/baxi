@@ -1,12 +1,12 @@
 import csv
 import datetime
 import os
-import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
 from api.dependencies import get_db, get_current_user
+from api.logging_config import get_request_id
 from api.schemas import (
     DispatchRequest,
     DispatchResponse,
@@ -24,7 +24,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 AUDIT_CSV = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "data", "system", "api_audit_log.csv",
+    "data", "system", "api_audit_dispatch.csv",
 )
 
 
@@ -53,7 +53,7 @@ def list_outbox(
 ):
     query = (
         "SELECT outbox_id, event_type, source_type, source_id, "
-        "target_channel, status, created_at "
+        "target_channel, status, dispatch_attempts, last_dispatch_at, created_at "
         "FROM event_outbox"
     )
     params = []
@@ -71,12 +71,17 @@ def list_outbox(
 
     rows = conn.execute(query, params).fetchall()
     items = [OutboxItem(**dict(r)) for r in rows]
-    return OutboxListResponse(items=items, total=len(items))
+    count_query = "SELECT COUNT(*) FROM event_outbox"
+    if conditions:
+        count_query += " WHERE " + " AND ".join(conditions)
+    total = conn.execute(count_query, params[:-1]).fetchone()[0]
+
+    return OutboxListResponse(items=items, total=total)
 
 
 @router.post("/outbox/dispatch", response_model=DispatchResponse)
 def dispatch_outbox(body: DispatchRequest, conn=Depends(get_db)):
-    request_id = str(uuid.uuid4())
+    request_id = get_request_id()
     is_dry_run = not body.apply
     mode = "dry-run" if is_dry_run else "apply"
 
@@ -118,7 +123,8 @@ def dispatch_outbox(body: DispatchRequest, conn=Depends(get_db)):
         })
 
     _write_api_audit(request_id, audit_entries)
-
+    if not is_dry_run:
+        conn.commit()
     return DispatchResponse(
         request_id=request_id,
         dry_run=is_dry_run,

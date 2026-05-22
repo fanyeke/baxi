@@ -3,10 +3,13 @@
 import os
 import sqlite3
 import uuid
+import time
+import logging
 from contextvars import ContextVar
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.errors import APIError, api_error_handler, validation_exception_handler
 from api.logging_config import setup_logging, set_request_id, get_request_id
@@ -17,31 +20,57 @@ _request_id_ctx: ContextVar[str] = ContextVar("request_id", default="")
 
 
 def _apply_migration(db_path: str) -> None:
-    """Apply 006_api_schema_fix.sql if dispatch_attempts column is missing."""
-    migration_file = os.path.join(
+    """Apply schema migrations if required columns are missing."""
+    migration_dir = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
-        "sql", "migrations", "006_api_schema_fix.sql",
+        "sql", "migrations",
     )
-    if not os.path.exists(migration_file) or not os.path.exists(db_path):
+    if not os.path.exists(db_path):
         return
 
     conn = sqlite3.connect(db_path)
     try:
-        cols = [r[1] for r in conn.execute("PRAGMA table_info(event_outbox)")]
-        if "dispatch_attempts" in cols:
-            return
-
-        with open(migration_file) as f:
-            for stmt in f.read().split(";"):
-                stmt = stmt.strip()
-                if stmt and not stmt.startswith("--"):
-                    try:
-                        conn.execute(stmt)
-                    except sqlite3.OperationalError:
-                        pass
-        conn.commit()
+        _migrate_if_needed(conn, migration_dir, "005_dispatch_adapters.sql",
+                           "event_outbox",
+                           ["dispatch_attempts", "last_dispatch_at",
+                            "external_ref", "adapter_name"])
+        _migrate_if_needed(conn, migration_dir, "006_api_schema_fix.sql",
+                           "alert_events",
+                           ["affected_orders", "affected_gmv", "impact_score"])
+        _migrate_if_needed(conn, migration_dir, "006_api_schema_fix.sql",
+                           "action_tasks",
+                           ["target_object_type", "target_object_id"])
+        _migrate_if_needed(conn, migration_dir, "007_review_retro_status_feedback.sql",
+                           "review_retro", ["status", "feedback"])
     finally:
         conn.close()
+
+
+def _migrate_if_needed(conn, migration_dir, filename, table, columns):
+    migration_file = os.path.join(migration_dir, filename)
+    if not os.path.exists(migration_file):
+        return
+
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    existing = [r[1] for r in cur.fetchall()]
+    if all(c in existing for c in columns):
+        return
+
+    with open(migration_file) as f:
+        raw = f.read()
+
+    for stmt in raw.split(";"):
+        lines = [l.strip() for l in stmt.split("\n")
+                 if l.strip() and not l.strip().startswith("--")]
+        stmt_clean = "\n".join(lines).strip()
+        if not stmt_clean:
+            continue
+        try:
+            conn.execute(stmt_clean)
+        except sqlite3.OperationalError:
+            pass
+
+    conn.commit()
 
 
 def create_app() -> FastAPI:
@@ -49,7 +78,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="Olist Decision Backend API",
-        version="0.5.0",
+        version="0.5.1",
         docs_url="/docs",
         openapi_url="/openapi.json",
     )
@@ -59,8 +88,20 @@ def create_app() -> FastAPI:
     async def request_id_middleware(request: Request, call_next):
         rid = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         set_request_id(rid)
+        t0 = time.time()
         response = await call_next(request)
+        elapsed = int((time.time() - t0) * 1000)
         response.headers["X-Request-ID"] = rid
+        logging.getLogger("api").info(
+            "%s %s %d %dms",
+            request.method, request.url.path, response.status_code, elapsed,
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "elapsed_ms": elapsed,
+            },
+        )
         return response
 
     # ── Exception handlers ───────────────────────────────────────────────
@@ -70,19 +111,59 @@ def create_app() -> FastAPI:
         validation_exception_handler,
     )
 
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        rid = get_request_id()
+        logging.getLogger("api").error(
+            "Unhandled exception: %s", exc,
+            extra={"request_id": rid, "path": request.url.path},
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "request_id": rid,
+                "error_code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred",
+                "diagnosis": str(exc) if os.environ.get("DEBUG") else "Internal server error",
+                "suggested_action": "Check server logs for details or contact the administrator",
+            },
+        )
+
     # ── Startup migration ────────────────────────────────────────────────
     from scripts.config import DB_PATH
 
     _apply_migration(DB_PATH)
 
     # ── Router mounting ──────────────────────────────────────────────────
-    from api.routers import health, status, alerts, tasks, outbox
+    from api.routers import health, status, alerts, tasks, outbox, logs, feishu, pipeline
 
     app.include_router(health.router, prefix="/api/v1", tags=["Health"])
     app.include_router(status.router, prefix="/api/v1", tags=["Status"])
     app.include_router(alerts.router, prefix="/api/v1", tags=["Alerts"])
     app.include_router(tasks.router, prefix="/api/v1", tags=["Tasks"])
     app.include_router(outbox.router, prefix="/api/v1", tags=["Outbox"])
+    app.include_router(logs.router, prefix="/api/v1", tags=["Logs"])
+    app.include_router(feishu.router, prefix="/api/v1", tags=["Feishu"])
+    app.include_router(pipeline.router, prefix="/api/v1", tags=["Pipeline"])
+
+    # ── CORS ─────────────────────────────────────────────────────────────
+    _cors_origins = os.environ.get(
+        "CORS_ORIGINS", "http://localhost:5173"
+    ).split(",")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["*"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    )
+
+    # ── Frontend static serving (if built) ────────────────────────────────
+    _frontend_dist = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "frontend", "dist"
+    )
+    if os.path.exists(os.path.join(_frontend_dist, "index.html")):
+        from fastapi.staticfiles import StaticFiles
+        app.mount("/console", StaticFiles(directory=_frontend_dist, html=True), name="console")
 
     return app
 

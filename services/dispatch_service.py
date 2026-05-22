@@ -9,7 +9,7 @@ import os
 import csv
 import datetime
 
-import config
+from scripts import config
 from adapters.base import resolve_adapter
 
 
@@ -52,12 +52,12 @@ def claim_event(conn, outbox_id):
     Returns:
         True if the event was successfully claimed (was pending), False otherwise.
     """
-    conn.execute(
+    cur = conn.execute(
         "UPDATE event_outbox SET status = 'dispatching' WHERE outbox_id = ? AND status = 'pending'",
         (outbox_id,))
+    claimed = cur.rowcount > 0
     conn.commit()
-    return conn.execute(
-        "SELECT changes() FROM (SELECT 1)").fetchone()[0] > 0
+    return claimed
 
 
 def write_result(conn, outbox_id, result, adapter_name, is_dry_run):
@@ -85,9 +85,11 @@ def write_result(conn, outbox_id, result, adapter_name, is_dry_run):
     elif status in ("dispatched", "skipped"):
         db_status = status
     else:
-        conn.execute("UPDATE event_outbox SET dispatch_attempts = dispatch_attempts + 1")
-        if conn.execute("SELECT dispatch_attempts FROM event_outbox WHERE outbox_id = ?",
-                         (outbox_id,)).fetchone()[0] < MAX_ATTEMPTS:
+        current = conn.execute(
+            "SELECT dispatch_attempts FROM event_outbox WHERE outbox_id = ?",
+            (outbox_id,)
+        ).fetchone()
+        if current and current[0] + 1 < MAX_ATTEMPTS:
             db_status = "pending"
         else:
             db_status = "failed"
@@ -128,20 +130,33 @@ def dispatch_one(conn, event, registry, is_dry_run):
         is_dry_run: If True, call adapter.dry_run(); else adapter.dispatch().
 
     Returns:
-        dict with keys: status, adapter_name, result (the adapter's return dict),
-                        error (if adapter resolution failed).
+        dict with keys: status, adapter_name, message, external_ref, error.
     """
     target = event["target_channel"]
     outbox_id = event["outbox_id"]
 
+    # Claim the event atomically (skip in dry-run)
+    if not is_dry_run:
+        if not claim_event(conn, outbox_id):
+            return {
+                "status": "skipped",
+                "adapter_name": None,
+                "error": "already claimed",
+                "message": None,
+                "external_ref": None,
+            }
+
     try:
         adapter = resolve_adapter(target, registry, dry_run=is_dry_run)
     except (ValueError, ImportError, AttributeError) as e:
+        result_fail = {"status": "failed", "external_ref": None, "error": str(e), "message": None}
+        write_result(conn, outbox_id, result_fail, None, is_dry_run)
         return {
             "status": "failed",
             "adapter_name": None,
             "error": str(e),
-            "result": {"status": "failed", "external_ref": None, "error": str(e)},
+            "message": None,
+            "external_ref": None,
         }
 
     adapter_name = adapter.__class__.__name__
@@ -150,11 +165,14 @@ def dispatch_one(conn, event, registry, is_dry_run):
     try:
         result = adapter.dry_run(event_dict) if is_dry_run else adapter.dispatch(event_dict)
     except Exception as e:
-        result = {"status": "failed", "external_ref": None, "error": str(e)}
+        result = {"status": "failed", "external_ref": None, "error": str(e), "message": None}
+
+    write_result(conn, outbox_id, result, adapter_name, is_dry_run)
 
     return {
         "status": result.get("status", "failed"),
         "adapter_name": adapter_name,
         "error": result.get("error"),
-        "result": result,
+        "message": result.get("message"),
+        "external_ref": result.get("external_ref"),
     }

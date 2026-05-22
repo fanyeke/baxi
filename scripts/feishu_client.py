@@ -1,3 +1,4 @@
+import json
 import time
 import logging
 import requests
@@ -39,6 +40,7 @@ class FeishuClient:
         resp = self._raw_post(
             "/auth/v3/tenant_access_token/internal",
             {"app_id": self.app_id, "app_secret": self.app_secret},
+            skip_auth=True,
         )
         token = resp["tenant_access_token"]
         expire = resp.get("expire", 7200)
@@ -213,6 +215,28 @@ class FeishuClient:
             body,
         )
 
+    def send_message(
+        self,
+        chat_id: str,
+        content: str,
+        msg_type: str = "text",
+        dry_run: Optional[bool] = None,
+    ):
+        is_dry = dry_run if dry_run is not None else self.dry_run
+
+        if is_dry:
+            logger.info("[dry-run] Would send message to chat_id: %s, content: %.80s", chat_id, content)
+            return "dry_run_message_" + str(int(time.time()))
+
+        payload = {"receive_id": chat_id, "msg_type": msg_type,
+                    "content": json.dumps({"text": content})}
+        try:
+            resp = self._raw_post("/im/v1/messages", payload, params={"receive_id_type": "chat_id"})
+            return resp.get("data", {}).get("message_id")
+        except Exception as e:
+            logger.error("Failed to send message to %s: %s", chat_id, e)
+            return None
+
     def send_group_message(self, chat_id: str, content: str) -> Optional[str]:
         if self.dry_run:
             logger.info("[dry-run] Would send message to chat_id: %s", chat_id)
@@ -221,14 +245,14 @@ class FeishuClient:
         body = {
             "receive_id": chat_id,
             "msg_type": "text",
-            "content": '{"text":"' + content.replace('"', '\\"') + '"}',
+            "content": json.dumps({"text": content}),
         }
         resp = self._raw_post("/im/v1/messages", body, params={"receive_id_type": "chat_id"})
         return resp.get("data", {}).get("message_id")
 
-    def _raw_get(self, path: str, params: Optional[Dict] = None) -> Dict:
+    def _raw_get(self, path: str, params: Optional[Dict] = None, skip_auth: bool = False) -> Dict:
         url = self.BASE_URL + path
-        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()}
+        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()} if not skip_auth else {}
         for attempt, wait in enumerate(self.DEFAULT_WAIT):
             resp = requests.get(url, headers=headers, params=params, timeout=30)
             if self._check_response(resp, path, attempt):
@@ -236,9 +260,9 @@ class FeishuClient:
             time.sleep(wait)
         raise RuntimeError(f"Failed to GET {path} after {self.MAX_RETRIES} retries")
 
-    def _raw_post(self, path: str, json: Dict, params: Optional[Dict] = None) -> Dict:
+    def _raw_post(self, path: str, json: Dict, params: Optional[Dict] = None, skip_auth: bool = False) -> Dict:
         url = self.BASE_URL + path
-        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()}
+        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()} if not skip_auth else {}
         for attempt, wait in enumerate(self.DEFAULT_WAIT):
             resp = requests.post(url, headers=headers, json=json, params=params, timeout=30)
             if self._check_response(resp, path, attempt):
@@ -246,9 +270,9 @@ class FeishuClient:
             time.sleep(wait)
         raise RuntimeError(f"Failed to POST {path} after {self.MAX_RETRIES} retries")
 
-    def _raw_put(self, path: str, json: Dict) -> Dict:
+    def _raw_put(self, path: str, json: Dict, skip_auth: bool = False) -> Dict:
         url = self.BASE_URL + path
-        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()}
+        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()} if not skip_auth else {}
         for attempt, wait in enumerate(self.DEFAULT_WAIT):
             resp = requests.put(url, headers=headers, json=json, timeout=30)
             if self._check_response(resp, path, attempt):
@@ -256,9 +280,9 @@ class FeishuClient:
             time.sleep(wait)
         raise RuntimeError(f"Failed to PUT {path} after {self.MAX_RETRIES} retries")
 
-    def _raw_patch(self, path: str, json: Dict) -> Dict:
+    def _raw_patch(self, path: str, json: Dict, skip_auth: bool = False) -> Dict:
         url = self.BASE_URL + path
-        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()}
+        headers = {"Authorization": "Bearer " + self.get_tenant_access_token()} if not skip_auth else {}
         for attempt, wait in enumerate(self.DEFAULT_WAIT):
             resp = requests.patch(url, headers=headers, json=json, timeout=30)
             if self._check_response(resp, path, attempt):
@@ -269,7 +293,8 @@ class FeishuClient:
     def _check_response(self, resp: requests.Response, path: str, attempt: int) -> bool:
         try:
             data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to parse response JSON from %s: %s", path, e)
             data = {}
 
         code = data.get("code", resp.status_code)
@@ -280,10 +305,8 @@ class FeishuClient:
 
         if code != 0:
             msg = data.get("msg", resp.reason)
-            if resp.status_code >= 400:
-                logger.error("API error on %s: code=%d, msg=%s", path, code, msg)
-                return False
-            return True
+            logger.error("API error on %s: code=%d, msg=%s", path, code, msg)
+            return False
 
         return True
 

@@ -49,47 +49,58 @@ def check_db() -> None:
 
 
 def run_migration() -> None:
-    """Apply sql/migrations/006_api_schema_fix.sql if columns are missing."""
+    """Apply sql/migrations if columns are missing."""
     from scripts.config import DB_PATH
 
-    migration_file = os.path.join(
-        PROJECT_ROOT, "sql", "migrations", "006_api_schema_fix.sql"
-    )
-
-    if not os.path.exists(migration_file) or not os.path.exists(DB_PATH):
+    if not os.path.exists(DB_PATH):
         return
 
     conn = sqlite3.connect(DB_PATH)
-    try:
-        # Check if migration already applied
-        cur = conn.execute("PRAGMA table_info(event_outbox)")
-        cols = [r[1] for r in cur.fetchall()]
-        if "dispatch_attempts" in cols:
-            print("Migration already applied (dispatch_attempts column exists)")
-            return
+    _apply_migration(conn, "005_dispatch_adapters.sql",
+                     "event_outbox",
+                     ["dispatch_attempts", "last_dispatch_at",
+                      "external_ref", "adapter_name"])
+    _apply_migration(conn, "006_api_schema_fix.sql",
+                     "alert_events",
+                     ["affected_orders", "affected_gmv", "impact_score"])
+    _apply_migration(conn, "006_api_schema_fix.sql",
+                     "action_tasks",
+                     ["target_object_type", "target_object_id"])
+    _apply_migration(conn, "007_review_retro_status_feedback.sql",
+                     "review_retro", ["status", "feedback"])
 
-        print("Applying schema migration: 006_api_schema_fix.sql ...")
-        with open(migration_file) as f:
-            for stmt in f.read().split(";"):
-                stmt = stmt.strip()
-                if stmt and not stmt.startswith("--"):
-                    try:
-                        conn.execute(stmt)
-                    except sqlite3.OperationalError as e:
-                        if "duplicate column name" in str(e).lower():
-                            pass  # idempotent: column already exists
-                        else:
-                            print(f"Migration warning: {e}", file=sys.stderr)
-        conn.commit()
-        print("Migration applied successfully")
 
-        # Verify
-        cur = conn.execute("PRAGMA table_info(event_outbox)")
-        cols = [r[1] for r in cur.fetchall()]
-        if "dispatch_attempts" in cols:
-            print("Verified: dispatch_attempts column present in event_outbox")
-    finally:
-        conn.close()
+def _apply_migration(conn, filename, table, columns):
+    migration_file = os.path.join(PROJECT_ROOT, "sql", "migrations", filename)
+    if not os.path.exists(migration_file):
+        return
+
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    existing = [r[1] for r in cur.fetchall()]
+    if all(c in existing for c in columns):
+        print(f"Migration already applied (all columns present in {table})")
+        return
+
+    print(f"Applying schema migration: {filename} ...")
+    with open(migration_file) as f:
+        raw = f.read()
+
+    for stmt in raw.split(";"):
+        lines = [l.strip() for l in stmt.split("\n")
+                 if l.strip() and not l.strip().startswith("--")]
+        stmt_clean = "\n".join(lines).strip()
+        if not stmt_clean:
+            continue
+        try:
+            conn.execute(stmt_clean)
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e).lower():
+                pass
+            else:
+                print(f"Migration warning: {e}", file=sys.stderr)
+
+    conn.commit()
+    print(f"Migration applied successfully")
 
 
 def main() -> None:

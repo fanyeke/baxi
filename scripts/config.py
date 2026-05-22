@@ -4,6 +4,10 @@ All scripts should import from this module instead of hardcoding paths.
 """
 
 import os
+import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Project root (parent of scripts/ directory)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +46,14 @@ RUN_MANIFEST_FILE = os.path.join(SYSTEM_DIR, 'run_manifest.csv')
 VALIDATION_RESULTS_FILE = os.path.join(SYSTEM_DIR, 'validation_results.json')
 DATA_QUALITY_EXCEPTIONS_FILE = os.path.join(SYSTEM_DIR, 'data_quality_exceptions.csv')
 
+# Database
+DB_PATH = os.path.join(PROJECT_ROOT, 'data', 'olist_ops.db')
+
+# v0.3 Dimensional alerts
+DIMENSIONAL_RULES_FILE = os.path.join(CONFIG_DIR, 'dimensional_alert_rules.yml')
+ACTION_TEMPLATES_FILE = os.path.join(CONFIG_DIR, 'action_templates.yml')
+MIGRATIONS_DIR = os.path.join(PROJECT_ROOT, 'sql', 'migrations')
+
 # Config files
 DATA_QUALITY_RULES_FILE = os.path.join(CONFIG_DIR, 'data_quality_rules.yml')
 METRICS_FILE = os.path.join(CONFIG_DIR, 'metrics.yml')
@@ -56,6 +68,7 @@ FEISHU_FIELD_MAPPING_FILE = os.path.join(CONFIG_DIR, 'feishu_field_mapping.yml')
 FEISHU_TABLE_IDS_FILE = os.path.join(CONFIG_DIR, 'feishu_table_ids.yml')
 FEISHU_APP_CONFIG_FILE = os.path.join(CONFIG_DIR, 'feishu_app.yml')
 FEISHU_USER_MAPPING_FILE = os.path.join(CONFIG_DIR, 'feishu_user_mapping.yml')
+ADAPTER_REGISTRY_FILE = os.path.join(CONFIG_DIR, 'adapter_registry.yml')
 
 # AIP output files
 AIP_BUSINESS_OBJECTS_FILE = os.path.join(AIP_DIR, 'aip_business_objects.json')
@@ -73,6 +86,7 @@ CHANNEL_CLASSIFICATION_FILE = os.path.join(INTERIM_DIR, 'channel_classification.
 # ADS output files
 DAILY_METRICS_FILE = os.path.join(ADS_DIR, 'daily_metrics.csv')
 METRIC_ALERTS_FILE = os.path.join(ADS_DIR, 'metric_alerts.csv')
+METRIC_ALERTS_FULL_FILE = os.path.join(ADS_DIR, 'metric_alerts_full.csv')
 
 
 def ensure_dirs_exist():
@@ -82,6 +96,60 @@ def ensure_dirs_exist():
               TABLES_DIR, VALIDATION_DIR, DOCS_DIR, REPORTS_DIR, TESTS_DIR,
               SCRIPTS_DIR]:
         os.makedirs(d, exist_ok=True)
+
+
+_SQL_IDENTIFIER_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
+
+def validate_sql_identifier(name: str, context: str = "") -> str:
+    """Validate a SQL identifier (table/column name) against a safe pattern.
+
+    Raises ValueError if the name does not match [a-zA-Z_][a-zA-Z0-9_]*.
+
+    Args:
+        name: The identifier to validate.
+        context: Optional description for error messages.
+
+    Returns:
+        The validated name (unchanged if valid).
+    """
+    if not _SQL_IDENTIFIER_RE.match(name):
+        ctx = f" for {context}" if context else ""
+        raise ValueError(
+            f"Invalid SQL identifier{ctx}: {name!r}. "
+            f"Must match pattern: [a-zA-Z_][a-zA-Z0-9_]*"
+        )
+    return name
+
+
+def load_feishu_credentials() -> dict:
+    """Load Feishu credentials from environment variables and YAML config.
+
+    Priority: environment variables > config/feishu_app.yml
+
+    Returns:
+        dict with keys: app_id, app_secret, app_token, chat_id
+    """
+    import yaml
+
+    cfg = {
+        "app_id": os.environ.get("FEISHU_APP_ID", ""),
+        "app_secret": os.environ.get("FEISHU_APP_SECRET", ""),
+        "app_token": os.environ.get("FEISHU_BASE_APP_TOKEN", ""),
+        "chat_id": os.environ.get("FEISHU_CHAT_ID", ""),
+    }
+
+    if os.path.exists(FEISHU_APP_CONFIG_FILE):
+        try:
+            with open(FEISHU_APP_CONFIG_FILE) as f:
+                yml = yaml.safe_load(f) or {}
+            for key in ("app_id", "app_secret", "app_token", "chat_id"):
+                if not cfg[key]:
+                    cfg[key] = yml.get(key, "")
+        except Exception as e:
+            logger.warning("Failed to load Feishu app config: %s", e)
+
+    return cfg
 
 
 if __name__ == '__main__':

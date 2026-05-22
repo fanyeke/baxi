@@ -1,5 +1,6 @@
-"""Bearer Token authentication — single static token comparison."""
+"""Bearer Token authentication — constant-time token comparison."""
 
+import hmac
 import os
 
 
@@ -8,4 +9,4 @@ def verify_token(token: str) -> bool:
     expected = os.environ.get("API_BEARER_TOKEN", "")
     if not expected:
         return False
-    return token == expected
+    return hmac.compare_digest(token, expected)
