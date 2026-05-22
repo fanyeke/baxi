@@ -140,6 +140,19 @@ def transform_strategy_recommendations(schema, field_mapping):
         if src in df.columns and tgt in field_ids:
             df = df.rename(columns={src: tgt})
 
+    # Map approval_status based on requires_approval
+    if 'requires_approval' in df.columns and 'approval_status' in field_ids:
+        def map_approval_status(row):
+            if row.get('requires_approval') is True or str(row.get('requires_approval', '')).lower() in ('true', '1', 'yes'):
+                return 'pending_review'
+            return 'approved'
+        df['approval_status'] = df.apply(map_approval_status, axis=1)
+
+    # Map status from source (source uses 'status' as recommendation status)
+    # If source has 'status', keep it as-is; otherwise leave empty
+    if 'status' not in df.columns:
+        df['status'] = None
+
     available = [f for f in field_ids if f in df.columns]
     out = df[available].copy()
 
@@ -195,6 +208,28 @@ def transform_action_tasks(schema, field_mapping):
     return len(out)
 
 
+def transform_latest_daily_metrics():
+    """Extract the latest business date row from daily_metrics_for_feishu.csv
+    and write to latest_daily_metrics_for_feishu.csv for KPI card binding."""
+    source_path = os.path.join(FEISHU_DIR, 'daily_metrics_for_feishu.csv')
+    output_path = os.path.join(FEISHU_DIR, 'latest_daily_metrics_for_feishu.csv')
+
+    if not os.path.exists(source_path):
+        return 0
+
+    df = pd.read_csv(source_path)
+    if df.empty:
+        return 0
+
+    if 'simulated_date' in df.columns:
+        latest_row = df.loc[df['simulated_date'].idxmax()].to_frame().T
+    else:
+        latest_row = df.tail(1)
+
+    latest_row.to_csv(output_path, index=False)
+    return len(latest_row)
+
+
 def transform_execution_reviews(schema, field_mapping):
     """Create execution_reviews CSV with correct headers from schema."""
     field_ids = get_schema_fields(schema, 'review_retro')
@@ -244,6 +279,12 @@ def main():
     # 5. execution_reviews
     count = transform_execution_reviews(schema, field_mapping)
     path = 'execution_reviews_for_feishu.csv'
+    results[path] = count
+    print(f"  [{count:>6} rows] {path}")
+
+    # 6. latest_daily_metrics (KPI card binding — single-row snapshot)
+    count = transform_latest_daily_metrics()
+    path = 'latest_daily_metrics_for_feishu.csv'
     results[path] = count
     print(f"  [{count:>6} rows] {path}")
 

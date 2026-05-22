@@ -75,9 +75,15 @@ USER_TYPE_FIELDS = {"owner_role", "owner"}
 # Fields that should be percentage (0-1 range) in the Feishu schema
 PERCENTAGE_FIELDS = {"low_review_rate", "late_delivery_rate", "cancel_rate"}
 
-# Human-editable fields that sync should NOT overwrite
-# Once a human changes these in Feishu, the sync script must preserve them
-HUMAN_FIELDS = {"status", "execution_status", "approval_status", "feedback", "execution_feedback", "completed_at"}
+# Human-editable fields that sync should NOT overwrite, keyed by table_id.
+# Once a human changes these in Feishu, the sync script must preserve them.
+# strategy_recommendations: no protection — system sets initial approval_status
+# action_tasks: protect status/feedback/completed_at (human workflow fields)
+# alert_events: protect status (human triage)
+HUMAN_FIELDS = {
+    "action_tasks": {"status", "feedback", "completed_at"},
+    "alert_events": {"status"},
+}
 
 
 def load_user_mapping():
@@ -189,8 +195,9 @@ def sync_table(
 
     records = records_to_dicts(df, table_id)
     # Strip human-editable fields to prevent overwriting manual changes
+    protected_fields = HUMAN_FIELDS.get(table_id, set())
     for rec in records:
-        for hf in HUMAN_FIELDS:
+        for hf in protected_fields:
             if hf in rec:
                 del rec[hf]
     source_file = f"{table_id}_for_feishu.csv"
