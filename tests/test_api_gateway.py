@@ -186,3 +186,45 @@ class TestErrors:
         assert r.status_code == 422
         data = r.json()
         assert "error_code" in data
+
+
+# ── Integration ─────────────────────────────────────────────────────────
+
+class TestIntegration:
+    def test_full_flow_health_to_alerts(self, client, auth_headers):
+        h = client.get("/api/v1/health")
+        assert h.status_code == 200
+        s = client.get("/api/v1/status", headers=auth_headers)
+        assert s.status_code == 200
+        a = client.get("/api/v1/alerts?limit=5", headers=auth_headers)
+        assert a.status_code == 200
+
+    def test_full_flow_tasks_to_dispatch(self, client, auth_headers):
+        t = client.get("/api/v1/tasks?limit=5", headers=auth_headers)
+        assert t.status_code == 200
+        o = client.get("/api/v1/outbox?limit=5", headers=auth_headers)
+        assert o.status_code == 200
+        d = client.post("/api/v1/outbox/dispatch",
+                        json={"channel": "manual", "limit": 1},
+                        headers=auth_headers)
+        assert d.status_code == 200
+
+    def test_x_request_id_header(self, client):
+        r = client.get("/api/v1/health")
+        assert "x-request-id" in r.headers
+
+    def test_invalid_token_format(self, client):
+        r = client.get("/api/v1/status", headers={"Authorization": "NoBearer token"})
+        assert r.status_code == 401
+
+    def test_empty_db_handled_gracefully(self, client, auth_headers):
+        r = client.get("/api/v1/alerts?limit=1000", headers=auth_headers)
+        assert r.status_code == 200
+        assert isinstance(r.json()["items"], list)
+
+    def test_dispatch_apply_flag(self, client, auth_headers):
+        r = client.post("/api/v1/outbox/dispatch",
+                        json={"channel": "manual", "limit": 1, "apply": True},
+                        headers=auth_headers)
+        assert r.status_code == 200
+        assert r.json()["dry_run"] is False
