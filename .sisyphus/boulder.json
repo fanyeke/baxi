@@ -1,10 +1,20 @@
 {
-  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/v0.5.2-hardening.md",
-  "started_at": "2026-05-23T04:50:39.281Z",
+  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/readme-version-roadmap.md",
+  "started_at": "2026-05-23T08:00:27Z",
   "session_ids": [
-    "ses_1ad154121ffev6qUvkdXAiP6cl"
+    "ses_1ac347e0bffeJqOh3Xfi56GcHx",
+    "ses_1ac2445e4ffeKw4xboPXQ7Imet"
   ],
-  "plan_name": "v0.5.2-hardening",
-  "agent": "atlas",
-  "task_sessions": {}
+  "plan_name": "readme-version-roadmap",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "README 版本路线图更新",
+      "session_id": "ses_1ac2445e4ffeKw4xboPXQ7Imet",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-23T08:05:36.566Z"
+    }
+  }
 }

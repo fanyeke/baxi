@@ -1,0 +1,12 @@
+=== Task 1: Version Updated ===
+Date: 2026年 05月 23日 星期六 16:05:13 CST
+
+grep v0.1-heuristic (expect 0):
+0
+
+grep v0.5.2 (expect >=2):
+2
+
+Matches:
+305:**当前版本**: v0.5.2（含规则决策引擎、SQLite 后端、FastAPI 网关、React 控制台、飞书集成）
+361:| v0.5.2 | 控制台 Beta 硬化 (P0修复 + 日志诊断) | ✅ DONE |

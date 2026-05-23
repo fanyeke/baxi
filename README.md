@@ -302,7 +302,7 @@ python3 generate_docs.py
 
 ## 后续计划
 
-**当前版本**: v0.1-heuristic-decision-sandbox（规则驱动的 AI-ready 决策沙盘，不含真实 LLM 决策）
+**当前版本**: v0.5.2（含规则决策引擎、SQLite 后端、FastAPI 网关、React 控制台、飞书集成）
 
 ### Phase 3：全局业务分析 ✅ (FROZEN)
 
@@ -346,6 +346,21 @@ What-If 场景模拟，GMV/评分联动预测。
 
 读写契约验证。
 - 文档: `docs/waker_read_write_contract.md`, `docs/phase10_*.md`
+
+### 版本演进
+
+| 版本 | 核心能力 | 状态 |
+|------|---------|------|
+| v0.1 | 规则驱动决策沙盘 (heuristic) | ✅ DONE |
+| v0.2 | SQLite 后端 + 12 表 Schema + 配置化治理 | ✅ DONE |
+| v0.3 | 维度级异常检测 (seller/category/region) | ✅ DONE |
+| v0.3.1 | 飞书沙盘集成 + 决策质量校准 | ✅ DONE |
+| v0.4 | 分发适配器 (Feishu/GitHub/Local/Manual) | ✅ DONE |
+| v0.5 | API 网关 (FastAPI:8765, OpenAPI, Bearer Token) | ✅ DONE |
+| v0.5.1 | React 控制台 Alpha (7 pages, TanStack Query) | ✅ DONE |
+| v0.5.2 | 控制台 Beta 硬化 (P0修复 + 日志诊断) | ✅ DONE |
+| Phase I | 全量数据 + AI 决策引擎 (LLM 代码就绪，待激活) | 🟡 核心完成 |
+| Phase II+ | 维度告警扩展 / 真实 LLM 决策 / 自动调度 | ❌ 未启动 |
 
 ## 运行说明
 
