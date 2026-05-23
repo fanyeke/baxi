@@ -108,14 +108,15 @@ def write_result(conn, outbox_id, result, adapter_name, is_dry_run):
         adapter_name: Name of the adapter class used.
         is_dry_run: If True, status remains 'pending'.
     """
+    if is_dry_run:
+        return
+
     now = datetime.datetime.now().isoformat()
     status = result.get("status", "failed")
     external_ref = result.get("external_ref")
     error = result.get("error")
 
-    if is_dry_run:
-        db_status = "pending"
-    elif status in ("dispatched", "skipped"):
+    if status in ("dispatched", "skipped"):
         db_status = status
     else:
         current = conn.execute(
