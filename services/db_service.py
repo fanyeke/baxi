@@ -1,9 +1,12 @@
 """Database utility service for SQLite operations."""
 
+import logging
 import os
 import sqlite3
 
 from scripts.config import DB_PATH
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_PUBLIC_TABLES = {
     "pipeline_runs", "ingestion_batches", "dwd_order_level", "dwd_item_level",
@@ -57,7 +60,11 @@ def get_table_counts(conn):
     counts = {}
     for row in tables:
         table_name = row["name"]
-        validate_table_name(table_name)
+        try:
+            validate_table_name(table_name)
+        except ValueError:
+            logger.warning("Skipping unknown table: %s", table_name)
+            continue
         count_row = conn.execute(f"SELECT COUNT(*) as cnt FROM {table_name}").fetchone()
         counts[table_name] = count_row["cnt"]
 
