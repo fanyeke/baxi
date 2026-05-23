@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { PipelineRunResponse } from "../api/types"
 import { LoadingSkeleton } from "../components/LoadingSkeleton"
@@ -13,12 +13,9 @@ const PIPELINE_TYPES = [
 
 export default function Pipeline() {
   const [pipelineType, setPipelineType] = useState("daily")
-  const [triggered, setTriggered] = useState(false)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["pipeline-preview", pipelineType],
-    queryFn: () => apiClient.post<PipelineRunResponse>("/pipeline/run", { pipeline_type: pipelineType }),
-    enabled: triggered,
+  const mutation = useMutation({
+    mutationFn: () => apiClient.post<PipelineRunResponse>("/pipeline/run", { pipeline_type: pipelineType }),
   })
 
   return (
@@ -34,7 +31,7 @@ export default function Pipeline() {
               name="pipeline"
               value={pt.type}
               checked={pipelineType === pt.type}
-              onChange={() => { setPipelineType(pt.type); setTriggered(false) }}
+              onChange={() => setPipelineType(pt.type)}
             />
             <div>
               <p className="font-medium">{pt.label}</p>
@@ -45,44 +42,49 @@ export default function Pipeline() {
       </div>
 
       <button
-        onClick={() => setTriggered(true)}
-        className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+        className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm disabled:opacity-50"
       >
         查看预览
       </button>
 
-      {isLoading && <LoadingSkeleton type="text" count={3} />}
+      {mutation.isPending && <LoadingSkeleton type="text" count={3} />}
 
-      {data && (
+      {mutation.error && (
+        <ErrorPanel title="预览加载失败" message="请确认 API 服务正常运行。" />
+      )}
+
+      {mutation.data && (
         <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
           <div>
             <p className="text-sm font-medium">命令</p>
-            <pre className="mt-1 p-2 bg-black/5 rounded text-sm font-mono overflow-x-auto">{data.command}</pre>
+            <pre className="mt-1 p-2 bg-black/5 rounded text-sm font-mono overflow-x-auto">{mutation.data.command}</pre>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">预计耗时</p>
-              <p className="text-sm">{data.estimated_duration}</p>
+              <p className="text-sm">{mutation.data.estimated_duration}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">管道类型</p>
-              <p className="text-sm">{data.pipeline_type}</p>
+              <p className="text-sm">{mutation.data.pipeline_type}</p>
             </div>
           </div>
-          {data.required_env_vars.length > 0 && (
+          {mutation.data.required_env_vars.length > 0 && (
             <div>
               <p className="text-xs text-muted-foreground">所需环境变量</p>
               <div className="flex flex-wrap gap-1 mt-1">
-                {data.required_env_vars.map(v => (
+                {mutation.data.required_env_vars.map(v => (
                   <span key={v} className="px-2 py-0.5 bg-muted rounded text-xs font-mono">{v}</span>
                 ))}
               </div>
             </div>
           )}
-          {data.warnings.length > 0 && (
+          {mutation.data.warnings.length > 0 && (
             <div className="p-2 border border-yellow-300 bg-yellow-50 rounded">
               <p className="text-xs font-medium text-yellow-800">警告</p>
-              {data.warnings.map((w, i) => (
+              {mutation.data.warnings.map((w, i) => (
                 <p key={i} className="text-xs text-yellow-700 mt-1">{w}</p>
               ))}
             </div>
@@ -91,10 +93,6 @@ export default function Pipeline() {
             管道执行需在服务器终端手动运行，此处仅提供命令预览。
           </p>
         </div>
-      )}
-
-      {triggered && !isLoading && !data && (
-        <ErrorPanel title="预览加载失败" message="请确认 API 服务正常运行。" />
       )}
     </div>
   )
