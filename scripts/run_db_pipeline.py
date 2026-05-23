@@ -33,7 +33,7 @@ def run_step(step, mode='full', start=None, end=None):
     print(f"{'='*50}")
 
     started = datetime.datetime.now()
-    result = subprocess.run(args, capture_output=True, text=True)
+    result = subprocess.run(args, capture_output=True, text=True, timeout=3600)
     elapsed = (datetime.datetime.now() - started).total_seconds()
 
     if result.stdout:

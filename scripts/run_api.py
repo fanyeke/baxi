@@ -5,11 +5,14 @@ import os
 import sys
 import argparse
 import sqlite3
+import logging
 
 # ── Path Setup ──────────────────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts"))
+
+logger = logging.getLogger("run_api")
 
 
 def check_env() -> str:
@@ -28,10 +31,31 @@ def check_env() -> str:
         except ImportError:
             pass
 
+    # Validate token complexity
+    _WEAK_TOKENS = {
+        "your-secret-token-here",
+        "test-token",
+        "changeme",
+        "admin",
+        "password",
+        "secret",
+        "generate-a-random-token-at-least-32-chars-using-secrets-token-urlsafe",
+    }
+    if token:
+        if len(token) < 32:
+            print("ERROR: API_BEARER_TOKEN must be at least 32 characters long.", file=sys.stderr)
+            print(f"Current token length: {len(token)}", file=sys.stderr)
+            sys.exit(1)
+        if token.lower() in _WEAK_TOKENS:
+            print("ERROR: API_BEARER_TOKEN is a weak/example token.", file=sys.stderr)
+            print("Generate a strong random token, e.g.:", file=sys.stderr)
+            print('  python3 -c "import secrets; print(secrets.token_urlsafe(32))"', file=sys.stderr)
+            sys.exit(1)
+
     if not token:
         print("ERROR: API_BEARER_TOKEN is not set.", file=sys.stderr)
         print("Add it to .env file or set as environment variable.", file=sys.stderr)
-        print("Example: export API_BEARER_TOKEN=your-secret-token", file=sys.stderr)
+        print('Example: export API_BEARER_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")', file=sys.stderr)
         sys.exit(1)
 
     return token
@@ -45,7 +69,7 @@ def check_db() -> None:
         print(f"WARNING: Database not found at {DB_PATH}", file=sys.stderr)
         print("Health endpoint will report db_connected: false", file=sys.stderr)
     else:
-        print(f"Database found: {DB_PATH}")
+        logger.info("Database found: %s", DB_PATH)
 
 
 def run_migration() -> None:
@@ -78,10 +102,10 @@ def _apply_migration(conn, filename, table, columns):
     cur = conn.execute(f"PRAGMA table_info({table})")
     existing = [r[1] for r in cur.fetchall()]
     if all(c in existing for c in columns):
-        print(f"Migration already applied (all columns present in {table})")
+        logger.info("Migration already applied: %s", table)
         return
 
-    print(f"Applying schema migration: {filename} ...")
+    logger.info("Applying schema migration: %s", filename)
     with open(migration_file) as f:
         raw = f.read()
 
@@ -100,7 +124,7 @@ def _apply_migration(conn, filename, table, columns):
                 print(f"Migration warning: {e}", file=sys.stderr)
 
     conn.commit()
-    print(f"Migration applied successfully")
+    logger.info("Migration applied successfully")
 
 
 def main() -> None:
@@ -118,14 +142,14 @@ def main() -> None:
     args = parser.parse_args()
 
     token = check_env()
-    print(f"API_BEARER_TOKEN: {'set' if token else 'MISSING'}")
     check_db()
     run_migration()
 
     import uvicorn
 
-    print(f"Starting API server on http://{args.host}:{args.port}")
-    print(f"API docs: http://{args.host}:{args.port}/docs")
+    logger.info("Starting API server on http://%s:%s", args.host, args.port)
+    if os.environ.get("ENABLE_DOCS"):
+        print(f"API docs: http://{args.host}:{args.port}/docs")
     uvicorn.run("api.main:app", host=args.host, port=args.port, reload=False)
 
 

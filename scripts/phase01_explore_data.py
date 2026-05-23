@@ -25,7 +25,7 @@ def infer_date_column(df, column):
                     'min_date': str(full_parsed.min()),
                     'max_date': str(full_parsed.max())
                 }
-    except:
+    except Exception:
         pass
     return {'is_date': False}
 

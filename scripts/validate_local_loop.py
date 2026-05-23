@@ -96,7 +96,8 @@ def main():
 
     entries = 0
     if os.path.exists(RUN_MANIFEST_FILE):
-        rows = list(csv.reader(open(RUN_MANIFEST_FILE)))
+        with open(RUN_MANIFEST_FILE) as f:
+            rows = list(csv.reader(f))
         entries = len(rows) - 1
         stages = set()
         for r in rows[1:]:
@@ -108,7 +109,8 @@ def main():
         results.append(check("run_manifest存在", False))
 
     orders_path = os.path.join(RAW_DIR, "olist_orders_dataset.csv")
-    lines = sum(1 for _ in open(orders_path))
+    with open(orders_path) as f:
+        lines = sum(1 for _ in f)
     raw_ok = lines == 99442
     results.append(check("原始数据不变", raw_ok, f"{lines} lines"))
 

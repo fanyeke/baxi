@@ -11,6 +11,7 @@ export default function Outbox() {
   const [channel, setChannel] = useState("")
   const [results, setResults] = useState<DispatchResponse | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const params: Record<string, string> = { limit: "100" }
   if (status) params.status = status
@@ -23,15 +24,25 @@ export default function Outbox() {
 
   const dryRunMutation = useMutation({
     mutationFn: () => apiClient.post<DispatchResponse>("/outbox/dispatch", { dry_run: true, channel: channel || undefined, limit: 100 }),
-    onSuccess: (data) => setResults(data),
+    onSuccess: (data) => {
+      setResults(data)
+      setErrorMessage(null)
+    },
+    onError: (error: Error) => {
+      setErrorMessage(error.message || "Dry-run 分发失败")
+    },
   })
 
   const applyMutation = useMutation({
     mutationFn: () => apiClient.post<DispatchResponse>("/outbox/dispatch", { apply: true, channel: channel || undefined, limit: 100 }),
     onSuccess: (data) => {
       setResults(data)
+      setErrorMessage(null)
       setShowConfirm(false)
       refetch()
+    },
+    onError: (error: Error) => {
+      setErrorMessage(error.message || "真实分发失败")
     },
   })
 
@@ -56,7 +67,7 @@ export default function Outbox() {
 
       <div className="flex gap-2">
         <button
-          onClick={() => dryRunMutation.mutate()}
+          onClick={() => { setErrorMessage(null); dryRunMutation.mutate() }}
           disabled={dryRunMutation.isPending}
           className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm hover:opacity-90 disabled:opacity-50"
         >
@@ -69,6 +80,14 @@ export default function Outbox() {
           真实分发
         </button>
       </div>
+
+      {errorMessage && (
+        <div className="p-3 border border-red-300 rounded-lg bg-red-50 text-red-700 text-sm">
+          <span className="font-medium">错误: </span>
+          {errorMessage}
+          <button onClick={() => setErrorMessage(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
+        </div>
+      )}
 
       {showConfirm && (
         <ConfirmApplyDialog

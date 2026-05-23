@@ -225,7 +225,7 @@ class FeishuClient:
         is_dry = dry_run if dry_run is not None else self.dry_run
 
         if is_dry:
-            logger.info("[dry-run] Would send message to chat_id: %s, content: %.80s", chat_id, content)
+            logger.info("[dry-run] Would send message to chat_id: %s, content: %.40s", chat_id, content)
             return "dry_run_message_" + str(int(time.time()))
 
         payload = {"receive_id": chat_id, "msg_type": msg_type,

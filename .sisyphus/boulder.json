@@ -3,18 +3,12 @@
   "started_at": "2026-05-23T08:00:27Z",
   "session_ids": [
     "ses_1ac347e0bffeJqOh3Xfi56GcHx",
-    "ses_1ac2445e4ffeKw4xboPXQ7Imet"
+    "ses_1ac2445e4ffeKw4xboPXQ7Imet",
+    "ses_1ac0b9b5dffeT0XZI6hubrvzvL",
+    "ses_1ac0b9be6ffemUc9oXS4vIib8T",
+    "ses_1ac0b9b1bffe5Dc14J2mytVPub",
+    "ses_1ac0b9ba2ffeYGXdC1qz3d337I"
   ],
   "plan_name": "readme-version-roadmap",
-  "task_sessions": {
-    "todo:1": {
-      "task_key": "todo:1",
-      "task_label": "1",
-      "task_title": "README 版本路线图更新",
-      "session_id": "ses_1ac2445e4ffeKw4xboPXQ7Imet",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-05-23T08:05:36.566Z"
-    }
-  }
+  "task_sessions": {}
 }
