@@ -69,6 +69,17 @@ FEISHU_TABLE_IDS_FILE = os.path.join(CONFIG_DIR, 'feishu_table_ids.yml')
 FEISHU_APP_CONFIG_FILE = os.path.join(CONFIG_DIR, 'feishu_app.yml')
 FEISHU_USER_MAPPING_FILE = os.path.join(CONFIG_DIR, 'feishu_user_mapping.yml')
 ADAPTER_REGISTRY_FILE = os.path.join(CONFIG_DIR, 'adapter_registry.yml')
+# Governance config files (v0.5.3)
+DATA_CLASSIFICATION_FILE = os.path.join(CONFIG_DIR, 'data_classification.yml')
+DATA_MARKINGS_FILE = os.path.join(CONFIG_DIR, 'data_markings.yml')
+DATA_LINEAGE_FILE = os.path.join(CONFIG_DIR, 'data_lineage.yml')
+CHECKPOINT_RULES_FILE = os.path.join(CONFIG_DIR, 'checkpoint_rules.yml')
+RETENTION_POLICIES_FILE = os.path.join(CONFIG_DIR, 'retention_policies.yml')
+HEALTH_CHECKS_FILE = os.path.join(CONFIG_DIR, 'health_checks.yml')
+DECISION_EVAL_RULES_FILE = os.path.join(CONFIG_DIR, 'decision_eval_rules.yml')
+ACCESS_POLICY_FILE = os.path.join(CONFIG_DIR, 'access_policy.yml')
+DATA_CATALOG_FILE = os.path.join(CONFIG_DIR, 'data_catalog.yml')
+
 
 # AIP output files
 AIP_BUSINESS_OBJECTS_FILE = os.path.join(AIP_DIR, 'aip_business_objects.json')

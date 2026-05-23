@@ -317,6 +317,8 @@ def create_app() -> FastAPI:
     app.include_router(feishu.router, prefix="/api/v1", tags=["Feishu"])
     app.include_router(pipeline.router, prefix="/api/v1", tags=["Pipeline"])
     app.include_router(diagnosis.router, prefix="/api/v1", tags=["Logs"])
+    from api.routers.governance import router as governance_router
+    app.include_router(governance_router, prefix="/api/v1")
 
     # ── CORS ─────────────────────────────────────────────────────────────
     _cors_origins = os.environ.get(

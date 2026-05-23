@@ -1,0 +1,48 @@
+# Data retention policies for Baxi v0.5.3
+# Reference: docs/governance/baxi_retention_policy.md
+# Foundry Data Lifetime: lineage-aware retention.
+# Deletion removes transactions + ALL downstream descendants.
+# Policy overrides allow exceptions.
+
+policies:
+  - asset_ref: raw_orders_csv
+    retention_period: "indefinite"
+    lineage_aware: false
+    cascade_behavior: null
+    cleanup_action: null
+  - asset_ref: dwd_order_level
+    retention_period: "indefinite"
+    lineage_aware: true
+    cascade_behavior: delete_descendants
+    cleanup_action: null
+  - asset_ref: metric_daily
+    retention_period: "indefinite"
+    lineage_aware: true
+    cascade_behavior: delete_descendants
+    cleanup_action: null
+  - asset_ref: api_logs
+    retention_period: "90_days"
+    lineage_aware: false
+    cascade_behavior: null
+    cleanup_action: "archive_to_zip"
+  - asset_ref: dispatch_archive_csv
+    retention_period: "180_days"
+    lineage_aware: false
+    cascade_behavior: null
+    cleanup_action: "archive"
+  - asset_ref: strategy_recommendations
+    retention_period: "365_days"
+    lineage_aware: true
+    cascade_behavior: archive_descendants
+    cleanup_action: null
+  - asset_ref: raw_customers
+    retention_period: "purpose_completion"
+    lineage_aware: true
+    cascade_behavior: delete_descendants
+    cleanup_action: null
+
+policy_overrides:
+  - policy: sensitive_pii_data
+    override_reason: "Legal hold — pending compliance review"
+    override_until: "2026-12-31"
+    approved_by: "data_protection_officer"

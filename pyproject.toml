@@ -1,6 +1,6 @@
 [project]
 name = "baxi"
-version = "0.5.1"
+version = "0.5.3"
 requires-python = ">=3.9"
 dependencies = [
     "pandas>=2.0.0",
