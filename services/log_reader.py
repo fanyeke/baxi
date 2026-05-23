@@ -36,19 +36,56 @@ def _tail_jsonl(filepath: str, limit: int) -> list[dict]:
 
     entries = deque()
     try:
-        with open(filepath, "r") as f:
-            for line in reversed(list(f)):
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                    entries.appendleft(obj)
-                except json.JSONDecodeError:
-                    logger.warning("Skipping malformed JSON line in %s", filepath)
-                    continue
-                if len(entries) >= limit:
-                    break
+        with open(filepath, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            chunk_size = 4096
+            buffer = b""
+            pos = size
+
+            while pos > 0 and len(entries) < limit:
+                read_size = min(chunk_size, pos)
+                pos -= read_size
+                f.seek(pos)
+                chunk = f.read(read_size)
+                buffer = chunk + buffer
+
+                lines = buffer.split(b"\n")
+
+                # If not at file start, keep first incomplete line in buffer
+                if pos > 0:
+                    buffer = lines[0]
+                    complete_lines = lines[1:]
+                else:
+                    buffer = b""
+                    complete_lines = lines
+
+                # Parse from newest to oldest within this chunk
+                for line_b in reversed(complete_lines):
+                    line = line_b.decode("utf-8").strip()
+                    if not line:
+                        continue
+                    try:
+                        entries.appendleft(json.loads(line))
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            "Skipping malformed JSON line in %s", filepath
+                        )
+                        continue
+                    if len(entries) >= limit:
+                        break
+
+            # Process remaining buffer (first line of file)
+            if buffer and len(entries) < limit:
+                line = buffer.decode("utf-8").strip()
+                if line:
+                    try:
+                        entries.appendleft(json.loads(line))
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            "Skipping malformed JSON line in %s", filepath
+                        )
+
     except OSError as e:
         logger.warning("Error reading %s: %s", filepath, e)
         return []
