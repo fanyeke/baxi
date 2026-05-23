@@ -161,7 +161,12 @@ class FeishuService:
             }
 
         try:
-            result = self._run_script("db_export_feishu.py", ["--all"], parse_json=True)
+            all_available = self._get_table_names()
+            if set(resolved) == set(all_available):
+                export_args = ["--all"]
+            else:
+                export_args = [a for t in resolved for a in ("--table", t)]
+            result = self._run_script("db_export_feishu.py", export_args, parse_json=True)
             if result and "tables" in result:
                 tables_result = {t["table"]: t["rows"] for t in result.get("tables", [])}
             else:
@@ -198,7 +203,7 @@ class FeishuService:
                 result = self._run_script("sync_feishu_bitable.py", ["--all", "--apply"], parse_json=True)
             else:
                 result = self._run_script("sync_feishu_bitable.py",
-                    ["--table", resolved[0], "--apply"], parse_json=True)
+                    ["--apply"] + [a for t in resolved for a in ("--table", t)], parse_json=True)
 
             tables_counts = {}
             if result and "tables" in result:
@@ -234,13 +239,15 @@ class FeishuService:
             import_result = self._run_script("db_import_feishu_status.py", ["--apply"], parse_json=True)
 
             pull_counts = pull_result.get("tables", {}) if pull_result else {}
-            import_counts = import_result if import_result else {}
+            import_tables = {}
+            if import_result:
+                import_tables = import_result.get("tables", {})
 
             return {"status": "imported", "tables": [
                 {"name": t,
                  "pulled": pull_counts.get(t, 0) if isinstance(pull_counts, dict) else 0,
-                 "imported": import_counts.get("imported", 0),
-                 "skipped": import_counts.get("skipped", 0),
+                 "imported": import_tables.get(t, {}).get("imported", 0) if isinstance(import_tables, dict) else 0,
+                 "skipped": import_tables.get(t, {}).get("skipped", 0) if isinstance(import_tables, dict) else 0,
                  "status": "imported"}
                 for t in resolved
             ]}
