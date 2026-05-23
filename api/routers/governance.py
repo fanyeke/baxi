@@ -70,6 +70,6 @@ def get_status(user=Depends(get_current_user)):
         try:
             _load_yaml(c)
             status[c] = "loaded"
-        except (FileNotFoundError, yaml.YAMLError, PermissionError):
+        except (HTTPException, PermissionError):
             status[c] = "error"
     return {"governance_layer": "active", "configs": status}
