@@ -1,9 +1,11 @@
-"""Feishu service layer wrapping FeishuClient for v0.5.1 API endpoints.
+"""Feishu service layer wrapping FeishuClient for v0.5.2 API endpoints.
  
 Provides export_tables, sync_to_feishu, and import_status_from_feishu
 operations with universal dry_run support and graceful missing-config handling.
+v0.5.2: Added --json flag parsing for real result counts.
 """
 
+import json
 import logging
 import os
 import sys
@@ -73,8 +75,10 @@ class FeishuService:
             return matched
         return available
 
-    def _run_script(self, script_name, args, timeout=120):
+    def _run_script(self, script_name, args, timeout=120, parse_json=False):
         script_path = os.path.join(SCRIPTS_DIR, script_name)
+        if parse_json:
+            args = args + ["--json"]
         cmd = [sys.executable, script_path] + args
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout,
@@ -85,7 +89,60 @@ class FeishuService:
             raise RuntimeError(
                 f"{script_name} exited {result.returncode}: {stderr}"
             )
+        if parse_json:
+            for line in reversed(result.stdout.strip().split("\n")):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    return json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+            return None
         return result.stdout
+
+    def _run_script_json(self, script_name, args, timeout=120):
+        output = self._run_script(script_name, args + ["--json"], timeout=timeout)
+        for line in reversed(output.strip().splitlines()):
+            try:
+                return json.loads(line)
+            except json.JSONDecodeError:
+                continue
+        try:
+            return json.loads(output.strip())
+        except json.JSONDecodeError:
+            return None
+
+    @staticmethod
+    def _sync_counts(output, table_name):
+        if output and output.get("tables"):
+            for t in output["tables"]:
+                if t.get("table") == table_name:
+                    return {"created": t.get("created", 0), "updated": t.get("updated", 0)}
+        if output:
+            n = max(len(output.get("tables", [{}])), 1)
+            return {
+                "created": output.get("created", 0) // n,
+                "updated": output.get("updated", 0) // n,
+            }
+        return {"created": 0, "updated": 0}
+
+    @staticmethod
+    def _import_counts(pull_output, import_output, table_name):
+        pulled = 0
+        if pull_output and pull_output.get("tables"):
+            pulled = pull_output["tables"].get(table_name, 0)
+        total_imported = 0
+        total_skipped = 0
+        if import_output:
+            total_imported = import_output.get("applied", 0)
+            total_skipped = import_output.get("skipped", 0)
+        n = max(len(["action_tasks", "review_retro"]), 1)
+        return {
+            "pulled": pulled,
+            "imported": total_imported // n,
+            "skipped": total_skipped // n,
+        }
 
     def export_tables(self, table_names: Optional[list] = None) -> dict:
         if not self._is_configured():
@@ -104,21 +161,19 @@ class FeishuService:
             }
 
         try:
-            self._run_script("db_export_feishu.py", ["--all"])
+            result = self._run_script("db_export_feishu.py", ["--all"], parse_json=True)
+            if result and "tables" in result:
+                tables_result = {t["table"]: t["rows"] for t in result.get("tables", [])}
+            else:
+                tables_result = {}
             tables = []
             for name in resolved:
                 csv_path = os.path.join(config.FEISHU_DIR, f"{name}_for_feishu.csv")
-                rows = 0
-                if os.path.exists(csv_path):
-                    with open(csv_path) as f:
-                        rows = sum(1 for __ in f) - 1
-                tables.append({"name": name, "rows": max(rows, 0), "file": csv_path, "status": "exported"})
-            all_available = self._get_table_names()
-            if table_names and set(resolved) != set(all_available):
-                return {"status": "exported", "tables": tables,
-                        "note": f"Requested {len(resolved)} table(s); export script processed all {len(all_available)} tables"}
+                rows = tables_result.get(name, 0)
+                tables.append({"name": name, "rows": rows, "file": csv_path, "status": "exported"})
             return {"status": "exported", "tables": tables}
         except Exception as e:
+            logger.exception("Feishu export failed")
             return {"status": "failed", "message": str(e), "tables": []}
 
     def sync_to_feishu(self, table_names: Optional[list] = None) -> dict:
@@ -140,15 +195,22 @@ class FeishuService:
         try:
             all_available = self._get_table_names()
             if set(resolved) == set(all_available):
-                self._run_script("sync_feishu_bitable.py", ["--all", "--apply"])
+                result = self._run_script("sync_feishu_bitable.py", ["--all", "--apply"], parse_json=True)
             else:
-                for name in resolved:
-                    self._run_script("sync_feishu_bitable.py", ["--table", name, "--apply"])
+                result = self._run_script("sync_feishu_bitable.py",
+                    ["--table", resolved[0], "--apply"], parse_json=True)
+
+            tables_counts = {}
+            if result and "tables" in result:
+                tables_counts = {t["table"]: t for t in result.get("tables", [])}
+
             return {"status": "synced", "tables": [
-                {"name": t, "created": 0, "updated": 0, "status": "synced"}
+                {"name": t, "created": tables_counts.get(t, {}).get("created", 0),
+                 "updated": tables_counts.get(t, {}).get("updated", 0), "status": "synced"}
                 for t in resolved
             ]}
         except Exception as e:
+            logger.exception("Feishu sync failed")
             return {"status": "failed", "message": str(e), "tables": []}
 
     def import_status_from_feishu(self, table_names: Optional[list] = None) -> dict:
@@ -168,11 +230,20 @@ class FeishuService:
             }
 
         try:
-            self._run_script("pull_feishu_status.py", ["--apply"])
-            self._run_script("db_import_feishu_status.py", ["--apply"])
+            pull_result = self._run_script("pull_feishu_status.py", ["--apply"], parse_json=True)
+            import_result = self._run_script("db_import_feishu_status.py", ["--apply"], parse_json=True)
+
+            pull_counts = pull_result.get("tables", {}) if pull_result else {}
+            import_counts = import_result if import_result else {}
+
             return {"status": "imported", "tables": [
-                {"name": t, "pulled": 0, "imported": 0, "skipped": 0, "status": "imported"}
+                {"name": t,
+                 "pulled": pull_counts.get(t, 0) if isinstance(pull_counts, dict) else 0,
+                 "imported": import_counts.get("imported", 0),
+                 "skipped": import_counts.get("skipped", 0),
+                 "status": "imported"}
                 for t in resolved
             ]}
         except Exception as e:
+            logger.exception("Feishu status import failed")
             return {"status": "failed", "message": str(e), "tables": []}

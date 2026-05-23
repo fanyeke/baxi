@@ -30,7 +30,7 @@
 
 ## 项目阶段
 
-### 第一阶段：原始数据理解 ✅
+### 第一阶段（Phase 1）：原始数据理解 ✅ (FROZEN)
 
 本阶段完成时间：2026-05-20
 
@@ -205,7 +205,7 @@ Marketing Funnel 数据集将建立完整的业务链路分析：
 - landing page 优化建议
 - 营销投入与销售业绩关联分析
 
-### 第二阶段：核心数据模型搭建 ✅
+### 第二阶段（Phase 2）：核心数据模型搭建 ✅ (FROZEN)
 
 本阶段完成时间：2026-05-20
 
@@ -302,21 +302,23 @@ python3 generate_docs.py
 
 ## 后续计划
 
-### Phase 3：全局业务分析 ✅
+**当前版本**: v0.1-heuristic-decision-sandbox（规则驱动的 AI-ready 决策沙盘，不含真实 LLM 决策）
+
+### Phase 3：全局业务分析 ✅ (FROZEN)
 
 月度趋势分析（GMV/订单量/客户增长）、订单状态分布、支付方式分析、品类销售排名、卖家GMV排名、地域分析。
 - 脚本: `scripts/phase03_overall_business_analysis.py`
 - 报告: `reports/overall_business_analysis.md`
 - 产出: 12 CSV + 13 图表
 
-### Phase 4：履约与客户体验分析 ✅
+### Phase 4：履约与客户体验分析 ✅ (FROZEN)
 
 订单交付时效、评价分数影响、地域/品类/卖家交付表现对比。
 - 脚本: `scripts/phase04_fulfillment_experience_analysis.py`
 - 报告: `reports/fulfillment_customer_experience_analysis.md`
 - 产出: 14 CSV + 11 图表
 
-### Phase 5：营销漏斗 + 卖家绩效分析 ✅
+### Phase 5：营销漏斗 + 卖家绩效分析 ✅ (FROZEN)
 
 营销线索来源、渠道质量、卖家GMV排名、质量修订。
 - 脚本: `scripts/phase05_marketing_funnel_analysis.py`, `phase05_seller_performance_analysis.py`, `phase05_quality_revision.py`
@@ -324,7 +326,7 @@ python3 generate_docs.py
 
 ### Phase 6：（跳过）
 
-### Phase 7：决策沙盘模拟器 ✅
+### Phase 7：决策沙盘模拟器 ✅ (FROZEN)
 
 What-If 场景模拟，GMV/评分联动预测。
 - 脚本: `scripts/phase07_simulation_engine.py`, `phase07_calibration_revision.py`

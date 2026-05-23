@@ -75,7 +75,7 @@ class TestHealth:
 
     def test_health_has_version(self, client):
         r = client.get("/api/v1/health")
-        assert r.json()["version"] == "0.5.0"
+        assert r.json()["version"] == "0.5.1"
 
     def test_health_db_connected(self, client):
         r = client.get("/api/v1/health")

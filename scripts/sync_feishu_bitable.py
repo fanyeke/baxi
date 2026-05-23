@@ -1,6 +1,7 @@
 from typing import Tuple
 import argparse
 import csv
+import json
 import logging
 import os
 import sys
@@ -269,6 +270,11 @@ def main():
         default=os.environ.get("FEISHU_BASE_APP_TOKEN", ""),
         help="Feishu base app_token (or set FEISHU_BASE_APP_TOKEN env var)",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output JSON summary to stdout",
+    )
 
     args = parser.parse_args()
     ensure_dirs_exist()
@@ -298,17 +304,34 @@ def main():
         len(tables_to_sync),
     )
 
+    table_results = []
     for table_id in tables_to_sync:
         try:
-            sync_table(client, table_id, dry_run, run_id)
+            created, updated, skipped = sync_table(client, table_id, dry_run, run_id)
+            table_results.append({
+                "table": table_id, "created": created,
+                "updated": updated, "skipped": skipped,
+            })
         except Exception as e:
             logger.error("Failed to sync %s: %s", table_id, e)
             write_sync_log(
                 run_id, table_id, "", 0, 0, 0, "failed",
                 str(e), "",
             )
+            table_results.append({
+                "table": table_id, "created": 0,
+                "updated": 0, "skipped": 0,
+                "error": str(e),
+            })
 
     logger.info("Feishu sync completed for run_id=%s", run_id)
+
+    if args.json:
+        totals = {"created": 0, "updated": 0, "skipped": 0}
+        for tr in table_results:
+            for k in totals:
+                totals[k] += tr.get(k, 0)
+        print(json.dumps({"status": "success", "tables": table_results, **totals}))
 
 
 if __name__ == "__main__":

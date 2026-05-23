@@ -9,7 +9,7 @@ Usage:
     python3 scripts/db_import_feishu_status.py --apply    # execute updates
     python3 scripts/db_import_feishu_status.py --help     # full options
 """
-import os, sys, csv, sqlite3, argparse, datetime
+import os, sys, csv, sqlite3, argparse, datetime, json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
@@ -75,7 +75,7 @@ def import_status(snapshot_path, db_path, apply=False):
 
     if not rows:
         print("Snapshot is empty (no records to import).")
-        return
+        return {"applied": 0, "skipped": 0, "errors": 0, "action": "skipped" if apply else "dry-run"}
 
     by_table = {}
     for row in rows:
@@ -164,6 +164,8 @@ def import_status(snapshot_path, db_path, apply=False):
         print(f"Import {action}: {applied} updates, {skipped} skipped, {errors} errors")
         print(f"Log: {log_path}")
 
+        return {"applied": applied, "skipped": skipped, "errors": errors, "action": action}
+
     except Exception as e:
         if apply:
             conn.rollback()
@@ -199,6 +201,11 @@ def main():
         default=False,
         help=argparse.SUPPRESS,
     )
+    parser.add_argument(
+        '--json',
+        action='store_true',
+        help='Output JSON summary to stdout',
+    )
     args = parser.parse_args()
 
     mode = 'APPLY' if args.apply else 'DRY-RUN'
@@ -206,7 +213,10 @@ def main():
     print(f"  DB:       {args.db}")
     print(f"  Snapshot: {args.snapshot}")
 
-    import_status(args.snapshot, args.db, apply=args.apply)
+    stats = import_status(args.snapshot, args.db, apply=args.apply)
+
+    if args.json and stats:
+        print(json.dumps({"status": "success", **stats}))
 
 
 if __name__ == '__main__':

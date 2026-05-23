@@ -1,0 +1,98 @@
+[
+  {
+    "review_id": "rev_001",
+    "strategy_id": "rec_010",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标cancel_rate变化-100.0%",
+    "is_effective": true,
+    "lessons_learned": "促销峰值后取消率异常应设置7日观察窗口，避免单日误报",
+    "promote_to_rule": true,
+    "reviewed_at": "2017-11-22 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_002",
+    "strategy_id": "rec_020",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标late_delivery_rate变化66.7%",
+    "is_effective": false,
+    "lessons_learned": "延迟配送问题需结合区域仓储容量评估，单一卖家排查效果有限",
+    "promote_to_rule": false,
+    "reviewed_at": "2017-06-08 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_003",
+    "strategy_id": "rec_030",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标avg_review_score变化-3.1%",
+    "is_effective": false,
+    "lessons_learned": "低评分品类治理需联合品类运营和卖家运营双线推进",
+    "promote_to_rule": false,
+    "reviewed_at": "2018-03-22 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_004",
+    "strategy_id": "rec_040",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标gmv变化93.5%",
+    "is_effective": true,
+    "lessons_learned": "GMV波动需结合促销日历分析，纯数据异常可能为业务事件",
+    "promote_to_rule": false,
+    "reviewed_at": "2017-01-17 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_005",
+    "strategy_id": "rec_050",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标有改善",
+    "is_effective": true,
+    "lessons_learned": "高取消率卖家的持续监控比单次排查更有效",
+    "promote_to_rule": false,
+    "reviewed_at": "2017-08-27 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_006",
+    "strategy_id": "rec_060",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标order_count变化-5.8%",
+    "is_effective": false,
+    "lessons_learned": "订单量下降调查需区分季节性因素和结构性因素",
+    "promote_to_rule": false,
+    "reviewed_at": "2017-04-22 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_007",
+    "strategy_id": "rec_070",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标late_delivery_rate变化71.0%",
+    "is_effective": false,
+    "lessons_learned": "区域配送异常往往与物流基础设施变动相关",
+    "promote_to_rule": false,
+    "reviewed_at": "2018-01-22 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  },
+  {
+    "review_id": "rev_008",
+    "strategy_id": "rec_080",
+    "outcome": "已完成异常排查",
+    "actual_impact": "指标seller_count变化11.2%",
+    "is_effective": true,
+    "lessons_learned": "活跃卖家流失应提前设置卖家生命周期预警",
+    "promote_to_rule": false,
+    "reviewed_at": "2017-10-08 00:00:00",
+    "review_type": "simulated",
+    "review_source": "hindsight_rule"
+  }
+]

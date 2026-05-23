@@ -18,62 +18,77 @@ daily_metrics:
     payment_installment_rate: "分期支付率"
     marketing_seller_share: "营销卖家占比"
 
-metric_alerts:
-  local_table: data/ads/metric_alerts.csv
+alert_events:
+  local_table: data/feishu/alert_events_for_feishu.csv
   feishu_table: "异常事件表"
-  primary_key: [alert_id]
+  primary_key: [event_id]
   sync_frequency: on_alert
   fields:
-    alert_id: "事件ID"
-    real_run_date: "执行日期"
-    simulated_date: "业务日期"
+    event_id: "事件ID"
+    event_date: "业务日期"
     rule_id: "规则ID"
-    metric: "指标名称"
+    metric_name: "指标名称"
     severity: "严重等级"
-    dimension: "维度"
     object_type: "对象类型"
     object_id: "对象ID"
     current_value: "当前值"
     baseline_value: "基线值"
+    change_rate: "变化率"
+    sample_size: "样本量"
+    affected_orders: "影响订单数"
+    affected_gmv: "影响GMV"
+    impact_score: "影响评分"
     description: "异常描述"
     owner_role: "负责人角色"
     status: "状态"
 
 strategy_recommendations:
-  local_table: data/aip/aip_action_recommendations.json
+  local_table: data/feishu/strategy_recommendations_for_feishu.csv
   feishu_table: "策略建议表"
   primary_key: [recommendation_id]
   sync_frequency: on_recommendation
   fields:
     recommendation_id: "建议ID"
     event_id: "关联事件ID"
-    title: "策略标题"
-    detail: "策略详情"
+    decision_source: "决策来源"
+    rule_id: "规则ID"
+    strategy_title: "策略标题"
+    strategy_detail: "策略详情"
+    target_object_type: "目标对象类型"
+    target_object_id: "目标对象ID"
     expected_impact: "预期影响"
     risk_level: "风险等级"
-    requires_approval: "是否需要审批"
+    confidence: "置信度"
     owner_role: "负责人"
-    status: "状态"
+    approval_status: "审批状态"
+    execution_status: "执行状态"
+    success_metric: "成功指标"
+    created_at: "创建时间"
 
 action_tasks:
-  local_table: data/outputs/action_tasks.json
+  local_table: data/feishu/action_tasks_for_feishu.csv
   feishu_table: "负责人任务表"
   primary_key: [task_id]
   sync_frequency: on_task
   fields:
     task_id: "任务ID"
-    title: "任务标题"
-    description: "任务说明"
-    owner: "负责人"
-    source_event: "来源事件"
-    source_strategy: "来源策略"
+    recommendation_id: "关联建议ID"
+    event_id: "关联事件ID"
+    task_title: "任务标题"
+    task_description: "任务说明"
+    task_source: "任务来源"
+    owner_role: "负责人"
     priority: "优先级"
-    deadline: "截止时间"
     status: "状态"
     feedback: "反馈"
+    due_at: "截止时间"
+    created_at: "创建时间"
 
-execution_reviews:
-  local_table: data/feishu/execution_reviews_for_feishu.csv
+# HUMAN_FIELDS: status, feedback are human-editable in Feishu
+# These fields are populated by humans during task execution review.
+# sync_feishu_bitable.py bidirectional sync writes them back to local DB.
+review_retro:
+  local_table: data/feishu/review_retro_for_feishu.csv
   feishu_table: "执行复盘表"
   primary_key: [review_id]
   sync_frequency: manual

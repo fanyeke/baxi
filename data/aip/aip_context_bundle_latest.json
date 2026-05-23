@@ -1,77 +1,84 @@
 {
-  "snapshot_date": "2016-10-04",
-  "run_id": "f4e1629b77f91d84f7921d2c22cfe675",
+  "snapshot_date": "2016-10-11",
+  "run_id": "20a907a8cf8e22f177b7d74c470ca43b",
   "ingestion_state": {
-    "next_simulated_date": "2016-10-05",
-    "last_completed_simulated_date": "2016-10-04"
+    "next_simulated_date": "2016-10-12",
+    "last_completed_simulated_date": "2016-10-11"
   },
   "time_windows": {
     "current": {
       "label": "最近7天",
-      "start": "2016-09-28",
-      "end": "2016-10-04"
+      "start": "2016-10-05",
+      "end": "2016-10-11"
     },
     "baseline": {
       "label": "前14天",
-      "start": "2016-09-14",
-      "end": "2016-09-27"
+      "start": "2016-09-21",
+      "end": "2016-10-04"
     }
   },
   "metric_summary": [
     {
-      "metric_name": "avg_order_value",
-      "current_window_value": 105.2427,
-      "baseline_value": 134.97,
-      "change_pct": -0.2203,
-      "trend": "down"
-    },
-    {
-      "metric_name": "avg_review_score",
-      "current_window_value": 2.545,
-      "baseline_value": 1.0,
-      "change_pct": 1.545,
-      "trend": "up"
-    },
-    {
-      "metric_name": "cancel_rate",
-      "current_window_value": 0.4015,
+      "metric_name": "alert_count",
+      "current_window_value": 0.0,
       "baseline_value": 0.0,
       "change_pct": null,
       "trend": "unknown"
     },
     {
+      "metric_name": "avg_order_value",
+      "current_window_value": 152.4599,
+      "baseline_value": 105.2427,
+      "change_pct": 0.4487,
+      "trend": "up"
+    },
+    {
+      "metric_name": "avg_review_score",
+      "current_window_value": 3.5954,
+      "baseline_value": 2.545,
+      "change_pct": 0.4127,
+      "trend": "up"
+    },
+    {
+      "metric_name": "cancel_rate",
+      "current_window_value": 0.0702,
+      "baseline_value": 0.4015,
+      "change_pct": -0.825,
+      "trend": "down"
+    },
+    {
       "metric_name": "customer_count",
-      "current_window_value": 24.0,
-      "baseline_value": 1.0,
-      "change_pct": 23.0,
+      "current_window_value": 41.5,
+      "baseline_value": 24.0,
+      "change_pct": 0.7292,
       "trend": "up"
     },
     {
       "metric_name": "freight_value",
-      "current_window_value": 498.5067,
-      "baseline_value": 8.49,
-      "change_pct": 57.7169,
+      "current_window_value": 967.61,
+      "baseline_value": 498.5067,
+      "change_pct": 0.941,
       "trend": "up"
     },
     {
       "metric_name": "gmv",
-      "current_window_value": 3501.48,
-      "baseline_value": 134.97,
-      "change_pct": 24.9427,
+      "current_window_value": 6500.5367,
+      "baseline_value": 3501.48,
+      "change_pct": 0.8565,
       "trend": "up"
     },
     {
       "metric_name": "late_delivery_rate",
-      "current_window_value": 0.0185,
-      "baseline_value": 1.0,
-      "change_pct": -0.9815,
+      "current_window_value": 0.0049,
+      "baseline_value": 0.0185,
+      "change_pct": -0.7353,
       "trend": "down"
     },
     {
       "metric_name": "low_review_rate",
-      "current_window_value": 0.5536,
-      "baseline_value": 1.0,
-      "change_pct": -0.4464,
+      "current_window_value": 0.2799,
+      "baseline_value": 0.5536,
+      "change_pct": -0.4944,
       "trend": "down"
     },
     {
@@ -83,23 +90,23 @@
     },
     {
       "metric_name": "order_count",
-      "current_window_value": 24.0,
-      "baseline_value": 1.0,
-      "change_pct": 23.0,
+      "current_window_value": 41.8333,
+      "baseline_value": 24.0,
+      "change_pct": 0.7431,
       "trend": "up"
     },
     {
       "metric_name": "payment_installment_rate",
-      "current_window_value": 0.3836,
-      "baseline_value": 0.0,
-      "change_pct": null,
-      "trend": "unknown"
+      "current_window_value": 0.6114,
+      "baseline_value": 0.3836,
+      "change_pct": 0.5939,
+      "trend": "up"
     },
     {
       "metric_name": "seller_count",
-      "current_window_value": 15.6667,
-      "baseline_value": 1.0,
-      "change_pct": 14.6667,
+      "current_window_value": 33.0,
+      "baseline_value": 15.6667,
+      "change_pct": 1.1064,
       "trend": "up"
     }
   ],
@@ -122,7 +129,8 @@
         "baseline_value": 0.5,
         "description": "Cancel rate (1.0000) changed 100.0% from baseline (0.5000), exceeds 50% threshold",
         "owner_role": "logistics_ops",
-        "status": "new"
+        "status": "new",
+        "impact_score": null
       }
     },
     {
@@ -143,7 +151,8 @@
         "baseline_value": 0.6,
         "description": "Cancel rate (0.1250) changed 79.2% from baseline (0.6000), exceeds 50% threshold",
         "owner_role": "logistics_ops",
-        "status": "new"
+        "status": "new",
+        "impact_score": null
       }
     },
     {
@@ -164,7 +173,162 @@
         "baseline_value": 0.5208,
         "description": "Cancel rate (0.0794) changed 84.8% from baseline (0.5208), exceeds 50% threshold",
         "owner_role": "logistics_ops",
-        "status": "new"
+        "status": "new",
+        "impact_score": null
+      }
+    },
+    {
+      "event_id": "43ec57da3c65436a9baa311d66b7c4c8",
+      "event_type": "cancel_rate_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "43ec57da3c65436a9baa311d66b7c4c8",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-06",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0588,
+        "baseline_value": 0.4638,
+        "description": "Cancel rate (0.0588) changed 87.3% from baseline (0.4638), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "event_id": "422a7bae2a814e70a9dc42f6b3475598",
+      "event_type": "gmv_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "422a7bae2a814e70a9dc42f6b3475598",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-06",
+        "rule_id": "gmv_spike",
+        "metric": "gmv",
+        "severity": "medium",
+        "dimension": "overall",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 3857.5243,
+        "baseline_value": 72.89,
+        "description": "GMV 7-day avg (3857.52) exceeds 120% threshold vs prev 14-day avg (72.89)",
+        "owner_role": "business_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "event_id": "230e9b731fa9422bafe4261a5d660237",
+      "event_type": "gmv_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "230e9b731fa9422bafe4261a5d660237",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-07",
+        "rule_id": "gmv_spike",
+        "metric": "gmv",
+        "severity": "medium",
+        "dimension": "overall",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 4881.6029,
+        "baseline_value": 66.195,
+        "description": "GMV 7-day avg (4881.60) exceeds 120% threshold vs prev 14-day avg (66.19)",
+        "owner_role": "business_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "event_id": "6e42562515e04c54849ff78e9e05a699",
+      "event_type": "cancel_rate_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "6e42562515e04c54849ff78e9e05a699",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-08",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0714,
+        "baseline_value": 0.1927,
+        "description": "Cancel rate (0.0714) changed 62.9% from baseline (0.1927), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "event_id": "afc73aebe5df48c69b3b7550529f479e",
+      "event_type": "gmv_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "afc73aebe5df48c69b3b7550529f479e",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-08",
+        "rule_id": "gmv_spike",
+        "metric": "gmv",
+        "severity": "medium",
+        "dimension": "overall",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 6068.3,
+        "baseline_value": 89.12,
+        "description": "GMV 7-day avg (6068.30) exceeds 120% threshold vs prev 14-day avg (89.12)",
+        "owner_role": "business_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "event_id": "5d1c10f03f344c9790fccc327c926c8f",
+      "event_type": "gmv_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "5d1c10f03f344c9790fccc327c926c8f",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-09",
+        "rule_id": "gmv_spike",
+        "metric": "gmv",
+        "severity": "medium",
+        "dimension": "overall",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 6530.7271,
+        "baseline_value": 91.84,
+        "description": "GMV 7-day avg (6530.73) exceeds 120% threshold vs prev 14-day avg (91.84)",
+        "owner_role": "business_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "event_id": "34c069bf97094408895768893d878661",
+      "event_type": "gmv_spike",
+      "event_timestamp": "",
+      "properties": {
+        "alert_id": "34c069bf97094408895768893d878661",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-10",
+        "rule_id": "gmv_spike",
+        "metric": "gmv",
+        "severity": "medium",
+        "dimension": "overall",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 6992.0257,
+        "baseline_value": 166.168,
+        "description": "GMV 7-day avg (6992.03) exceeds 120% threshold vs prev 14-day avg (166.17)",
+        "owner_role": "business_ops",
+        "status": "new",
+        "impact_score": 2.0
       }
     }
   ],
@@ -189,7 +353,8 @@
         "baseline_value": 0.5,
         "description": "Cancel rate (1.0000) changed 100.0% from baseline (0.5000), exceeds 50% threshold",
         "owner_role": "logistics_ops",
-        "status": "new"
+        "status": "new",
+        "impact_score": null
       }
     },
     {
@@ -211,7 +376,8 @@
         "baseline_value": 0.6,
         "description": "Cancel rate (0.1250) changed 79.2% from baseline (0.6000), exceeds 50% threshold",
         "owner_role": "logistics_ops",
-        "status": "new"
+        "status": "new",
+        "impact_score": null
       }
     },
     {
@@ -233,7 +399,54 @@
         "baseline_value": 0.5208,
         "description": "Cancel rate (0.0794) changed 84.8% from baseline (0.5208), exceeds 50% threshold",
         "owner_role": "logistics_ops",
-        "status": "new"
+        "status": "new",
+        "impact_score": null
+      }
+    },
+    {
+      "recommendation_id": "rec_43ec57da3c65436a9baa311d66b7c4c8",
+      "source_event_id": "43ec57da3c65436a9baa311d66b7c4c8",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "43ec57da3c65436a9baa311d66b7c4c8",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-06",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0588,
+        "baseline_value": 0.4638,
+        "description": "Cancel rate (0.0588) changed 87.3% from baseline (0.4638), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new",
+        "impact_score": 2.0
+      }
+    },
+    {
+      "recommendation_id": "rec_6e42562515e04c54849ff78e9e05a699",
+      "source_event_id": "6e42562515e04c54849ff78e9e05a699",
+      "action": "调查取消率上升原因",
+      "priority": "high",
+      "properties": {
+        "alert_id": "6e42562515e04c54849ff78e9e05a699",
+        "real_run_date": "2026-05-22",
+        "simulated_date": "2016-10-08",
+        "rule_id": "cancel_rate_spike",
+        "metric": "cancel_rate",
+        "severity": "medium",
+        "dimension": "region",
+        "object_type": null,
+        "object_id": null,
+        "current_value": 0.0714,
+        "baseline_value": 0.1927,
+        "description": "Cancel rate (0.0714) changed 62.9% from baseline (0.1927), exceeds 50% threshold",
+        "owner_role": "logistics_ops",
+        "status": "new",
+        "impact_score": 2.0
       }
     }
   ],

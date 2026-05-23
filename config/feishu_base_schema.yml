@@ -101,6 +101,29 @@ tables:
         options: [new, investigating, strategy_generated, task_created, resolved, ignored]
         enum_ref: status_enums.alert_event_status
         default: new
+      - field_id: rule_id
+        field_name: "规则ID"
+        type: text
+      - field_id: event_date
+        field_name: "事件日期"
+        type: date
+      - field_id: change_rate
+        field_name: "变化率"
+        type: number
+        format: percent
+      - field_id: sample_size
+        field_name: "样本量"
+        type: number
+      - field_id: affected_orders
+        field_name: "受影响订单数"
+        type: number
+      - field_id: affected_gmv
+        field_name: "受影响GMV"
+        type: number
+        format: currency
+      - field_id: impact_score
+        field_name: "影响分数"
+        type: number
     view_config:
       default_view: "open_by_severity"
 
@@ -148,6 +171,24 @@ tables:
       - field_id: completed_at
         field_name: "完成时间"
         type: datetime
+      - field_id: target_object_type
+        field_name: "目标对象类型"
+        type: text
+      - field_id: target_object_id
+        field_name: "目标对象ID"
+        type: text
+      - field_id: recommendation_id
+        field_name: "关联建议ID"
+        type: text
+      - field_id: event_id
+        field_name: "关联事件ID"
+        type: text
+      - field_id: created_at
+        field_name: "创建时间"
+        type: datetime
+      - field_id: task_source
+        field_name: "任务来源"
+        type: text
     view_config:
       default_view: "by_owner_status"
 
@@ -170,8 +211,11 @@ tables:
       - field_id: detail
         field_name: "策略详情"
         type: text_long
-      - field_id: target_object
-        field_name: "目标对象"
+      - field_id: target_object_type
+        field_name: "目标对象类型"
+        type: text
+      - field_id: target_object_id
+        field_name: "目标对象ID"
         type: text
       - field_id: expected_impact
         field_name: "预期影响"
@@ -201,6 +245,18 @@ tables:
       - field_id: created_at
         field_name: "创建时间"
         type: datetime
+      - field_id: decision_source
+        field_name: "决策来源"
+        type: text
+      - field_id: rule_id
+        field_name: "规则ID"
+        type: text
+      - field_id: confidence
+        field_name: "置信度"
+        type: text
+      - field_id: success_metric
+        field_name: "成功指标"
+        type: text
     view_config:
       default_view: "by_risk_status"
 
@@ -213,8 +269,17 @@ tables:
         field_name: "复盘ID"
         type: text
         required: true
-      - field_id: strategy_id
-        field_name: "策略ID"
+      - field_id: recommendation_id
+        field_name: "关联建议ID"
+        type: text
+      - field_id: task_id
+        field_name: "关联任务ID"
+        type: text
+      - field_id: review_type
+        field_name: "复盘类型"
+        type: text
+      - field_id: review_source
+        field_name: "复盘来源"
         type: text
       - field_id: outcome
         field_name: "执行结果"
@@ -234,5 +299,13 @@ tables:
       - field_id: reviewed_at
         field_name: "复盘时间"
         type: datetime
+      - field_id: status
+        field_name: "状态"
+        type: single_select
+        options: [draft, in_review, completed]
+        default: draft
+      - field_id: feedback
+        field_name: "反馈"
+        type: text_long
     view_config:
       default_view: "all_reviews"

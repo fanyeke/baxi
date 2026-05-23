@@ -27,4 +27,21 @@ def list_alerts(
         limit=limit,
     )
     items = [AlertItem(**dict(r)) for r in rows]
-    return AlertListResponse(items=items, total=len(items))
+    count_conditions = []
+    count_params = []
+    if status is not None:
+        count_conditions.append("status = ?")
+        count_params.append(status)
+    if severity is not None:
+        count_conditions.append("severity = ?")
+        count_params.append(severity)
+    if object_type is not None:
+        count_conditions.append("object_type = ?")
+        count_params.append(object_type)
+    if object_id is not None:
+        count_conditions.append("object_id = ?")
+        count_params.append(object_id)
+    count_where = "WHERE " + " AND ".join(count_conditions) if count_conditions else ""
+    total = conn.execute(f"SELECT COUNT(*) FROM alert_events {count_where}", count_params).fetchone()[0]
+
+    return AlertListResponse(items=items, total=total)

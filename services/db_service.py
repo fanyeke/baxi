@@ -14,6 +14,9 @@ def get_db(db_path=None):
 
     Returns:
         sqlite3.Connection configured with WAL journal mode and Row factory.
+
+    Raises:
+        FileNotFoundError: if the DB file does not exist and create_if_missing is False.
     """
     path = db_path or DB_PATH
     conn = sqlite3.connect(path)

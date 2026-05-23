@@ -1,0 +1,11 @@
+# LLM Configuration for AI Decision Engine
+# API key is read from environment variable LLM_API_KEY (not stored here)
+
+provider: openai        # or anthropic
+model: gpt-4o
+api_base: https://api.openai.com/v1
+temperature: 0.3         # Low temperature for consistent, structured analysis
+max_tokens: 2000         # Max response length for strategy generation
+timeout_seconds: 60      # LLM API call timeout
+max_retries: 2           # Auto-retry on transient failures
+fallback: rule_based     # On API failure: fall back to heuristic rules, do NOT halt

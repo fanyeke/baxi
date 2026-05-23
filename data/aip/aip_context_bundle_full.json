@@ -1,0 +1,767 @@
+{
+  "mode": "full",
+  "generated_at": "2026-05-22T03:25:10.451143+00:00",
+  "date_range": {
+    "start": "2016-09-04",
+    "end": "2018-10-17"
+  },
+  "total_days": 750,
+  "monthly_snapshots": [
+    {
+      "month": "2016-09",
+      "days": 4,
+      "gmv": 89.12,
+      "order_count": 1.0,
+      "customer_count": 1.0,
+      "seller_count": 1.0,
+      "avg_order_value": 89.12,
+      "freight_value": 29.13,
+      "avg_review_score": 1.0,
+      "low_review_rate": 1.0,
+      "late_delivery_rate": 1.0,
+      "cancel_rate": 0.5,
+      "payment_installment_rate": 0.5,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 267.36,
+      "monthly_orders": 4
+    },
+    {
+      "month": "2016-10",
+      "days": 10,
+      "gmv": 5500.8511,
+      "order_count": 32.4,
+      "customer_count": 32.2,
+      "seller_count": 27.2222,
+      "avg_order_value": 136.7208,
+      "freight_value": 811.2422,
+      "avg_review_score": 3.0207,
+      "low_review_rate": 0.434,
+      "late_delivery_rate": 0.0083,
+      "cancel_rate": 0.2626,
+      "payment_installment_rate": 0.4819,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 49507.66,
+      "monthly_orders": 324
+    },
+    {
+      "month": "2016-12",
+      "days": 1,
+      "gmv": 10.9,
+      "order_count": 1.0,
+      "customer_count": 1.0,
+      "seller_count": 1.0,
+      "avg_order_value": 10.9,
+      "freight_value": 8.72,
+      "avg_review_score": 5.0,
+      "low_review_rate": 0.0,
+      "late_delivery_rate": 0.0,
+      "cancel_rate": 0.0,
+      "payment_installment_rate": 0.0,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 10.9,
+      "monthly_orders": 1
+    },
+    {
+      "month": "2017-01",
+      "days": 27,
+      "gmv": 4456.0322,
+      "order_count": 29.6296,
+      "customer_count": 28.4074,
+      "seller_count": 22.0741,
+      "avg_order_value": 159.5308,
+      "freight_value": 625.023,
+      "avg_review_score": 3.9893,
+      "low_review_rate": 0.1786,
+      "late_delivery_rate": 0.0454,
+      "cancel_rate": 0.0066,
+      "payment_installment_rate": 0.4952,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 120312.87,
+      "monthly_orders": 800
+    },
+    {
+      "month": "2017-02",
+      "days": 28,
+      "gmv": 8832.2507,
+      "order_count": 63.5714,
+      "customer_count": 62.9286,
+      "seller_count": 49.8214,
+      "avg_order_value": 139.1929,
+      "freight_value": 1392.0571,
+      "avg_review_score": 3.9974,
+      "low_review_rate": 0.1674,
+      "late_delivery_rate": 0.0327,
+      "cancel_rate": 0.0096,
+      "payment_installment_rate": 0.4754,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 247303.02,
+      "monthly_orders": 1780
+    },
+    {
+      "month": "2017-03",
+      "days": 31,
+      "gmv": 12075.6226,
+      "order_count": 86.5161,
+      "customer_count": 85.3871,
+      "seller_count": 65.1613,
+      "avg_order_value": 140.0761,
+      "freight_value": 1861.4287,
+      "avg_review_score": 4.0758,
+      "low_review_rate": 0.1418,
+      "late_delivery_rate": 0.0555,
+      "cancel_rate": 0.0115,
+      "payment_installment_rate": 0.5043,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 374344.3,
+      "monthly_orders": 2682
+    },
+    {
+      "month": "2017-04",
+      "days": 30,
+      "gmv": 11997.5743,
+      "order_count": 80.1333,
+      "customer_count": 79.3333,
+      "seller_count": 63.0,
+      "avg_order_value": 150.2378,
+      "freight_value": 1749.8337,
+      "avg_review_score": 4.0412,
+      "low_review_rate": 0.1545,
+      "late_delivery_rate": 0.0779,
+      "cancel_rate": 0.0078,
+      "payment_installment_rate": 0.5453,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 359927.23,
+      "monthly_orders": 2404
+    },
+    {
+      "month": "2017-05",
+      "days": 31,
+      "gmv": 16324.8755,
+      "order_count": 119.3548,
+      "customer_count": 117.6774,
+      "seller_count": 87.6129,
+      "avg_order_value": 136.735,
+      "freight_value": 2584.51,
+      "avg_review_score": 4.1389,
+      "low_review_rate": 0.1276,
+      "late_delivery_rate": 0.0364,
+      "cancel_rate": 0.0083,
+      "payment_installment_rate": 0.5801,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 506071.14,
+      "monthly_orders": 3700
+    },
+    {
+      "month": "2017-06",
+      "days": 30,
+      "gmv": 14434.62,
+      "order_count": 108.1667,
+      "customer_count": 106.4333,
+      "seller_count": 78.9667,
+      "avg_order_value": 134.6653,
+      "freight_value": 2330.8147,
+      "avg_review_score": 4.1492,
+      "low_review_rate": 0.1263,
+      "late_delivery_rate": 0.0393,
+      "cancel_rate": 0.005,
+      "payment_installment_rate": 0.5743,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 433038.6,
+      "monthly_orders": 3245
+    },
+    {
+      "month": "2017-07",
+      "days": 31,
+      "gmv": 16065.5316,
+      "order_count": 129.871,
+      "customer_count": 127.9677,
+      "seller_count": 90.0645,
+      "avg_order_value": 123.0508,
+      "freight_value": 2804.5206,
+      "avg_review_score": 4.1754,
+      "low_review_rate": 0.1221,
+      "late_delivery_rate": 0.0331,
+      "cancel_rate": 0.007,
+      "payment_installment_rate": 0.5794,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 498031.48,
+      "monthly_orders": 4026
+    },
+    {
+      "month": "2017-08",
+      "days": 31,
+      "gmv": 18515.2155,
+      "order_count": 139.7097,
+      "customer_count": 137.5806,
+      "seller_count": 101.3548,
+      "avg_order_value": 131.838,
+      "freight_value": 3039.7716,
+      "avg_review_score": 4.2343,
+      "low_review_rate": 0.114,
+      "late_delivery_rate": 0.0325,
+      "cancel_rate": 0.0062,
+      "payment_installment_rate": 0.5511,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 573971.68,
+      "monthly_orders": 4331
+    },
+    {
+      "month": "2017-09",
+      "days": 30,
+      "gmv": 20813.3897,
+      "order_count": 142.8333,
+      "customer_count": 141.2333,
+      "seller_count": 101.7,
+      "avg_order_value": 146.8498,
+      "freight_value": 3199.9073,
+      "avg_review_score": 4.1932,
+      "low_review_rate": 0.1226,
+      "late_delivery_rate": 0.0484,
+      "cancel_rate": 0.0048,
+      "payment_installment_rate": 0.5379,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 624401.69,
+      "monthly_orders": 4285
+    },
+    {
+      "month": "2017-10",
+      "days": 31,
+      "gmv": 21426.4332,
+      "order_count": 149.3871,
+      "customer_count": 147.6774,
+      "seller_count": 108.6774,
+      "avg_order_value": 143.7273,
+      "freight_value": 3390.0948,
+      "avg_review_score": 4.1211,
+      "low_review_rate": 0.132,
+      "late_delivery_rate": 0.0516,
+      "cancel_rate": 0.0061,
+      "payment_installment_rate": 0.5346,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 664219.43,
+      "monthly_orders": 4631
+    },
+    {
+      "month": "2017-11",
+      "days": 30,
+      "gmv": 33675.7123,
+      "order_count": 251.4667,
+      "customer_count": 248.8667,
+      "seller_count": 150.9333,
+      "avg_order_value": 138.0552,
+      "freight_value": 5629.08,
+      "avg_review_score": 3.9851,
+      "low_review_rate": 0.1705,
+      "late_delivery_rate": 0.1124,
+      "cancel_rate": 0.0063,
+      "payment_installment_rate": 0.5175,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 1010271.37,
+      "monthly_orders": 7544
+    },
+    {
+      "month": "2017-12",
+      "days": 31,
+      "gmv": 23997.2313,
+      "order_count": 183.0,
+      "customer_count": 181.3548,
+      "seller_count": 119.9355,
+      "avg_order_value": 129.3976,
+      "freight_value": 3859.131,
+      "avg_review_score": 4.0415,
+      "low_review_rate": 0.1578,
+      "late_delivery_rate": 0.0742,
+      "cancel_rate": 0.0024,
+      "payment_installment_rate": 0.5099,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 743914.17,
+      "monthly_orders": 5673
+    },
+    {
+      "month": "2018-01",
+      "days": 31,
+      "gmv": 30646.1406,
+      "order_count": 234.4839,
+      "customer_count": 232.129,
+      "seller_count": 150.7097,
+      "avg_order_value": 130.2813,
+      "freight_value": 5073.2752,
+      "avg_review_score": 4.044,
+      "low_review_rate": 0.1544,
+      "late_delivery_rate": 0.0648,
+      "cancel_rate": 0.005,
+      "payment_installment_rate": 0.4815,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 950030.36,
+      "monthly_orders": 7269
+    },
+    {
+      "month": "2018-02",
+      "days": 28,
+      "gmv": 30149.2396,
+      "order_count": 240.2857,
+      "customer_count": 235.6786,
+      "seller_count": 155.4643,
+      "avg_order_value": 124.9662,
+      "freight_value": 5097.5089,
+      "avg_review_score": 3.8369,
+      "low_review_rate": 0.2057,
+      "late_delivery_rate": 0.1551,
+      "cancel_rate": 0.0108,
+      "payment_installment_rate": 0.4851,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.1786,
+      "monthly_gmv": 844178.71,
+      "monthly_orders": 6728
+    },
+    {
+      "month": "2018-03",
+      "days": 31,
+      "gmv": 31716.5626,
+      "order_count": 232.6129,
+      "customer_count": 230.3871,
+      "seller_count": 155.9677,
+      "avg_order_value": 136.2404,
+      "freight_value": 5545.5929,
+      "avg_review_score": 3.7589,
+      "low_review_rate": 0.2265,
+      "late_delivery_rate": 0.2108,
+      "cancel_rate": 0.0033,
+      "payment_installment_rate": 0.5183,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.3548,
+      "monthly_gmv": 983213.44,
+      "monthly_orders": 7211
+    },
+    {
+      "month": "2018-04",
+      "days": 30,
+      "gmv": 33221.5917,
+      "order_count": 231.3,
+      "customer_count": 230.4,
+      "seller_count": 163.9333,
+      "avg_order_value": 142.8004,
+      "freight_value": 5435.0097,
+      "avg_review_score": 4.1532,
+      "low_review_rate": 0.1313,
+      "late_delivery_rate": 0.0525,
+      "cancel_rate": 0.0022,
+      "payment_installment_rate": 0.4982,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 996647.75,
+      "monthly_orders": 6939
+    },
+    {
+      "month": "2018-05",
+      "days": 31,
+      "gmv": 32145.7316,
+      "order_count": 221.7097,
+      "customer_count": 221.0,
+      "seller_count": 153.5806,
+      "avg_order_value": 147.0682,
+      "freight_value": 4944.0045,
+      "avg_review_score": 4.2051,
+      "low_review_rate": 0.1156,
+      "late_delivery_rate": 0.0722,
+      "cancel_rate": 0.0033,
+      "payment_installment_rate": 0.5129,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 996517.68,
+      "monthly_orders": 6873
+    },
+    {
+      "month": "2018-06",
+      "days": 30,
+      "gmv": 28837.477,
+      "order_count": 205.5667,
+      "customer_count": 205.0,
+      "seller_count": 153.1667,
+      "avg_order_value": 139.9557,
+      "freight_value": 5251.76,
+      "avg_review_score": 4.276,
+      "low_review_rate": 0.1083,
+      "late_delivery_rate": 0.013,
+      "cancel_rate": 0.0029,
+      "payment_installment_rate": 0.5074,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 865124.31,
+      "monthly_orders": 6167
+    },
+    {
+      "month": "2018-07",
+      "days": 31,
+      "gmv": 28887.3297,
+      "order_count": 202.9677,
+      "customer_count": 201.7097,
+      "seller_count": 150.871,
+      "avg_order_value": 143.6703,
+      "freight_value": 5265.1874,
+      "avg_review_score": 4.2549,
+      "low_review_rate": 0.1127,
+      "late_delivery_rate": 0.0431,
+      "cancel_rate": 0.0065,
+      "payment_installment_rate": 0.4899,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 895507.22,
+      "monthly_orders": 6292
+    },
+    {
+      "month": "2018-08",
+      "days": 31,
+      "gmv": 29471.9424,
+      "order_count": 210.0645,
+      "customer_count": 209.6129,
+      "seller_count": 164.3448,
+      "avg_order_value": 126.6464,
+      "freight_value": 5124.9014,
+      "avg_review_score": 4.2415,
+      "low_review_rate": 0.1186,
+      "late_delivery_rate": 0.0867,
+      "cancel_rate": 0.084,
+      "payment_installment_rate": 0.4523,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 854686.33,
+      "monthly_orders": 6512
+    },
+    {
+      "month": "2018-09",
+      "days": 11,
+      "gmv": 145.0,
+      "order_count": 1.4545,
+      "customer_count": 1.4545,
+      "seller_count": 1.0,
+      "avg_order_value": 36.25,
+      "freight_value": 21.46,
+      "avg_review_score": 1.6364,
+      "low_review_rate": 0.8864,
+      "cancel_rate": 0.9773,
+      "payment_installment_rate": 0.0,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.0,
+      "monthly_gmv": 145.0,
+      "monthly_orders": 16
+    },
+    {
+      "month": "2018-10",
+      "days": 4,
+      "order_count": 1.0,
+      "customer_count": 1.0,
+      "avg_review_score": 2.25,
+      "low_review_rate": 0.75,
+      "cancel_rate": 1.0,
+      "payment_installment_rate": 0.0,
+      "marketing_seller_share": 0.0,
+      "alert_count": 0.75
+    }
+  ],
+  "full_range_summary": {
+    "total_gmv": 13591643.7,
+    "total_orders": 99441,
+    "avg_daily_gmv": 21437.92,
+    "avg_review_score": 4.01,
+    "cancel_rate": 0.1073,
+    "gmv_trend": "up"
+  },
+  "top_alerts": [
+    {
+      "date": "2018-10-17",
+      "rule": "gmv_drop",
+      "metric": "gmv",
+      "current": "5573.5129",
+      "baseline": "31046.4329",
+      "description": "GMV 7-day avg (5573.51) dropped below threshold (26389.47) vs previous 14-day avg (31046.43)"
+    },
+    {
+      "date": "2018-10-17",
+      "rule": "seller_risk",
+      "metric": "seller_count",
+      "current": "45.5714",
+      "baseline": "179.2857",
+      "description": "Seller count 7-day avg (46) dropped 30% below prev 14-day avg (179)"
+    },
+    {
+      "date": "2018-10-17",
+      "rule": "order_drop",
+      "metric": "order_count",
+      "current": "1.0",
+      "baseline": "15.4286",
+      "description": "Order count 7-day avg (1) dropped 20% below prev 14-day avg (15)"
+    },
+    {
+      "date": "2018-03-02",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.3206",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.3206) exceeds 25% with 266 orders"
+    },
+    {
+      "date": "2018-03-03",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.3122",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.3122) exceeds 25% with 214 orders"
+    },
+    {
+      "date": "2018-03-07",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.311",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.3110) exceeds 25% with 259 orders"
+    },
+    {
+      "date": "2018-02-26",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.3103",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.3103) exceeds 25% with 299 orders"
+    },
+    {
+      "date": "2018-03-06",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.306",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.3060) exceeds 25% with 271 orders"
+    },
+    {
+      "date": "2018-03-12",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.3026",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.3026) exceeds 25% with 232 orders"
+    },
+    {
+      "date": "2018-03-05",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2857",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2857) exceeds 25% with 264 orders"
+    },
+    {
+      "date": "2018-03-04",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2851",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2851) exceeds 25% with 236 orders"
+    },
+    {
+      "date": "2018-03-01",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2836",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2836) exceeds 25% with 277 orders"
+    },
+    {
+      "date": "2018-02-24",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2713",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2713) exceeds 25% with 191 orders"
+    },
+    {
+      "date": "2018-03-10",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2703",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2703) exceeds 25% with 193 orders"
+    },
+    {
+      "date": "2018-03-11",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2698",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2698) exceeds 25% with 218 orders"
+    },
+    {
+      "date": "2018-02-28",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.264",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2640) exceeds 25% with 313 orders"
+    },
+    {
+      "date": "2018-02-27",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2628",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2628) exceeds 25% with 298 orders"
+    },
+    {
+      "date": "2018-02-25",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2554",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2554) exceeds 25% with 237 orders"
+    },
+    {
+      "date": "2018-03-08",
+      "rule": "late_delivery_spike",
+      "metric": "late_delivery_rate",
+      "current": "0.2511",
+      "baseline": "0.25",
+      "description": "Late delivery rate (0.2511) exceeds 25% with 234 orders"
+    }
+  ],
+  "alert_statistics": {
+    "total_alerts": 19,
+    "by_type": {
+      "gmv_drop": 1,
+      "seller_risk": 1,
+      "order_drop": 1,
+      "late_delivery_spike": 16
+    },
+    "by_severity": {
+      "high": 19
+    }
+  },
+  "allowed_actions": {
+    "actions": {
+      "create_feishu_report": {
+        "description": "创建飞书日报/异常报告",
+        "risk_level": "low",
+        "requires_approval": false,
+        "allowed_by": [
+          "business_ops",
+          "seller_ops",
+          "category_ops",
+          "logistics_ops",
+          "marketing_ops"
+        ]
+      },
+      "notify_owner": {
+        "description": "通知负责人处理异常",
+        "risk_level": "low",
+        "requires_approval": false,
+        "allowed_by": [
+          "business_ops",
+          "seller_ops",
+          "category_ops",
+          "logistics_ops",
+          "marketing_ops"
+        ]
+      },
+      "create_followup_task": {
+        "description": "创建跟进任务",
+        "risk_level": "medium",
+        "requires_approval": true,
+        "allowed_by": [
+          "business_ops",
+          "seller_ops"
+        ]
+      },
+      "recommend_business_strategy": {
+        "description": "推荐业务策略",
+        "risk_level": "medium",
+        "requires_approval": true,
+        "allowed_by": [
+          "business_ops",
+          "category_ops",
+          "marketing_ops"
+        ]
+      },
+      "modify_business_policy": {
+        "description": "修改业务策略或规则",
+        "risk_level": "high",
+        "requires_approval": true,
+        "allowed_by": [
+          "business_ops"
+        ]
+      }
+    }
+  },
+  "owner_mapping": {
+    "owners": [
+      {
+        "owner_role": "business_ops",
+        "business_domain": "总体经营指标",
+        "metric_scope": [
+          "gmv",
+          "order_count",
+          "avg_order_value"
+        ],
+        "dimension_scope": "overall",
+        "feishu_user_type": "manager_group",
+        "priority_rule": "high severity -> immediate notification"
+      },
+      {
+        "owner_role": "seller_ops",
+        "business_domain": "卖家治理",
+        "metric_scope": [
+          "late_delivery_rate",
+          "avg_review_score",
+          "cancel_rate"
+        ],
+        "dimension_scope": "seller",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "high severity -> task created within 1h"
+      },
+      {
+        "owner_role": "category_ops",
+        "business_domain": "品类运营",
+        "metric_scope": [
+          "gmv",
+          "avg_review_score"
+        ],
+        "dimension_scope": "category",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "medium severity -> daily digest"
+      },
+      {
+        "owner_role": "logistics_ops",
+        "business_domain": "履约物流",
+        "metric_scope": [
+          "late_delivery_rate",
+          "freight_value"
+        ],
+        "dimension_scope": "region",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "high severity -> immediate notification"
+      },
+      {
+        "owner_role": "marketing_ops",
+        "business_domain": "营销渠道",
+        "metric_scope": [
+          "marketing_seller_share"
+        ],
+        "dimension_scope": "origin",
+        "feishu_user_type": "ops_group",
+        "priority_rule": "medium severity -> weekly review"
+      }
+    ]
+  }
+}

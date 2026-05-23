@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """db_export_feishu.py - Export database tables to Feishu-sync-ready CSV files.
 Enhanced for v0.3: includes dimensional columns."""
-import os, sys, csv, sqlite3, argparse
+import os, sys, csv, sqlite3, argparse, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
 
@@ -93,6 +93,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--db')
+    parser.add_argument('--json', action='store_true', help='Output JSON summary to stdout')
     args = parser.parse_args()
     if not args.all:
         parser.print_help()
@@ -101,11 +102,17 @@ def main():
     conn = get_db(args.db if args.db else DB_PATH)
     try:
         total = 0
+        table_results = []
         for name, spec in EXPORT_SPECS.items():
-            total += export(conn, spec)
+            rows = export(conn, spec)
+            table_results.append({"table": name, "rows": rows, "file": spec["output"]})
+            total += rows
         print(f"[db_export_feishu] Done. {total} rows")
+        if args.json:
+            print(json.dumps({"status": "success", "total_rows": total, "tables": table_results}))
     finally:
         conn.close()
+
 
 
 if __name__ == '__main__':

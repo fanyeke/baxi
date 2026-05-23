@@ -1,5 +1,6 @@
 import argparse
 import csv
+import json
 import os
 import sys
 from datetime import datetime, timezone
@@ -27,6 +28,7 @@ def main():
         help="Path to feishu_table_ids.yml",
     )
     parser.add_argument("--since", default=None, help="Only pull records updated since YYYY-MM-DD")
+    parser.add_argument("--json", action="store_true", help="Output JSON summary to stdout")
     args = parser.parse_args()
     ensure_dirs_exist()
 
@@ -48,6 +50,7 @@ def main():
     )
 
     all_local_records = []
+    table_pull_counts = {}
 
     for table_name in PULL_TABLES:
         table_info = table_config.get("tables", {}).get(table_name, {})
@@ -55,10 +58,12 @@ def main():
 
         if not table_id:
             print(f"WARNING: No table_id configured for {table_name}, skipping")
+            table_pull_counts[table_name] = 0
             continue
 
         if dry_run:
             print(f"dry-run: Would pull records from table {table_name} ({table_id})")
+            table_pull_counts[table_name] = 0
             continue
 
         filter_config = None
@@ -76,10 +81,13 @@ def main():
 
         records, _ = client.list_records(table_id, page_size=500, filter_config=filter_config)
         print(f"Pulled {len(records)} records from {table_name}")
+        table_pull_counts[table_name] = len(records)
 
         for rec in records:
             fields = rec.get("fields", {})
-            fields["_record_id"] = rec.get("record_id", "")
+            fields["_record_id"] = (
+                fields.get("task_id") or fields.get("review_id") or rec.get("record_id", "")
+            )
             fields["_table"] = table_name
             fields["_pulled_at"] = datetime.now(timezone.utc).isoformat()
             all_local_records.append(fields)
@@ -89,6 +97,7 @@ def main():
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "data", "ops", "action_task_status_snapshot.csv",
         )
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w", newline="", encoding="utf-8") as f:
             all_keys = set()
             for rec in all_local_records:
@@ -99,6 +108,13 @@ def main():
             writer.writerows(all_local_records)
 
         print(f"Wrote {len(all_local_records)} records to {output_path}")
+
+    if args.json:
+        total_pulled = sum(table_pull_counts.values())
+        print(json.dumps({
+            "status": "success", "total_pulled": total_pulled,
+            "tables": table_pull_counts, "written": len(all_local_records),
+        }))
 
 
 if __name__ == "__main__":

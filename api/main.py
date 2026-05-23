@@ -18,6 +18,9 @@ from services.db_service import get_db
 
 _request_id_ctx: ContextVar[str] = ContextVar("request_id", default="")
 
+logger = logging.getLogger("api")
+_migration_status = {"status": "ok", "failed": []}
+
 
 def _apply_migration(db_path: str) -> None:
     """Apply schema migrations if required columns are missing."""
@@ -42,6 +45,22 @@ def _apply_migration(db_path: str) -> None:
                            ["target_object_type", "target_object_id"])
         _migrate_if_needed(conn, migration_dir, "007_review_retro_status_feedback.sql",
                            "review_retro", ["status", "feedback"])
+
+        # ── Critical table check ─────────────────────────────────
+        critical_tables = ["dwd_order_level", "alert_events"]
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        )
+        existing_tables = {r[0] for r in cur.fetchall()}
+        missing = [t for t in critical_tables if t not in existing_tables]
+        if missing:
+            _migration_status["status"] = "failed"
+            _migration_status["failed"].extend([
+                {"table": t, "migration": "startup_check", "error": "critical table missing"}
+                for t in missing
+            ])
+            logger.critical("Critical tables missing: %s", ", ".join(missing))
+            raise SystemExit(f"Critical database tables missing: {', '.join(missing)}")
     finally:
         conn.close()
 
@@ -67,8 +86,14 @@ def _migrate_if_needed(conn, migration_dir, filename, table, columns):
             continue
         try:
             conn.execute(stmt_clean)
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as e:
+            logger.warning("Migration failed for %s (%s): %s", table, filename, e)
+            _migration_status["failed"].append({
+                "table": table,
+                "migration": filename,
+                "error": str(e),
+            })
+            _migration_status["status"] = "degraded"
 
     conn.commit()
 

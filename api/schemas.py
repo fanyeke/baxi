@@ -30,6 +30,7 @@ class StatusResponse(BaseModel):
     database: dict
     last_pipeline_run: Optional[dict] = None
     version: str
+    migration_status: dict = {}
 
 
 class AlertItem(BaseModel):

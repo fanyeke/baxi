@@ -1,28 +1,24 @@
 [
   {
-    "recommendation_id": "a77a68ad3954",
-    "event_id": null,
-    "title": "关注卖家服务质量 - 评价均分偏低",
-    "detail": "当前平均评价分数为 2.5（满分 5 分），该数值偏低的 主要原因可能是：平台刚启动、样本量小（仅 24 单）。建议重点跟踪早期卖家的履约表现和客户反馈。",
-    "expected_impact": "早期建立服务质量标杆有助于后续卖家治理，避免低质量卖家影响平台口碑。",
-    "risk_level": "medium",
-    "requires_approval": true,
-    "owner_role": "seller_ops",
-    "status": "draft"
-  },
-  {
-    "recommendation_id": "f2c647a541bf",
+    "recommendation_id": "7e2e13a2cee1",
     "event_id": null,
     "title": "监控订单取消率",
-    "detail": "当前订单取消率为 40.2%。虽然样本量较小，但取消订单直接影响客户体验，建议持续跟踪。",
+    "detail": "当前订单取消率为 7.0%。虽然样本量较小，但取消订单直接影响客户体验，建议持续跟踪。",
     "expected_impact": "早期识别取消模式可降低后续运营阶段的取消率到 1% 以下。",
     "risk_level": "low",
     "requires_approval": false,
     "owner_role": "seller_ops",
-    "status": "draft"
+    "decision_type": "monitor_only",
+    "confidence": "medium",
+    "success_metric": "订单取消率降至1%以下",
+    "impact_score": 0,
+    "status": "draft",
+    "decision_source": "heuristic",
+    "model_name": null,
+    "is_simulated": true
   },
   {
-    "recommendation_id": "3399df225206",
+    "recommendation_id": "4a56c9de6cd6",
     "event_id": null,
     "title": "评估营销获客渠道效果",
     "detail": "当前通过营销渠道入驻的卖家占比为 0%。平台启动初期尚未看到营销漏斗转化效果，建议跟踪 marketing qualified leads 到 closed deals 的转化效率，评估获客渠道 ROI。",
@@ -30,6 +26,13 @@
     "risk_level": "medium",
     "requires_approval": true,
     "owner_role": "marketing_ops",
-    "status": "draft"
+    "decision_type": "experiment",
+    "confidence": "medium",
+    "success_metric": "营销渠道卖家入驻比例提升",
+    "impact_score": 0,
+    "status": "draft",
+    "decision_source": "heuristic",
+    "model_name": null,
+    "is_simulated": true
   }
 ]

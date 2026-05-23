@@ -18,8 +18,6 @@ import config
 from adapters.base import load_adapter_registry
 from services.dispatch_service import (
     fetch_pending,
-    claim_event,
-    write_result,
     write_audit_log,
     dispatch_one,
     DISPATCH_ARCHIVE,
@@ -68,32 +66,18 @@ def main():
             outbox_id = event["outbox_id"]
             target = event["target_channel"]
 
-            if not is_dry_run and not claim_event(conn, outbox_id):
-                print(f"  [{target}] {outbox_id}: SKIPPED (already claimed)")
-                skipped += 1
-                continue
-
             dispatch_result = dispatch_one(conn, event, registry, is_dry_run)
             status = dispatch_result["status"]
             adapter_name = dispatch_result["adapter_name"]
-            result = dispatch_result["result"]
             error = dispatch_result.get("error")
-            external_ref = result.get("external_ref")
+            external_ref = dispatch_result.get("external_ref")
 
             print(f"  [{target}] {outbox_id}: {status}" +
                   (f" ({external_ref[:40]})" if external_ref else "") +
                   (f" ERROR: {error[:60]}" if error else ""))
 
             if not is_dry_run:
-                # For adapter resolution failures, write error directly
-                if adapter_name is None:
-                    conn.execute(
-                        "UPDATE event_outbox SET status = 'failed', error_message = ? WHERE outbox_id = ?",
-                        (error, outbox_id))
-                    conn.commit()
-                else:
-                    write_result(conn, outbox_id, result, adapter_name, is_dry_run)
-                    conn.commit()
+                conn.commit()
 
             audit_entries.append({
                 "timestamp": datetime.datetime.now().isoformat(),

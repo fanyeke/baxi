@@ -25,4 +25,18 @@ def list_tasks(
         limit=limit,
     )
     items = [TaskItem(**dict(r)) for r in rows]
-    return TaskListResponse(items=items, total=len(items))
+    count_conditions = []
+    count_params = []
+    if status is not None:
+        count_conditions.append("status = ?")
+        count_params.append(status)
+    if priority is not None:
+        count_conditions.append("priority = ?")
+        count_params.append(priority)
+    if owner_role is not None:
+        count_conditions.append("owner_role = ?")
+        count_params.append(owner_role)
+    count_where = "WHERE " + " AND ".join(count_conditions) if count_conditions else ""
+    total = conn.execute(f"SELECT COUNT(*) FROM action_tasks {count_where}", count_params).fetchone()[0]
+
+    return TaskListResponse(items=items, total=total)

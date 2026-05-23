@@ -7,11 +7,19 @@ from fastapi import Header, HTTPException
 
 from api.auth import verify_token
 from api.errors import APIError, AUTH_REQUIRED, INVALID_TOKEN
-from services.db_service import get_db as _svc_get_db
+from services.db_service import get_db as _svc_get_db, db_exists
 
 
 def get_db() -> Generator[sqlite3.Connection, None, None]:
     """Yield a SQLite connection, closing it on teardown."""
+    if not db_exists():
+        raise APIError(
+            error_code="DB_MISSING",
+            message="Database file not found",
+            diagnosis="The configured DB_PATH does not exist. Run pipeline first.",
+            suggested_action="Run scripts/run_db_pipeline.py --mode full to initialize.",
+            http_status=503,
+        )
     conn = _svc_get_db()
     try:
         yield conn
