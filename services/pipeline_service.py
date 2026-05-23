@@ -5,9 +5,7 @@ for each pipeline type — without executing anything.
 """
 
 import os
-import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from scripts import config
 
 # Pipeline definitions: type -> (script_name, args, estimate)

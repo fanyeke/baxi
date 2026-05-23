@@ -15,7 +15,6 @@ from typing import Optional
 
 import yaml
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from scripts import config
 
 logger = logging.getLogger(__name__)

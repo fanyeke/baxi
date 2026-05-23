@@ -42,12 +42,12 @@ def get_alerts(conn=None, status=None, severity=None, object_type=None, object_i
 
 
 def get_alerts_with_count(conn=None, status=None, severity=None, object_type=None, object_id=None, limit=100):
-    where, count_params = _build_alert_conditions(status, severity, object_type, object_id)
-    items = get_alerts(conn, status, severity, object_type, object_id, limit)
     should_close = conn is None
     if conn is None:
         conn = get_db()
     try:
+        items = get_alerts(conn, status, severity, object_type, object_id, limit)
+        where, count_params = _build_alert_conditions(status, severity, object_type, object_id)
         total = conn.execute(
             f"SELECT COUNT(*) FROM alert_events {where}", count_params
         ).fetchone()[0]

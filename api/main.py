@@ -9,6 +9,7 @@ from collections import defaultdict
 from contextvars import ContextVar
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -277,10 +278,7 @@ def create_app() -> FastAPI:
 
     # ── Exception handlers ───────────────────────────────────────────────
     app.add_exception_handler(APIError, api_error_handler)
-    app.add_exception_handler(
-        __import__("fastapi.exceptions", fromlist=["RequestValidationError"]).RequestValidationError,
-        validation_exception_handler,
-    )
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
@@ -318,7 +316,7 @@ def create_app() -> FastAPI:
     app.include_router(pipeline.router, prefix="/api/v1", tags=["Pipeline"])
     app.include_router(diagnosis.router, prefix="/api/v1", tags=["Logs"])
     from api.routers.governance import router as governance_router
-    app.include_router(governance_router, prefix="/api/v1")
+    app.include_router(governance_router, prefix="/api/v1", tags=["Governance"])
 
     # ── CORS ─────────────────────────────────────────────────────────────
     _cors_origins = os.environ.get(

@@ -39,3 +39,23 @@ ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["api", "services", "adapters", "scripts"]
+
+[tool.coverage.run]
+source = ["api", "services", "adapters"]
+omit = [
+    "tests/*",
+    "scripts/*",
+    "frontend/*",
+    "*/migrations/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 0
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

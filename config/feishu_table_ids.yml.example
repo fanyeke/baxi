@@ -1,0 +1,79 @@
+base:
+  app_token: YOUR_APP_TOKEN
+  name: "Olist 经营仪表盘"
+  url: "https://YOUR_TENANT.feishu.cn/base/YOUR_APP_TOKEN"
+  time_zone: Asia/Shanghai
+
+tables:
+  daily_metrics:
+    table_id: YOUR_DAILY_METRICS_TABLE_ID
+    name: "每日经营指标"
+  alert_events:
+    table_id: YOUR_ALERT_EVENTS_TABLE_ID
+    name: "异常事件表"
+  strategy_recommendations:
+    table_id: YOUR_STRATEGY_RECOMMENDATIONS_TABLE_ID
+    name: "策略建议表"
+  action_tasks:
+    table_id: YOUR_ACTION_TASKS_TABLE_ID
+    name: "负责人任务表"
+  review_retro:
+    table_id: YOUR_REVIEW_RETRO_TABLE_ID
+    name: "执行复盘表"
+
+dashboards:
+  business_overview:
+    dashboard_id: YOUR_BUSINESS_OVERVIEW_DASHBOARD_ID
+    name: "经营概览"
+    blocks: 8
+  ops_workbench:
+    dashboard_id: YOUR_OPS_WORKBENCH_DASHBOARD_ID
+    name: "运营工作台看板"
+    blocks: 7
+  closed_loop:
+    dashboard_id: YOUR_CLOSED_LOOP_DASHBOARD_ID
+    name: "闭环验证看板"
+    blocks: 6
+
+views:
+  daily_metrics:
+    - name: latest_30d
+      view_id: YOUR_LATEST_30D_VIEW_ID
+      type: grid
+  alert_events:
+    - name: open_by_severity
+      view_id: YOUR_OPEN_BY_SEVERITY_VIEW_ID
+      type: grid
+    - name: resolved_timeline
+      view_id: YOUR_RESOLVED_TIMELINE_VIEW_ID
+      type: gantt
+  action_tasks:
+    - name: by_owner_status
+      view_id: (default kanban)
+      type: kanban
+    - name: my_tasks
+      view_id: YOUR_MY_TASKS_VIEW_ID
+      type: grid
+    - name: overdue
+      view_id: YOUR_OVERDUE_VIEW_ID
+      type: grid
+  strategy_recommendations:
+    - name: by_risk_status
+      view_id: (default grid)
+      type: grid
+    - name: pending_approval
+      view_id: YOUR_PENDING_APPROVAL_VIEW_ID
+      type: grid
+    - name: completed
+      view_id: YOUR_COMPLETED_VIEW_ID
+      type: grid
+  review_retro:
+    - name: all_reviews
+      view_id: (default grid)
+      type: grid
+    - name: effective_only
+      view_id: YOUR_EFFECTIVE_ONLY_VIEW_ID
+      type: grid
+    - name: to_promote
+      view_id: YOUR_TO_PROMOTE_VIEW_ID
+      type: grid

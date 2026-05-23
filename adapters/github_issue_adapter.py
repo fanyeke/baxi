@@ -1,11 +1,16 @@
-import os, sys, json
+import json
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import config
 from adapters.base import ChannelAdapter
 
 
 class GitHubIssueAdapter(ChannelAdapter):
+    """GitHub Issue adapter — formats alert events as GitHub Issues.
+
+    Status: PREVIEW ONLY. Real dispatch is not implemented.
+    To enable, set GITHUB_TOKEN env var and implement the GitHub REST API call.
+    """
+
     def __init__(self, dry_run=True):
         self._dry_run = dry_run
 

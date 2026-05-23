@@ -3,12 +3,13 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from api.dependencies import get_current_user
+from api.schemas import DiagnosisResponse
 from services.diagnosis_service import diagnose_by_request_id
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-@router.get("/logs/diagnosis")
+@router.get("/logs/diagnosis", response_model=DiagnosisResponse)
 def get_diagnosis(request_id: str = Query(..., min_length=1)):
     result = diagnose_by_request_id(request_id)
     if result is None:
@@ -22,4 +23,4 @@ def get_diagnosis(request_id: str = Query(..., min_length=1)):
                 "suggested_action": "Verify the request_id is correct. Logs may have been rotated or the request may not have generated an error.",
             },
         )
-    return result
+    return DiagnosisResponse(**result)

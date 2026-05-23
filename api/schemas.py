@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 # ── Request models ───────────────────────────────────────────────────────
@@ -15,6 +15,13 @@ class DispatchRequest(BaseModel):
     channel: Optional[str] = None
     limit: int = 100
     apply: bool = False
+
+    @field_validator("limit")
+    @classmethod
+    def validate_limit(cls, v: int) -> int:
+        if v < 1 or v > 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        return v
 
 
 # ── Response models ──────────────────────────────────────────────────────
@@ -189,6 +196,17 @@ class FeishuExportRequest(BaseModel):
     tables: Optional[list[str]] = None
     apply: bool = False
 
+    @field_validator("tables")
+    @classmethod
+    def validate_tables(cls, v):
+        if v is not None:
+            if len(v) > 20:
+                raise ValueError("tables list cannot exceed 20 items")
+            for t in v:
+                if not t.replace("_", "").isalnum():
+                    raise ValueError(f"Invalid table name: {t}")
+        return v
+
 
 class FeishuTableResult(BaseModel):
     name: str
@@ -212,6 +230,17 @@ class FeishuSyncRequest(BaseModel):
     tables: Optional[list[str]] = None
     apply: bool = False
 
+    @field_validator("tables")
+    @classmethod
+    def validate_tables(cls, v):
+        if v is not None:
+            if len(v) > 20:
+                raise ValueError("tables list cannot exceed 20 items")
+            for t in v:
+                if not t.replace("_", "").isalnum():
+                    raise ValueError(f"Invalid table name: {t}")
+        return v
+
 
 class FeishuSyncResponse(BaseModel):
     status: str
@@ -222,6 +251,17 @@ class FeishuSyncResponse(BaseModel):
 class FeishuStatusImportRequest(BaseModel):
     tables: Optional[list[str]] = None
     apply: bool = False
+
+    @field_validator("tables")
+    @classmethod
+    def validate_tables(cls, v):
+        if v is not None:
+            if len(v) > 20:
+                raise ValueError("tables list cannot exceed 20 items")
+            for t in v:
+                if not t.replace("_", "").isalnum():
+                    raise ValueError(f"Invalid table name: {t}")
+        return v
 
 
 class FeishuStatusImportResponse(BaseModel):
@@ -244,3 +284,46 @@ class PipelineRunResponse(BaseModel):
     required_env_vars: list[str] = []
     warnings: list[str] = []
     description: str = ""
+
+
+# ── Governance response models ────────────────────────────────────────
+
+
+class GovernanceConfigResponse(BaseModel):
+    """Generic governance YAML config response — wraps arbitrary YAML content."""
+    model_config = ConfigDict(extra="allow")
+
+
+class GovernanceStatusResponse(BaseModel):
+    """Aggregated governance status across all config files."""
+    governance_layer: str
+    configs: dict
+
+
+# ── Diagnosis response models ─────────────────────────────────────────
+
+
+class DiagnosisLogEntry(BaseModel):
+    """Single log entry from a related diagnosis source."""
+    model_config = ConfigDict(extra="allow")
+
+    source: str
+    ts: Optional[str] = ""
+    timestamp: Optional[str] = ""
+    error_code: Optional[str] = ""
+    message: Optional[str] = ""
+    diagnosis: Optional[str] = ""
+    outbox_id: Optional[str] = ""
+    status: Optional[str] = ""
+    error: Optional[str] = ""
+    action: Optional[str] = ""
+
+
+class DiagnosisResponse(BaseModel):
+    """Structured diagnosis result for a request_id lookup."""
+    request_id: str
+    summary: str = ""
+    error_code: str = ""
+    diagnosis: str = ""
+    suggested_action: str = ""
+    related_logs: list[DiagnosisLogEntry] = []

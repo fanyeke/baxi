@@ -1,6 +1,5 @@
-import os, sys, json
+import json
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'scripts'))
 from scripts import config
 from adapters.base import ChannelAdapter
 from scripts.feishu_client import FeishuClient
