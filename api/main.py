@@ -59,8 +59,10 @@ def _apply_migration(db_path: str) -> None:
                 {"table": t, "migration": "startup_check", "error": "critical table missing"}
                 for t in missing
             ])
-            logger.critical("Critical tables missing: %s", ", ".join(missing))
-            raise SystemExit(f"Critical database tables missing: {', '.join(missing)}")
+            logger.critical(
+                "Critical tables missing: %s. API will serve but data may be incomplete.",
+                ", ".join(missing),
+            )
     finally:
         conn.close()
 
