@@ -5,6 +5,22 @@ import sqlite3
 
 from scripts.config import DB_PATH
 
+ALLOWED_PUBLIC_TABLES = {
+    "pipeline_runs", "ingestion_batches", "dwd_order_level", "dwd_item_level",
+    "metric_daily", "metric_dimension_daily", "alert_events",
+    "strategy_recommendations", "action_tasks", "review_retro",
+    "event_outbox", "qoder_jobs",
+}
+
+
+def validate_table_name(table_name):
+    if table_name not in ALLOWED_PUBLIC_TABLES:
+        raise ValueError(
+            f"Unknown table: {table_name}. "
+            f"Allowed: {', '.join(sorted(ALLOWED_PUBLIC_TABLES))}"
+        )
+    return table_name
+
 
 def get_db(db_path=None):
     """Get a SQLite database connection with WAL mode and Row factory.
@@ -41,6 +57,7 @@ def get_table_counts(conn):
     counts = {}
     for row in tables:
         table_name = row["name"]
+        validate_table_name(table_name)
         count_row = conn.execute(f"SELECT COUNT(*) as cnt FROM {table_name}").fetchone()
         counts[table_name] = count_row["cnt"]
 
@@ -57,6 +74,7 @@ def get_table_info(conn, table_name):
     Returns:
         List of column info dicts from PRAGMA table_info.
     """
+    validate_table_name(table_name)
     rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
     return [dict(row) for row in rows]
 

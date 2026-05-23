@@ -1,7 +1,7 @@
 from services.db_service import get_db
 
 
-def get_alerts(conn=None, status=None, severity=None, object_type=None, object_id=None, limit=100):
+def _build_alert_conditions(status, severity, object_type, object_id):
     conditions = []
     params = []
     if status is not None:
@@ -16,11 +16,12 @@ def get_alerts(conn=None, status=None, severity=None, object_type=None, object_i
     if object_id is not None:
         conditions.append("object_id = ?")
         params.append(object_id)
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+    return where, params
 
-    where = ""
-    if conditions:
-        where = "WHERE " + " AND ".join(conditions)
 
+def get_alerts(conn=None, status=None, severity=None, object_type=None, object_id=None, limit=100):
+    where, params = _build_alert_conditions(status, severity, object_type, object_id)
     params.append(limit)
 
     should_close = conn is None
@@ -35,6 +36,22 @@ def get_alerts(conn=None, status=None, severity=None, object_type=None, object_i
             FROM alert_events {where} ORDER BY event_date DESC LIMIT ?
         """, params)
         return [dict(r) for r in cur.fetchall()]
+    finally:
+        if should_close:
+            conn.close()
+
+
+def get_alerts_with_count(conn=None, status=None, severity=None, object_type=None, object_id=None, limit=100):
+    where, count_params = _build_alert_conditions(status, severity, object_type, object_id)
+    items = get_alerts(conn, status, severity, object_type, object_id, limit)
+    should_close = conn is None
+    if conn is None:
+        conn = get_db()
+    try:
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM alert_events {where}", count_params
+        ).fetchone()[0]
+        return items, total
     finally:
         if should_close:
             conn.close()

@@ -160,7 +160,7 @@ def create_app() -> FastAPI:
     _apply_migration(DB_PATH)
 
     # ── Router mounting ──────────────────────────────────────────────────
-    from api.routers import health, status, alerts, tasks, outbox, logs, feishu, pipeline
+    from api.routers import health, status, alerts, tasks, outbox, logs, feishu, pipeline, diagnosis
 
     app.include_router(health.router, prefix="/api/v1", tags=["Health"])
     app.include_router(status.router, prefix="/api/v1", tags=["Status"])
@@ -170,6 +170,7 @@ def create_app() -> FastAPI:
     app.include_router(logs.router, prefix="/api/v1", tags=["Logs"])
     app.include_router(feishu.router, prefix="/api/v1", tags=["Feishu"])
     app.include_router(pipeline.router, prefix="/api/v1", tags=["Pipeline"])
+    app.include_router(diagnosis.router, prefix="/api/v1", tags=["Logs"])
 
     # ── CORS ─────────────────────────────────────────────────────────────
     _cors_origins = os.environ.get(

@@ -18,6 +18,7 @@ from adapters.base import load_adapter_registry
 from services.dispatch_service import (
     dispatch_one,
     fetch_pending,
+    get_outbox_with_count,
 )
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -51,32 +52,12 @@ def list_outbox(
     limit: int = Query(100, ge=1, le=1000),
     conn=Depends(get_db),
 ):
-    query = (
-        "SELECT outbox_id, event_type, source_type, source_id, "
-        "target_channel, status, dispatch_attempts, last_dispatch_at, created_at "
-        "FROM event_outbox"
+    items, total = get_outbox_with_count(
+        conn, status=status, channel=channel, limit=limit,
     )
-    params = []
-    conditions = []
-    if status:
-        conditions.append("status = ?")
-        params.append(status)
-    if channel:
-        conditions.append("target_channel = ?")
-        params.append(channel)
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    query += " ORDER BY created_at DESC LIMIT ?"
-    params.append(limit)
-
-    rows = conn.execute(query, params).fetchall()
-    items = [OutboxItem(**dict(r)) for r in rows]
-    count_query = "SELECT COUNT(*) FROM event_outbox"
-    if conditions:
-        count_query += " WHERE " + " AND ".join(conditions)
-    total = conn.execute(count_query, params[:-1]).fetchone()[0]
-
-    return OutboxListResponse(items=items, total=total)
+    return OutboxListResponse(
+        items=[OutboxItem(**r) for r in items], total=total,
+    )
 
 
 @router.post("/outbox/dispatch", response_model=DispatchResponse)

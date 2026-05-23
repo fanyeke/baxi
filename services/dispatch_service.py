@@ -42,6 +42,41 @@ def fetch_pending(conn, channel=None, limit=None):
     return conn.execute(query, params).fetchall()
 
 
+def get_outbox_with_count(conn, status=None, channel=None, limit=100):
+    """Fetch outbox items with total count for a given filter.
+
+    Returns:
+        (items: list[dict], total: int) tuple.
+    """
+    query = (
+        "SELECT outbox_id, event_type, source_type, source_id, "
+        "target_channel, status, dispatch_attempts, last_dispatch_at, created_at "
+        "FROM event_outbox"
+    )
+    params = []
+    conditions = []
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    if channel:
+        conditions.append("target_channel = ?")
+        params.append(channel)
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY created_at DESC LIMIT ?"
+    params.append(limit)
+
+    rows = conn.execute(query, params).fetchall()
+    items = [dict(r) for r in rows]
+
+    count_query = "SELECT COUNT(*) FROM event_outbox"
+    if conditions:
+        count_query += " WHERE " + " AND ".join(conditions)
+    total = conn.execute(count_query, params[:-1]).fetchone()[0]
+
+    return items, total
+
+
 def claim_event(conn, outbox_id):
     """Atomically claim a pending event for dispatch.
 
@@ -55,9 +90,7 @@ def claim_event(conn, outbox_id):
     cur = conn.execute(
         "UPDATE event_outbox SET status = 'dispatching' WHERE outbox_id = ? AND status = 'pending'",
         (outbox_id,))
-    claimed = cur.rowcount > 0
-    conn.commit()
-    return claimed
+    return cur.rowcount > 0
 
 
 def write_result(conn, outbox_id, result, adapter_name, is_dry_run):

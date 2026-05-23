@@ -1,7 +1,7 @@
 from services.db_service import get_db
 
 
-def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100):
+def _build_task_conditions(status, priority, owner_role):
     conditions = []
     params = []
     if status is not None:
@@ -13,11 +13,12 @@ def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100)
     if owner_role is not None:
         conditions.append("owner_role = ?")
         params.append(owner_role)
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+    return where, params
 
-    where = ""
-    if conditions:
-        where = "WHERE " + " AND ".join(conditions)
 
+def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100):
+    where, params = _build_task_conditions(status, priority, owner_role)
     params.append(limit)
 
     should_close = conn is None
@@ -30,6 +31,22 @@ def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100)
             FROM action_tasks {where} ORDER BY created_at DESC LIMIT ?
         """, params)
         return [dict(r) for r in cur.fetchall()]
+    finally:
+        if should_close:
+            conn.close()
+
+
+def get_tasks_with_count(conn=None, status=None, priority=None, owner_role=None, limit=100):
+    where, count_params = _build_task_conditions(status, priority, owner_role)
+    items = get_tasks(conn, status, priority, owner_role, limit)
+    should_close = conn is None
+    if conn is None:
+        conn = get_db()
+    try:
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM action_tasks {where}", count_params
+        ).fetchone()[0]
+        return items, total
     finally:
         if should_close:
             conn.close()
