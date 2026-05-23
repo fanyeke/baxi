@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { TaskListResponse } from "../api/types"
+import { EmptyState } from "../components/EmptyState"
+import { LoadingSkeleton } from "../components/LoadingSkeleton"
 
 export default function Tasks() {
   const [status, setStatus] = useState("")
@@ -33,8 +35,8 @@ export default function Tasks() {
         </select>
       </div>
 
-      {isLoading && <p className="text-muted-foreground">加载中...</p>}
-      {data && data.items.length === 0 && <p className="text-muted-foreground">暂无任务</p>}
+      {isLoading && <LoadingSkeleton type="table" count={5} />}
+      {data && data.items.length === 0 && <EmptyState title="暂无任务" />}
       {data && data.items.length > 0 && (
         <div className="border rounded-lg overflow-hidden">
           <table className="w-full text-sm">

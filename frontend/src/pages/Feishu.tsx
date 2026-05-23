@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { FeishuExportResponse, FeishuSyncResponse, FeishuStatusImportResponse } from "../api/types"
+import { ConfirmApplyDialog } from "../components/ConfirmApplyDialog"
 
 export default function Feishu() {
   return (
@@ -41,13 +42,13 @@ function ExportSection() {
         <button onClick={() => setShowApply(true)} className="px-4 py-2 border rounded text-sm text-destructive">真实导出</button>
       </div>
       {showApply && (
-        <div className="p-3 border border-destructive rounded-lg bg-destructive/5">
-          <p className="text-xs text-destructive">确认导出文件到 data/feishu/？</p>
-          <div className="flex gap-2 mt-2">
-            <button onClick={() => { mutation.mutate(true); setShowApply(false) }} className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-xs">确认</button>
-            <button onClick={() => setShowApply(false)} className="px-3 py-1 border rounded text-xs">取消</button>
-          </div>
-        </div>
+        <ConfirmApplyDialog
+          open={showApply}
+          title="确认导出？"
+          description="确认导出文件到 data/feishu/？"
+          onConfirm={() => { mutation.mutate(true); setShowApply(false) }}
+          onCancel={() => setShowApply(false)}
+        />
       )}
       <StatusCard title="导出" result={mutation.data || (mutation.isError ? { status: "failed", message: String(mutation.error) } : null)} />
     </div>
@@ -69,13 +70,13 @@ function SyncSection() {
         <button onClick={() => setShowApply(true)} className="px-4 py-2 border rounded text-sm text-destructive">真实同步</button>
       </div>
       {showApply && (
-        <div className="p-3 border border-destructive rounded-lg bg-destructive/5">
-          <p className="text-xs text-destructive">确认同步数据到飞书？这会写入飞书多维表格。</p>
-          <div className="flex gap-2 mt-2">
-            <button onClick={() => { mutation.mutate(true); setShowApply(false) }} className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-xs">确认</button>
-            <button onClick={() => setShowApply(false)} className="px-3 py-1 border rounded text-xs">取消</button>
-          </div>
-        </div>
+        <ConfirmApplyDialog
+          open={showApply}
+          title="确认同步到飞书？"
+          description="确认同步数据到飞书？这会写入飞书多维表格。"
+          onConfirm={() => { mutation.mutate(true); setShowApply(false) }}
+          onCancel={() => setShowApply(false)}
+        />
       )}
       <StatusCard title="同步" result={mutation.data || (mutation.isError ? { status: "failed", message: String(mutation.error) } : null)} />
     </div>

@@ -2,6 +2,9 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { AlertListResponse } from "../api/types"
+import { EmptyState } from "../components/EmptyState"
+import { LoadingSkeleton } from "../components/LoadingSkeleton"
+import { ErrorPanel } from "../components/ErrorPanel"
 
 export default function Alerts() {
   const [severity, setSeverity] = useState("")
@@ -33,9 +36,9 @@ export default function Alerts() {
         </select>
       </div>
 
-      {isLoading && <p className="text-muted-foreground">加载中...</p>}
-      {error && <p className="text-destructive">加载失败</p>}
-      {data && data.items.length === 0 && <p className="text-muted-foreground">暂无告警</p>}
+      {isLoading && <LoadingSkeleton type="table" count={5} />}
+      {error && <ErrorPanel title="加载失败" message={String(error)} />}
+      {data && data.items.length === 0 && <EmptyState title="暂无告警" />}
       {data && data.items.length > 0 && (
         <div className="border rounded-lg overflow-hidden">
           <table className="w-full text-sm">

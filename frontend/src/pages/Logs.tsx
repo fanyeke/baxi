@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { ErrorLogListResponse, AuditLogListResponse, RecentLogListResponse } from "../api/types"
+import { EmptyState } from "../components/EmptyState"
+import { LoadingSkeleton } from "../components/LoadingSkeleton"
 
 type Tab = "errors" | "audit" | "recent"
 
@@ -39,8 +41,8 @@ function ErrorsTab() {
     queryFn: () => apiClient.get<ErrorLogListResponse>("/logs/errors", { limit: "100" }),
   })
 
-  if (isLoading) return <p className="text-muted-foreground">加载中...</p>
-  if (!data || data.items.length === 0) return <p className="text-muted-foreground">暂无错误日志</p>
+  if (isLoading) return <LoadingSkeleton type="table" count={5} />
+  if (!data || data.items.length === 0) return <EmptyState title="暂无错误日志" />
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -76,8 +78,8 @@ function AuditTab() {
     queryFn: () => apiClient.get<AuditLogListResponse>("/logs/audit", { limit: "100" }),
   })
 
-  if (isLoading) return <p className="text-muted-foreground">加载中...</p>
-  if (!data || data.items.length === 0) return <p className="text-muted-foreground">暂无审计日志</p>
+  if (isLoading) return <LoadingSkeleton type="table" count={3} />
+  if (!data || data.items.length === 0) return <EmptyState title="暂无审计日志" />
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -113,8 +115,8 @@ function RecentTab() {
     queryFn: () => apiClient.get<RecentLogListResponse>("/logs/recent", { limit: "50" }),
   })
 
-  if (isLoading) return <p className="text-muted-foreground">加载中...</p>
-  if (!data || data.items.length === 0) return <p className="text-muted-foreground">暂无请求日志</p>
+  if (isLoading) return <LoadingSkeleton type="text" count={5} />
+  if (!data || data.items.length === 0) return <EmptyState title="暂无请求日志" />
 
   return (
     <div className="border rounded-lg overflow-hidden">

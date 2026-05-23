@@ -2,6 +2,9 @@ import { useState } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { OutboxListResponse, DispatchResponse } from "../api/types"
+import { EmptyState } from "../components/EmptyState"
+import { LoadingSkeleton } from "../components/LoadingSkeleton"
+import { ConfirmApplyDialog } from "../components/ConfirmApplyDialog"
 
 export default function Outbox() {
   const [status, setStatus] = useState("")
@@ -68,14 +71,13 @@ export default function Outbox() {
       </div>
 
       {showConfirm && (
-        <div className="p-4 border border-destructive rounded-lg bg-destructive/5">
-          <p className="font-semibold text-destructive text-sm">确认执行？</p>
-          <p className="text-xs text-muted-foreground mt-1">这将执行真实的分发操作，不可撤销。</p>
-          <div className="flex gap-2 mt-2">
-            <button onClick={() => applyMutation.mutate()} className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-xs">确认执行</button>
-            <button onClick={() => setShowConfirm(false)} className="px-3 py-1 border rounded text-xs">取消</button>
-          </div>
-        </div>
+        <ConfirmApplyDialog
+          open={showConfirm}
+          title="确认执行？"
+          description="这将执行真实的分发操作，不可撤销。"
+          onConfirm={() => applyMutation.mutate()}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
 
       {results && (
@@ -94,8 +96,8 @@ export default function Outbox() {
         </div>
       )}
 
-      {isLoading && <p className="text-muted-foreground">加载中...</p>}
-      {data && data.items.length === 0 && <p className="text-muted-foreground">暂无 outbox 事件</p>}
+      {isLoading && <LoadingSkeleton type="table" count={5} />}
+      {data && data.items.length === 0 && <EmptyState title="暂无 outbox 事件" />}
       {data && data.items.length > 0 && (
         <div className="border rounded-lg overflow-hidden">
           <table className="w-full text-sm">

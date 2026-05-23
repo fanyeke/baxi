@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { PipelineRunResponse } from "../api/types"
+import { LoadingSkeleton } from "../components/LoadingSkeleton"
+import { ErrorPanel } from "../components/ErrorPanel"
 
 const PIPELINE_TYPES = [
   { type: "daily", label: "Daily Pipeline", desc: "8-step daily simulation" },
@@ -49,7 +51,7 @@ export default function Pipeline() {
         查看预览
       </button>
 
-      {isLoading && <p className="text-muted-foreground">加载中...</p>}
+      {isLoading && <LoadingSkeleton type="text" count={3} />}
 
       {data && (
         <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
@@ -92,7 +94,7 @@ export default function Pipeline() {
       )}
 
       {triggered && !isLoading && !data && (
-        <p className="text-xs text-red-500">预览加载失败。请确认 API 服务正常运行。</p>
+        <ErrorPanel title="预览加载失败" message="请确认 API 服务正常运行。" />
       )}
     </div>
   )

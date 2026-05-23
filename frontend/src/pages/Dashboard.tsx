@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "../api/client"
 import type { HealthResponse, StatusResponse, AlertListResponse, TaskListResponse, OutboxListResponse } from "../api/types"
+import { ErrorPanel } from "../components/ErrorPanel"
+import { LoadingSkeleton } from "../components/LoadingSkeleton"
 
 export default function Dashboard() {
   const health = useQuery({ queryKey: ["health"], queryFn: () => apiClient.get<HealthResponse>("/health") })
@@ -16,25 +18,22 @@ export default function Dashboard() {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">系统总览</h1>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1,2,3,4,5,6].map(i => (
-            <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
-          ))}
-        </div>
+        <LoadingSkeleton type="cards" count={6} />
       </div>
     )
   }
 
   if (error) {
-    const err = error as { message?: string }
+    const err = error as { message?: string; apiError?: { diagnosis?: string; suggested_action?: string; request_id?: string } }
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">系统总览</h1>
-        <div className="p-4 border border-destructive/50 bg-destructive/10 rounded-lg">
-          <p className="font-semibold text-destructive">连接失败</p>
-          <p className="text-sm text-muted-foreground mt-1">{err.message || "无法连接到 API 服务"}</p>
-          <p className="text-xs text-muted-foreground mt-1">请确认 API 服务运行在 localhost:8765，且 Token 已配置</p>
-        </div>
+        <ErrorPanel
+          title="连接失败"
+          message={err.message || "无法连接到 API 服务"}
+          diagnosis={err.apiError?.diagnosis || "请确认 API 服务运行在 localhost:8765，且 Token 已配置"}
+          request_id={err.apiError?.request_id}
+        />
       </div>
     )
   }
