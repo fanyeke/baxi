@@ -15,9 +15,10 @@ export default function Feishu() {
   )
 }
 
-function StatusCard({ title, result }: { title: string; result: { status: string; message?: string } | null }) {
+export function StatusCard({ title, result }: { title: string; result: { status: string; message?: string } | null }) {
   if (!result) return null
-  const isOk = result.status === "preview" || result.status === "not_configured" || result.status === "exported"
+  const okStatuses = new Set(["preview", "not_configured", "exported", "synced", "imported"])
+  const isOk = okStatuses.has(result.status)
   return (
     <div className={`p-3 rounded-lg text-sm border ${isOk ? "bg-muted/30" : "bg-destructive/10 border-destructive/30"}`}>
       <span className="font-medium">{title}: </span>
