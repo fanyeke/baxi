@@ -4,6 +4,7 @@ import { apiClient } from "../api/client"
 import type { TaskListResponse } from "../api/types"
 import { EmptyState } from "../components/EmptyState"
 import { LoadingSkeleton } from "../components/LoadingSkeleton"
+import { ErrorPanel } from "../components/ErrorPanel"
 
 export default function Tasks() {
   const [status, setStatus] = useState("")
@@ -12,7 +13,7 @@ export default function Tasks() {
   if (status) params.status = status
   if (priority) params.priority = priority
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["tasks", status, priority],
     queryFn: () => apiClient.get<TaskListResponse>("/tasks", params),
   })
@@ -36,8 +37,9 @@ export default function Tasks() {
       </div>
 
       {isLoading && <LoadingSkeleton type="table" count={5} />}
-      {data && data.items.length === 0 && <EmptyState title="暂无任务" />}
-      {data && data.items.length > 0 && (
+      {error && <ErrorPanel title="加载失败" message={error.message || "Failed to load tasks"} />}
+      {data && data.items.length === 0 && !error && <EmptyState title="暂无任务" />}
+      {data && data.items.length > 0 && !error && (
         <div className="border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted">

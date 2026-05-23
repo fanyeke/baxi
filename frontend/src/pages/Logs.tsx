@@ -4,6 +4,7 @@ import { apiClient } from "../api/client"
 import type { ErrorLogListResponse, AuditLogListResponse, RecentLogListResponse } from "../api/types"
 import { EmptyState } from "../components/EmptyState"
 import { LoadingSkeleton } from "../components/LoadingSkeleton"
+import { ErrorPanel } from "../components/ErrorPanel"
 
 type Tab = "errors" | "audit" | "recent"
 
@@ -36,12 +37,13 @@ export default function Logs() {
 }
 
 function ErrorsTab() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["log-errors"],
     queryFn: () => apiClient.get<ErrorLogListResponse>("/logs/errors", { limit: "100" }),
   })
 
   if (isLoading) return <LoadingSkeleton type="table" count={5} />
+  if (error) return <ErrorPanel title="加载失败" message={error.message || "Failed to load error logs"} />
   if (!data || data.items.length === 0) return <EmptyState title="暂无错误日志" />
 
   return (
@@ -73,12 +75,13 @@ function ErrorsTab() {
 }
 
 function AuditTab() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["log-audit"],
     queryFn: () => apiClient.get<AuditLogListResponse>("/logs/audit", { limit: "100" }),
   })
 
   if (isLoading) return <LoadingSkeleton type="table" count={3} />
+  if (error) return <ErrorPanel title="加载失败" message={error.message || "Failed to load audit logs"} />
   if (!data || data.items.length === 0) return <EmptyState title="暂无审计日志" />
 
   return (
@@ -110,12 +113,13 @@ function AuditTab() {
 }
 
 function RecentTab() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["log-recent"],
     queryFn: () => apiClient.get<RecentLogListResponse>("/logs/recent", { limit: "50" }),
   })
 
   if (isLoading) return <LoadingSkeleton type="text" count={5} />
+  if (error) return <ErrorPanel title="加载失败" message={error.message || "Failed to load recent logs"} />
   if (!data || data.items.length === 0) return <EmptyState title="暂无请求日志" />
 
   return (
