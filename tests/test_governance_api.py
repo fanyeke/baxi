@@ -1,11 +1,8 @@
 """Governance API integration tests — validates all 7 GET endpoints + auth."""
 import os
-import sys
 
-import pytest
 from fastapi.testclient import TestClient
 
-# Must set token BEFORE importing api.main (app created at import time)
 os.environ["API_BEARER_TOKEN"] = "test-token-12345"
 
 from api.main import app

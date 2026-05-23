@@ -35,7 +35,8 @@ const errorState = { data: undefined, isLoading: false, error: new Error("API Er
 const emptyState = { data: undefined, isLoading: false, error: null }
 
 const mockCatalogData = {
-  items: [
+  data_catalog: {},
+  assets: [
     {
       asset_id: "asst-001",
       asset_type: "table",
@@ -46,19 +47,17 @@ const mockCatalogData = {
       status: "active",
     },
   ],
-  total: 1,
 }
 
 const mockClassData = {
-  items: [
+  classifications: [
     { asset_ref: "dw.orders", level: "confidential", rationale: "Contains PII" },
   ],
-  total: 1,
 }
 
 const mockMarkingData = {
-  items: [
-    {
+  markings: {
+    "mark-1": {
       mandatory_control: true,
       access_type: "role-based",
       conjunctive: false,
@@ -66,8 +65,8 @@ const mockMarkingData = {
       applies_to: ["dw.orders"],
       policy: "arn:aws:iam::policy/governance-mandatory",
     },
-  ],
-  total: 1,
+  },
+  pipeline_stage_markings: [],
 }
 
 const mockLineageData = {
@@ -76,16 +75,15 @@ const mockLineageData = {
 }
 
 const mockCheckpointData = {
-  items: [
-    {
+  checkpoints: {
+    "chk-1": {
       scope: "pii-scan",
       endpoint: "/api/v1/scan",
       requires_justification: true,
       prompt: "Why access PII?",
       checkpoint_types: ["pre-query", "post-query"],
     },
-  ],
-  total: 1,
+  },
 }
 
 const mockHealthData = {
@@ -191,7 +189,7 @@ describe("Governance", () => {
 
   it("shows empty state when no data available", () => {
     vi.mocked(useCatalog).mockReturnValue({
-      data: { items: [], total: 0 }, isLoading: false, error: null,
+      data: { assets: [], data_catalog: {} }, isLoading: false, error: null,
     } as never)
 
     renderWithQueryClient(<Governance />)

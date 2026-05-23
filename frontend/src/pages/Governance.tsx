@@ -26,13 +26,17 @@ const TAB_ITEMS = [
   { value: "health", label: "健康检查", icon: "💚" },
 ] as const
 
+function fmtError(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
 function LevelBadge({ level }: { level: string }) {
   const colors: Record<string, string> = {
-    public: "bg-green-100 text-green-700",
+    public_internal: "bg-green-100 text-green-700",
     internal: "bg-blue-100 text-blue-700",
-    confidential: "bg-yellow-100 text-yellow-700",
-    restricted: "bg-orange-100 text-orange-700",
-    critical: "bg-red-100 text-red-700",
+    sensitive: "bg-yellow-100 text-yellow-700",
+    pii: "bg-red-100 text-red-700",
+    derived_sensitive: "bg-orange-100 text-orange-700",
   }
   const cls = colors[level.toLowerCase()] ?? "bg-gray-100 text-gray-700"
   return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{level}</span>
@@ -74,12 +78,12 @@ function DataTable({ headers, children }: { headers: string[]; children: React.R
 
 function CatalogTab({ data, isLoading, error }: ReturnType<typeof useCatalog>) {
   if (isLoading) return <LoadingSkeleton type="table" count={6} />
-  if (error) return <ErrorPanel title="加载失败" message={String(error)} />
-  if (!data || data.items.length === 0) return <EmptyState title="暂无数据目录" />
+  if (error) return <ErrorPanel title="加载失败" message={fmtError(error)} />
+  if (!data || data.assets.length === 0) return <EmptyState title="暂无数据目录" />
 
   return (
     <DataTable headers={["资产 ID", "名称", "类型", "位置", "描述", "粒度", "状态"]}>
-      {data.items.map((a: CatalogAsset) => (
+      {data.assets.map((a: CatalogAsset) => (
         <tr key={a.asset_id} className="border-t hover:bg-muted/50">
           <td className="p-2 font-mono text-xs">{a.asset_id}</td>
           <td className="p-2 font-medium">{a.name}</td>
@@ -106,11 +110,11 @@ function ClassTab({
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-2">分类规则</h3>
         {classQuery.isLoading && <LoadingSkeleton type="table" count={3} />}
-        {classQuery.error && <ErrorPanel title="加载失败" message={String(classQuery.error)} />}
-        {classQuery.data && classQuery.data.items.length === 0 && <EmptyState title="暂无分类" />}
-        {classQuery.data && classQuery.data.items.length > 0 && (
+        {classQuery.error && <ErrorPanel title="加载失败" message={fmtError(classQuery.error)} />}
+        {classQuery.data && classQuery.data.classifications.length === 0 && <EmptyState title="暂无分类" />}
+        {classQuery.data && classQuery.data.classifications.length > 0 && (
           <DataTable headers={["资产引用", "级别", "依据", "字段规则"]}>
-            {classQuery.data.items.map((c: Classification, i: number) => (
+            {classQuery.data.classifications.map((c: Classification, i: number) => (
               <tr key={c.asset_ref + i} className="border-t hover:bg-muted/50">
                 <td className="p-2 font-mono text-xs">{c.asset_ref}</td>
                 <td className="p-2"><LevelBadge level={c.level} /></td>
@@ -125,12 +129,13 @@ function ClassTab({
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-2">标记策略</h3>
         {markingQuery.isLoading && <LoadingSkeleton type="table" count={3} />}
-        {markingQuery.error && <ErrorPanel title="加载失败" message={String(markingQuery.error)} />}
-        {markingQuery.data && markingQuery.data.items.length === 0 && <EmptyState title="暂无标记" />}
-        {markingQuery.data && markingQuery.data.items.length > 0 && (
-          <DataTable headers={["访问类型", "强制控制", "合取", "继承", "适用范围", "策略"]}>
-            {markingQuery.data.items.map((m: MarkingInfo, i: number) => (
-              <tr key={m.access_type + i} className="border-t hover:bg-muted/50">
+        {markingQuery.error && <ErrorPanel title="加载失败" message={fmtError(markingQuery.error)} />}
+        {markingQuery.data && Object.keys(markingQuery.data.markings).length === 0 && <EmptyState title="暂无标记" />}
+        {markingQuery.data && Object.keys(markingQuery.data.markings).length > 0 && (
+          <DataTable headers={["标记键", "访问类型", "强制控制", "合取", "继承", "适用范围", "策略"]}>
+            {Object.entries(markingQuery.data.markings).map(([key, m]: [string, MarkingInfo], i: number) => (
+              <tr key={key + i} className="border-t hover:bg-muted/50">
+                <td className="p-2 font-mono text-xs">{key}</td>
                 <td className="p-2 font-medium">{m.access_type}</td>
                 <td className="p-2"><YesNoBadge value={m.mandatory_control} /></td>
                 <td className="p-2"><YesNoBadge value={m.conjunctive} /></td>
@@ -148,7 +153,7 @@ function ClassTab({
 
 function LineageTab({ data, isLoading, error }: ReturnType<typeof useLineage>) {
   if (isLoading) return <LoadingSkeleton type="table" count={4} />
-  if (error) return <ErrorPanel title="加载失败" message={String(error)} />
+  if (error) return <ErrorPanel title="加载失败" message={fmtError(error)} />
   if (!data) return <EmptyState title="暂无血缘关系" />
 
   return (
@@ -194,13 +199,13 @@ function LineageTab({ data, isLoading, error }: ReturnType<typeof useLineage>) {
 
 function CheckpointsTab({ data, isLoading, error }: ReturnType<typeof useCheckpoints>) {
   if (isLoading) return <LoadingSkeleton type="table" count={5} />
-  if (error) return <ErrorPanel title="加载失败" message={String(error)} />
-  if (!data || data.items.length === 0) return <EmptyState title="暂无检查点" />
+  if (error) return <ErrorPanel title="加载失败" message={fmtError(error)} />
+  if (!data || Object.keys(data.checkpoints).length === 0) return <EmptyState title="暂无检查点" />
 
   return (
     <DataTable headers={["范围", "端点", "需要理由", "提示词", "检查类型"]}>
-      {data.items.map((r: CheckpointRule, i: number) => (
-        <tr key={r.scope + i} className="border-t hover:bg-muted/50">
+      {Object.entries(data.checkpoints).map(([key, r]: [string, CheckpointRule], i: number) => (
+        <tr key={key + i} className="border-t hover:bg-muted/50">
           <td className="p-2 font-medium">{r.scope}</td>
           <td className="p-2 font-mono text-xs">{r.endpoint ?? "—"}</td>
           <td className="p-2"><YesNoBadge value={r.requires_justification} /></td>
@@ -214,7 +219,7 @@ function CheckpointsTab({ data, isLoading, error }: ReturnType<typeof useCheckpo
 
 function HealthTab({ data, isLoading, error }: ReturnType<typeof useHealth>) {
   if (isLoading) return <LoadingSkeleton type="table" count={5} />
-  if (error) return <ErrorPanel title="加载失败" message={String(error)} />
+  if (error) return <ErrorPanel title="加载失败" message={fmtError(error)} />
   if (!data) return <EmptyState title="暂无健康检查" />
 
   return (
@@ -261,19 +266,17 @@ function HealthTab({ data, isLoading, error }: ReturnType<typeof useHealth>) {
   )
 }
 
-function SummaryStats() {
-  const catalog = useCatalog()
-  const classQ = useClassification()
-  const checkpoints = useCheckpoints()
-  const health = useHealth()
-
+function SummaryStats(props: {
+  catalogCount: number
+  classCount: number
+  checkpointCount: number
+  healthCount: number
+}) {
   const items = [
-    { label: "数据资产", value: catalog.data?.total ?? "—", icon: "📦" },
-    { label: "分类规则", value: classQ.data?.total ?? "—", icon: "🏷️" },
-    { label: "检查点", value: checkpoints.data?.total ?? "—", icon: "✅" },
-    { label: "健康检查", value: health.data
-        ? (health.data.health_checks.length + health.data.monitoring_views.length)
-        : "—", icon: "💚" },
+    { label: "数据资产", value: props.catalogCount, icon: "📦" },
+    { label: "分类规则", value: props.classCount, icon: "🏷️" },
+    { label: "检查点", value: props.checkpointCount, icon: "✅" },
+    { label: "健康检查", value: props.healthCount, icon: "💚" },
   ]
 
   return (
@@ -346,7 +349,14 @@ export default function Governance() {
         </Tabs.Content>
       </Tabs.Root>
 
-      <SummaryStats />
+      <SummaryStats
+        catalogCount={catalog.data?.assets.length ?? 0}
+        classCount={classQuery.data?.classifications.length ?? 0}
+        checkpointCount={checkpoints.data ? Object.keys(checkpoints.data.checkpoints).length : 0}
+        healthCount={health.data
+          ? health.data.health_checks.length + health.data.monitoring_views.length
+          : 0}
+      />
     </div>
   )
 }

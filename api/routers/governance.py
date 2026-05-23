@@ -1,7 +1,7 @@
 import os
 
 import yaml
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_current_user
 
@@ -13,8 +13,13 @@ CONFIG_DIR = os.path.join(
 
 
 def _load_yaml(filename):
-    with open(os.path.join(CONFIG_DIR, filename)) as f:
-        return yaml.safe_load(f)
+    try:
+        with open(os.path.join(CONFIG_DIR, filename), encoding='utf-8') as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Config file not found: {filename}")
+    except yaml.YAMLError as e:
+        raise HTTPException(status_code=500, detail=f"YAML parse error in {filename}: {str(e)}")
 
 
 @router.get("/governance/catalog")
@@ -65,6 +70,6 @@ def get_status(user=Depends(get_current_user)):
         try:
             _load_yaml(c)
             status[c] = "loaded"
-        except Exception:
+        except (FileNotFoundError, yaml.YAMLError, PermissionError):
             status[c] = "error"
     return {"governance_layer": "active", "configs": status}

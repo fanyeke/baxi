@@ -11,9 +11,9 @@ export interface CatalogAsset {
   status: string
 }
 
-export interface CatalogListResponse {
-  items: CatalogAsset[]
-  total: number
+export interface CatalogResponse {
+  data_catalog: Record<string, unknown>
+  assets: CatalogAsset[]
 }
 
 export interface Classification {
@@ -23,9 +23,8 @@ export interface Classification {
   applies_to_fields?: Record<string, string>
 }
 
-export interface ClassificationListResponse {
-  items: Classification[]
-  total: number
+export interface ClassificationResponse {
+  classifications: Classification[]
 }
 
 export interface MarkingInfo {
@@ -37,9 +36,9 @@ export interface MarkingInfo {
   policy: string
 }
 
-export interface MarkingListResponse {
-  items: MarkingInfo[]
-  total: number
+export interface MarkingResponse {
+  markings: Record<string, MarkingInfo>
+  pipeline_stage_markings: Array<Record<string, unknown>>
 }
 
 export interface LineageNode {
@@ -69,9 +68,8 @@ export interface CheckpointRule {
   checkpoint_types?: string[]
 }
 
-export interface CheckpointListResponse {
-  items: CheckpointRule[]
-  total: number
+export interface CheckpointResponse {
+  checkpoints: Record<string, CheckpointRule>
 }
 
 export interface HealthCheck {
@@ -97,23 +95,26 @@ export interface HealthResponse {
 }
 
 export function useCatalog() {
-  return useQuery<CatalogListResponse>({
+  return useQuery<CatalogResponse>({
     queryKey: ["governance", "catalog"],
-    queryFn: () => apiClient.get<CatalogListResponse>("/governance/catalog"),
+    queryFn: () => apiClient.get<CatalogResponse>("/governance/catalog"),
+    staleTime: 30_000,
   })
 }
 
 export function useClassification() {
-  return useQuery<ClassificationListResponse>({
+  return useQuery<ClassificationResponse>({
     queryKey: ["governance", "class"],
-    queryFn: () => apiClient.get<ClassificationListResponse>("/governance/classification"),
+    queryFn: () => apiClient.get<ClassificationResponse>("/governance/classification"),
+    staleTime: 30_000,
   })
 }
 
 export function useMarkings() {
-  return useQuery<MarkingListResponse>({
+  return useQuery<MarkingResponse>({
     queryKey: ["governance", "markings"],
-    queryFn: () => apiClient.get<MarkingListResponse>("/governance/markings"),
+    queryFn: () => apiClient.get<MarkingResponse>("/governance/markings"),
+    staleTime: 30_000,
   })
 }
 
@@ -121,13 +122,15 @@ export function useLineage() {
   return useQuery<LineageResponse>({
     queryKey: ["governance", "lineage"],
     queryFn: () => apiClient.get<LineageResponse>("/governance/lineage"),
+    staleTime: 30_000,
   })
 }
 
 export function useCheckpoints() {
-  return useQuery<CheckpointListResponse>({
+  return useQuery<CheckpointResponse>({
     queryKey: ["governance", "chkpts"],
-    queryFn: () => apiClient.get<CheckpointListResponse>("/governance/checkpoints"),
+    queryFn: () => apiClient.get<CheckpointResponse>("/governance/checkpoints"),
+    staleTime: 30_000,
   })
 }
 
@@ -135,5 +138,6 @@ export function useHealth() {
   return useQuery<HealthResponse>({
     queryKey: ["governance", "health"],
     queryFn: () => apiClient.get<HealthResponse>("/governance/health"),
+    staleTime: 30_000,
   })
 }
