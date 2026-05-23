@@ -302,7 +302,7 @@ python3 generate_docs.py
 
 ## 后续计划
 
-**当前版本**: v0.5.2（含规则决策引擎、SQLite 后端、FastAPI 网关、React 控制台、飞书集成）
+**当前版本**: v0.5.3（含规则决策引擎、SQLite 后端、FastAPI 网关、React 控制台、飞书集成、数据治理层）
 
 ### Phase 3：全局业务分析 ✅ (FROZEN)
 
@@ -359,6 +359,7 @@ What-If 场景模拟，GMV/评分联动预测。
 | v0.5 | API 网关 (FastAPI:8765, OpenAPI, Bearer Token) | ✅ DONE |
 | v0.5.1 | React 控制台 Alpha (7 pages, TanStack Query) | ✅ DONE |
 | v0.5.2 | 控制台 Beta 硬化 (P0修复 + 日志诊断) | ✅ DONE |
+| v0.5.3 | 数据治理层 + API 接口参考文档 + Schema 校验 + 测试隔离优化 | ✅ DONE |
 | Phase I | 全量数据 + AI 决策引擎 (LLM 代码就绪，待激活) | 🟡 核心完成 |
 | Phase II+ | 维度告警扩展 / 真实 LLM 决策 / 自动调度 | ❌ 未启动 |
 
@@ -370,63 +371,161 @@ What-If 场景模拟，GMV/评分联动预测。
 
 详细说明见：[scripts/_FROZEN.md](scripts/_FROZEN.md)
 
-### Phase B 计划
+### 🚀 API 网关（活跃开发）
 
-后续将创建 `scripts/config.py` 集中管理路径常量，更新所有脚本使其可直接运行。
+`scripts/config.py` 已实现集中化路径常量管理。FastAPI API 网关是项目当前最活跃的对外接口。
+
+**快速启动**：
+
+```bash
+# 1. 安装依赖
+pip install -e .
+
+# 2. 配置环境变量（参考 .env.example）
+cat > .env <<EOF
+API_BEARER_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+FEISHU_APP_ID=YOUR_APP_ID
+FEISHU_APP_SECRET=YOUR_APP_SECRET
+FEISHU_BASE_APP_TOKEN=YOUR_APP_TOKEN
+FEISHU_CHAT_ID=YOUR_CHAT_ID
+EOF
+
+# 3. 启动 API
+python3 scripts/run_api.py --port 8765
+```
+
+**验证**：
+
+```bash
+# 健康检查（无需认证）
+curl http://127.0.0.1:8765/api/v1/health
+# → {"status":"ok","version":"0.5.1","db_connected":true}
+
+# 启用 OpenAPI 文档（可选）
+ENABLE_DOCS=1 python3 scripts/run_api.py
+# → http://127.0.0.1:8765/docs 查看 Swagger UI
+```
+
+**📖 完整接口文档**：[`docs/API_REFERENCE.md`](docs/API_REFERENCE.md)
+
+文档涵盖 21 个端点、统一错误格式、认证机制、速率限制、前端集成示例和状态机说明。
+
+### Phase B 计划（已完成 ✅）
+
+`scripts/config.py` 已实现集中管理路径常量。新代码应通过 `from scripts import config` 引用路径。
 
 ## 技术栈
 
-- **Python 3.x** - 主要编程语言
-- **Pandas** - 数据处理和分析
-- **Markdown** - 文档记录
+- **Python 3.9+** - 主要编程语言
+- **FastAPI + Uvicorn** - API 网关
+- **Pydantic v2** - 请求/响应模型与校验
+- **SQLite (WAL)** - 数据存储
+- **Pandas / NumPy** - 数据处理和分析
+- **React + TanStack Query** - 控制台前端
+- **lark-oapi** - 飞书集成
 
 ## 项目结构概览
 
 | 目录 | 内容 | 文件数 |
 |------|------|--------|
+| `api/` | FastAPI 网关（路由、认证、错误处理、Schema） | 18 .py |
+| `services/` | 业务逻辑层（DB、告警、任务、调度、飞书、日志） | 9 .py |
+| `adapters/` | 渠道适配层（Feishu、GitHub、LocalCLI、Manual） | 5 .py |
+| `config/` | 治理/业务 YAML 配置（告警规则、指标、权限、血缘等） | 27 .yml |
+| `tests/` | 单元 + 集成测试 | 27 test_*.py |
 | `data/raw/` | 原始数据源 | 12 |
 | `data/interim/` | 中间分析表 | 3 |
 | `data/processed/` | 飞书沙盘产物 | 4 |
-| `scripts/` | 分析脚本 | 14 .py + 1 .md |
+| `scripts/` | 数据管道脚本 + 分析脚本（❄️ FROZEN） | 14 .py + 1 .md |
+| `sql/` | Schema + 迁移脚本 | 1 schema + 6 migrations |
 | `outputs/charts/` | 分析图表 | ~34 .png |
 | `outputs/tables/` | 分析结果表 | ~47 .csv |
-| `outputs/validation/` | 验证产物 | 4 .csv |
 | `reports/` | 分析报告 | 6 .md |
-| `docs/` | 技术文档 | 18 文件 |
+| `docs/` | 技术文档（含接口参考、运行手册） | 19 文件 |
+| `frontend/` | React 控制台（Vite + TanStack Query） | — |
 
 ## 项目结构
 
 ```
 .
-├── .gitignore                         # 忽略大型文件和产物
-├── README.md                          # 项目说明（含全部 10 个阶段）
-├── data/
-│   ├── raw/                           # 原始数据源（11 个 CSV + archive.zip）
-│   │   └── olist_*.csv, archive.zip
+├── README.md                          # 项目说明
+├── pyproject.toml                     # Python 包配置 + 依赖
+├── pytest.ini                         # 测试配置（含覆盖率）
+├── .env / .env.example                # 环境变量（API 令牌 + 飞书凭据）
+│
+├── api/                               # ★ FastAPI 网关 (v0.5.3)
+│   ├── main.py                        # App factory + middleware
+│   ├── auth.py                        # Bearer Token 常量时间校验
+│   ├── dependencies.py                # DI: get_db / get_current_user
+│   ├── errors.py                      # APIError + 统一错误处理
+│   ├── schemas.py                     # Pydantic v2 模型（请求/响应）
+│   ├── logging_config.py              # JSON 日志 + ContextVar request_id
+│   └── routers/                       # 10 个路由分组
+│       ├── health.py, status.py       # 系统状态
+│       ├── alerts.py, tasks.py        # 业务数据查询
+│       ├── outbox.py                  # 调度（Outbox 模式）
+│       ├── feishu.py                  # 飞书双向同步
+│       ├── pipeline.py                # 管道预览
+│       ├── logs.py, diagnosis.py      # 日志与诊断
+│       └── governance.py              # 数据治理层
+│
+├── services/                          # 业务逻辑层
+│   ├── db_service.py                  # SQLite 连接 + 表校验
+│   ├── alert_service.py               # 告警查询
+│   ├── task_service.py                # 任务查询
+│   ├── dispatch_service.py            # 事件调度（Outbox 核心）
+│   ├── feishu_service.py              # 飞书操作
+│   ├── pipeline_service.py            # 管道预览
+│   ├── log_reader.py                  # JSONL 尾部读取
+│   ├── diagnosis_service.py           # 跨源请求诊断
+│   └── status_service.py              # 系统状态
+│
+├── adapters/                          # 渠道适配层（策略模式 + 工厂）
+│   ├── base.py                        # ChannelAdapter ABC + resolve_adapter()
+│   ├── feishu_adapter.py              # 飞书消息推送
+│   ├── github_issue_adapter.py        # GitHub Issue（预览模式）
+│   ├── local_cli_adapter.py           # 本地 CLI 审计日志
+│   └── manual_adapter.py              # 手动审核队列
+│
+├── config/                            # 治理 + 业务 YAML 配置（27 个）
+│   ├── alert_rules.yml                # 告警规则
+│   ├── metrics.yml                    # 指标定义
+│   ├── feishu_table_ids.yml.example   # 飞书表 ID 模板
+│   ├── data_classification.yml        # 数据分类
+│   ├── access_policy.yml              # 访问策略
+│   └── ...                            # 血缘、标记、检查点等
+│
+├── sql/                               # 数据库 Schema + 迁移
+│   ├── schema.sql                     # 14 表定义
+│   ├── indexes.sql                    # 22 个查询索引
+│   └── migrations/                    # 6 个版本迁移
+│
+├── tests/                             # 测试（27 个文件，305+ 用例）
+│   ├── conftest.py                    # 共享 fixtures
+│   ├── test_api_gateway.py            # API 集成测试
+│   └── test_*.py                      # ...
+│
+├── data/                              # 数据
+│   ├── raw/                           # 原始 CSV（❄️ 不可修改）
 │   ├── interim/                       # 中间分析表
-│   │   ├── order_level_base.csv       # 订单级基础表
-│   │   ├── item_level_base.csv        # 商品级基础表
-│   │   └── channel_classification.csv
-│   └── processed/                     # 飞书沙盘产物
-│       └── feishu_*.csv
-├── scripts/                           # 全部 Python 脚本（❄️ FROZEN）
-│   ├── _FROZEN.md                     # 脚本状态说明
-│   ├── phase01_explore_data.py        # 数据探索
-│   ├── phase01_explore_data_extended.py
-│   ├── phase02_build_data_model.py    # 数据模型
-│   ├── phase02_generate_docs.py
-│   ├── ...
-│   └── phase07_simulation_engine.py   # 模拟引擎
-├── outputs/
-│   ├── charts/                        # 34 张分析图表 (PNG)
-│   ├── tables/                        # 47 张分析结果表 (CSV)
-│   ├── validation/                    # 验证产物 (phase9/10)
-│   ├── data_profile_summary.csv       # 数据画像
-│   ├── erd.mmd                        # ER 关系图谱
-│   ├── join_validation_results.json
-│   └── project_overview.html          # 项目全景导览
-├── reports/                           # 分析报告 (6 份)
-└── docs/                              # 技术文档 (18 份)
+│   ├── processed/                     # 飞书产物
+│   └── system/                        # 运行时状态（审计 CSV 等）
+│
+├── scripts/                           # 数据管道脚本（❄️ FROZEN）
+│   ├── config.py                      # 集中路径常量（✅ 活跃）
+│   ├── run_api.py                     # API 启动入口（✅ 活跃）
+│   ├── run_db_pipeline.py             # DB 管道（✅ 活跃）
+│   ├── feishu_client.py               # 飞书 SDK 客户端（✅ 活跃）
+│   ├── _FROZEN.md                     # 冻结脚本说明
+│   └── phase01~07_*.py                # 分析脚本（❄️ 路径已失效）
+│
+├── frontend/                          # React 控制台
+├── outputs/                           # 分析产物（图表、CSV、ER 图谱）
+├── reports/                           # 分析报告
+└── docs/                              # 技术文档
+    ├── API_REFERENCE.md               # ★ API 接口参考手册
+    ├── v0.5_api_gateway_runbook.md    # v0.5 网关运维权手册
+    └── ...
 ```
 
 ## 参考资源
@@ -441,6 +540,16 @@ What-If 场景模拟，GMV/评分联动预测。
 
 - [Claude Code](https://claude.ai/code) - AI 辅助编程工具
 - [Pandas Documentation](https://pandas.pydata.org/) - 数据处理库
+- [FastAPI Documentation](https://fastapi.tiangolo.com/) - API 框架
+
+### 项目文档
+
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — **接口参考手册**（21 个端点、Schema、错误码、前端集成）
+- [`README_RUNBOOK.md`](README_RUNBOOK.md) — 端到端运维手册
+- [`docs/v0.5_api_gateway_runbook.md`](docs/v0.5_api_gateway_runbook.md) — v0.5 网关运行手册
+- [`docs/data_dictionary.md`](docs/data_dictionary.md) — 数据字典
+- [`docs/entity_relationships.md`](docs/entity_relationships.md) — 实体关系说明
+- [`scripts/_FROZEN.md`](scripts/_FROZEN.md) — 冻结脚本状态说明
 
 ## 许可证
 
@@ -448,5 +557,6 @@ What-If 场景模拟，GMV/评分联动预测。
 
 ---
 
-**最后更新**: 2026-05-20
-**分析工具**: Claude Code + Python
+**最后更新**: 2026-05-24
+**当前版本**: v0.5.3
+**活跃维护**: API 网关、服务层、适配层、测试套件
