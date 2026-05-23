@@ -27,7 +27,9 @@ def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100)
     try:
         cur = conn.execute(f"""
             SELECT task_id, task_title, task_description, status, priority,
-                   owner_role, due_at, created_at, completed_at, feedback
+                   owner_role, owner_user_id, due_at, created_at, completed_at,
+                   feedback, recommendation_id, event_id, target_object_type,
+                   target_object_id
             FROM action_tasks {where} ORDER BY created_at DESC LIMIT ?
         """, params)
         return [dict(r) for r in cur.fetchall()]

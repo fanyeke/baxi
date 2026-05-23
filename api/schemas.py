@@ -65,9 +65,11 @@ class TaskItem(BaseModel):
     status: str = "todo"
     priority: str = "medium"
     owner_role: str = ""
-    owner_user_id: str = ""
+    owner_user_id: Optional[str] = None
     due_at: Optional[str] = None
     created_at: str = ""
+    completed_at: Optional[str] = None
+    feedback: Optional[str] = None
     recommendation_id: Optional[str] = None
     event_id: Optional[str] = None
     target_object_type: Optional[str] = None
