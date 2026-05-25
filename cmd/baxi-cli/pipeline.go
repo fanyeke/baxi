@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"baxi/internal/pipeline"
+	"baxi/internal/pipeline/steps"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -89,6 +90,7 @@ func handleValidate(ctx context.Context, log *zap.Logger, pool *pgxpool.Pool) {
 }
 
 func allSteps() []pipeline.Step {
-	// Steps will be registered here as they are implemented in Tasks 6-15.
-	return []pipeline.Step{}
+	return []pipeline.Step{
+		steps.NewIngestRawStep(),
+	}
 }
