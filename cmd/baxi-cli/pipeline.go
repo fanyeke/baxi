@@ -93,5 +93,7 @@ func allSteps() []pipeline.Step {
 		steps.NewBuildDWDSOrderLevelStep(),
 		steps.NewBuildDWDItemLevelStep(),
 		steps.NewBuildMetricDailyStep(),
+		steps.NewBuildMetricDimensionDailyStep(),
+		steps.NewDetectAlertsStep(),
 	}
 }
