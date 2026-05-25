@@ -3,7 +3,7 @@ import json
 import logging
 import os
 
-from scripts import config
+from core import config
 
 logger = logging.getLogger(__name__)
 

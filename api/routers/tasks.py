@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from api.dependencies import get_db, get_current_user
+from api.dependencies import get_current_user, get_db
 from api.schemas import TaskItem, TaskListResponse
 from services.task_service import get_tasks_with_count
 

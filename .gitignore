@@ -44,3 +44,11 @@ frontend/dist/
 
 # External reference docs (downloaded for research, not tracked)
 docs/external/
+
+# Sisyphus ephemeral files
+.sisyphus/notepads/
+.sisyphus/evidence/
+.sisyphus/drafts/
+
+# Frontend build artifacts
+frontend/tsconfig.tsbuildinfo

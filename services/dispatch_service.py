@@ -5,13 +5,12 @@ Extracted from scripts/db_dispatch_outbox.py to enable reuse
 across CLI scripts and scheduled jobs.
 """
 
-import os
 import csv
 import datetime
+import os
 
-from scripts import config
 from adapters.base import resolve_adapter
-
+from core import config
 
 # Constants
 MAX_ATTEMPTS = 3
@@ -198,7 +197,12 @@ def dispatch_one(conn, event, registry, is_dry_run):
 
     try:
         result = adapter.dry_run(event_dict) if is_dry_run else adapter.dispatch(event_dict)
-    except Exception as e:
+    # Narrowed based on known adapter implementations:
+    #   KeyError/ValueError — config loading in FeishuAdapter
+    #   OSError — file I/O in LocalCLIAdapter
+    #   RuntimeError — FeishuClient._raw_* retry exhaustion
+    #   ConnectionError — network failures in FeishuClient
+    except (KeyError, OSError, ValueError, RuntimeError, ConnectionError) as e:
         result = {"status": "failed", "external_ref": None, "error": str(e), "message": None}
 
     write_result(conn, outbox_id, result, adapter_name, is_dry_run)

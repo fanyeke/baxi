@@ -1,14 +1,9 @@
 {
-  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/readme-version-roadmap.md",
-  "started_at": "2026-05-23T08:00:27Z",
+  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/go-postgres-migration-phase0.md",
+  "started_at": "2026-05-25T09:06:57.156Z",
   "session_ids": [
-    "ses_1ac347e0bffeJqOh3Xfi56GcHx",
-    "ses_1ac2445e4ffeKw4xboPXQ7Imet",
-    "ses_1ac0b9b5dffeT0XZI6hubrvzvL",
-    "ses_1ac0b9be6ffemUc9oXS4vIib8T",
-    "ses_1ac0b9b1bffe5Dc14J2mytVPub",
-    "ses_1ac0b9ba2ffeYGXdC1qz3d337I"
+    "ses_1a1ceab9effeFXQgo30fApjW3v"
   ],
-  "plan_name": "readme-version-roadmap",
-  "task_sessions": {}
+  "plan_name": "go-postgres-migration-phase0",
+  "agent": "atlas"
 }

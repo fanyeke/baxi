@@ -17,19 +17,25 @@ logger = logging.getLogger("run_api")
 
 def check_env() -> str:
     """Check that API_BEARER_TOKEN is set. Returns the token. Exits on failure."""
-    token = os.environ.get("API_BEARER_TOKEN", "")
-
     # Try loading from .env via python-dotenv
-    if not token:
-        try:
-            from dotenv import load_dotenv
+    try:
+        from dotenv import load_dotenv
 
-            dotenv_path = os.path.join(PROJECT_ROOT, ".env")
-            if os.path.exists(dotenv_path):
-                load_dotenv(dotenv_path)
-                token = os.environ.get("API_BEARER_TOKEN", "")
-        except ImportError:
-            pass
+        dotenv_path = os.path.join(PROJECT_ROOT, ".env")
+        if os.path.exists(dotenv_path):
+            load_dotenv(dotenv_path)
+    except ImportError:
+        pass
+
+    from core.config import get_env_or_raise
+
+    try:
+        token = get_env_or_raise("API_BEARER_TOKEN")
+    except RuntimeError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        print("Add it to .env file or set as environment variable.", file=sys.stderr)
+        print('Example: export API_BEARER_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")', file=sys.stderr)
+        sys.exit(1)
 
     # Validate token complexity
     _WEAK_TOKENS = {
@@ -41,21 +47,14 @@ def check_env() -> str:
         "secret",
         "generate-a-random-token-at-least-32-chars-using-secrets-token-urlsafe",
     }
-    if token:
-        if len(token) < 32:
-            print("ERROR: API_BEARER_TOKEN must be at least 32 characters long.", file=sys.stderr)
-            print(f"Current token length: {len(token)}", file=sys.stderr)
-            sys.exit(1)
-        if token.lower() in _WEAK_TOKENS:
-            print("ERROR: API_BEARER_TOKEN is a weak/example token.", file=sys.stderr)
-            print("Generate a strong random token, e.g.:", file=sys.stderr)
-            print('  python3 -c "import secrets; print(secrets.token_urlsafe(32))"', file=sys.stderr)
-            sys.exit(1)
-
-    if not token:
-        print("ERROR: API_BEARER_TOKEN is not set.", file=sys.stderr)
-        print("Add it to .env file or set as environment variable.", file=sys.stderr)
-        print('Example: export API_BEARER_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")', file=sys.stderr)
+    if len(token) < 32:
+        print("ERROR: API_BEARER_TOKEN must be at least 32 characters long.", file=sys.stderr)
+        print(f"Current token length: {len(token)}", file=sys.stderr)
+        sys.exit(1)
+    if token.lower() in _WEAK_TOKENS:
+        print("ERROR: API_BEARER_TOKEN is a weak/example token.", file=sys.stderr)
+        print("Generate a strong random token, e.g.:", file=sys.stderr)
+        print('  python3 -c "import secrets; print(secrets.token_urlsafe(32))"', file=sys.stderr)
         sys.exit(1)
 
     return token
@@ -94,11 +93,24 @@ def run_migration() -> None:
                      "review_retro", ["status", "feedback"])
 
 
+_VALID_MIGRATION_TABLES = frozenset({
+    "event_outbox", "alert_events", "action_tasks", "review_retro",
+})
+
+
+def _validate_identifier(name: str, kind: str = "table") -> None:
+    """Validate SQL identifier against a known whitelist."""
+    valid = _VALID_MIGRATION_TABLES if kind == "table" else _VALID_MIGRATION_TABLES
+    if name not in valid:
+        raise ValueError(f"Unknown {kind} name: {name!r}")
+
+
 def _apply_migration(conn, filename, table, columns):
     migration_file = os.path.join(PROJECT_ROOT, "sql", "migrations", filename)
     if not os.path.exists(migration_file):
         return
 
+    _validate_identifier(table)
     cur = conn.execute(f"PRAGMA table_info({table})")
     existing = [r[1] for r in cur.fetchall()]
     if all(c in existing for c in columns):

@@ -1,9 +1,12 @@
 import os
+import re
+from pathlib import Path
 
 import yaml
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from api.dependencies import get_current_user
+from api.errors import APIError
 from api.schemas import GovernanceConfigResponse, GovernanceStatusResponse
 
 router = APIRouter(tags=["Governance"])
@@ -14,13 +17,46 @@ CONFIG_DIR = os.path.join(
 
 
 def _load_yaml(filename):
+    if not filename or not re.match(r'^[a-zA-Z0-9_\-\.]+$', filename):
+        raise APIError(
+            error_code="INVALID_FILENAME",
+            message=f"Invalid filename: {filename!r}",
+            diagnosis="Filename contains invalid characters or is empty",
+            suggested_action="Use only alphanumeric characters, underscores, hyphens, and periods",
+            http_status=400,
+        )
+
+    config_path = Path(CONFIG_DIR).resolve()
+    target_path = (config_path / filename).resolve()
+
+    if not str(target_path).startswith(str(config_path)):
+        raise APIError(
+            error_code="PATH_TRAVERSAL",
+            message=f"Path traversal detected: {filename!r}",
+            diagnosis="Resolved path escapes the config directory",
+            suggested_action="Use a valid filename without path traversal sequences",
+            http_status=400,
+        )
+
     try:
-        with open(os.path.join(CONFIG_DIR, filename), encoding='utf-8') as f:
+        with open(target_path, encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Config file not found: {filename}")
+        raise APIError(
+            error_code="CONFIG_NOT_FOUND",
+            message=f"Config file not found: {filename}",
+            diagnosis="The requested configuration file does not exist",
+            suggested_action="Verify the filename is correct",
+            http_status=404,
+        )
     except yaml.YAMLError as e:
-        raise HTTPException(status_code=500, detail=f"YAML parse error in {filename}: {str(e)}")
+        raise APIError(
+            error_code="YAML_PARSE_ERROR",
+            message=f"YAML parse error in {filename}: {str(e)}",
+            diagnosis="The configuration file contains invalid YAML syntax",
+            suggested_action="Check the YAML syntax in the config file",
+            http_status=500,
+        )
 
 
 @router.get("/governance/catalog", response_model=GovernanceConfigResponse)
@@ -71,6 +107,6 @@ def get_status(user=Depends(get_current_user)):
         try:
             _load_yaml(c)
             status[c] = "loaded"
-        except (HTTPException, PermissionError):
+        except (APIError, PermissionError):
             status[c] = "error"
     return {"governance_layer": "active", "configs": status}

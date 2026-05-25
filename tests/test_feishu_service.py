@@ -129,3 +129,46 @@ class TestImportStatusPerTable:
                 f"products skipped should be 1, got {products_result['skipped']}"
             )
             assert orders_result["imported"] != products_result["imported"]
+
+
+class TestSubprocessValidation:
+    """Test that _run_script validates subprocess parameters correctly."""
+
+    def test_subprocess_cmd_rejects_empty_list(self, service):
+        """Empty script_name should raise ValueError (not reach subprocess.run)."""
+        with pytest.raises(ValueError):
+            service._run_script("", [])
+
+    def test_subprocess_cmd_rejects_invalid_script(self, service):
+        """Path traversal patterns in script_name should raise ValueError."""
+        # Path separators
+        with pytest.raises(ValueError, match="Invalid script_name"):
+            service._run_script("../../../etc/passwd", [])
+        with pytest.raises(ValueError, match="Invalid script_name"):
+            service._run_script("/etc/passwd", [])
+        with pytest.raises(ValueError, match="Invalid script_name"):
+            service._run_script("subdir/script.py", [])
+
+        # .. in name
+        with pytest.raises(ValueError, match="Invalid script_name"):
+            service._run_script("..", [])
+        with pytest.raises(ValueError, match="Invalid script_name"):
+            service._run_script("..\\script.py", [])
+
+        # Backslash path traversal
+        with pytest.raises(ValueError, match="Invalid script_name"):
+            service._run_script("..\\..\\script.py", [])
+
+    def test_subprocess_no_shell_true(self, service):
+        """subprocess.run should never be called with shell=True."""
+        with patch("services.feishu_service.subprocess.run") as mock_run:
+            mock_run.return_value.returncode = 0
+            mock_run.return_value.stdout = ""
+
+            service._run_script("valid_script.py", [])
+
+            mock_run.assert_called_once()
+            _, kwargs = mock_run.call_args
+            assert kwargs.get("shell") is not True, (
+                f"subprocess.run should not have shell=True, got kwargs: {kwargs}"
+            )

@@ -1,13 +1,15 @@
 """FastAPI dependencies — database connections and auth."""
 
 import sqlite3
-from typing import Generator
+from collections.abc import Generator
 
-from fastapi import Header, HTTPException
+from fastapi import Header
 
 from api.auth import verify_token
-from api.errors import APIError, AUTH_REQUIRED, INVALID_TOKEN
-from services.db_service import get_db as _svc_get_db, db_exists
+from api.errors import AUTH_REQUIRED, INVALID_TOKEN, APIError
+from core.config import get_env_or_raise
+from services.db_service import db_exists
+from services.db_service import get_db as _svc_get_db
 
 
 def get_db() -> Generator[sqlite3.Connection, None, None]:
@@ -25,6 +27,10 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
         yield conn
     finally:
         conn.close()
+
+
+# Shared migration state (avoids circular imports)
+_migration_status = {"status": "ok", "failed": []}
 
 
 def get_current_user(authorization: str = Header(None)) -> str:
@@ -60,4 +66,4 @@ def get_current_user(authorization: str = Header(None)) -> str:
             http_status=403,
         )
 
-    return "qoder"
+    return get_env_or_raise("DEFAULT_USER", default="qoder")

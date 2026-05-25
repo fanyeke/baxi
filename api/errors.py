@@ -1,8 +1,8 @@
 """API error handling — structured errors with diagnosis and suggested action."""
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 
 class APIError(Exception):
@@ -38,8 +38,9 @@ CONFIG_MISSING = "CONFIG_MISSING"
 
 async def api_error_handler(request: Request, exc: APIError) -> JSONResponse:
     """Convert APIError to structured JSON response."""
-    from api.logging_config import get_request_id
     import logging
+
+    from api.logging_config import get_request_id
 
     rid = get_request_id()
     logging.getLogger("api.error").error(

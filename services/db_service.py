@@ -4,7 +4,7 @@ import logging
 import os
 import sqlite3
 
-from scripts.config import DB_PATH
+from core.config import DB_PATH, validate_sql_identifier
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +13,7 @@ ALLOWED_PUBLIC_TABLES = {
     "metric_daily", "metric_dimension_daily", "alert_events",
     "strategy_recommendations", "action_tasks", "review_retro",
     "event_outbox", "qoder_jobs",
+    "qoder_runs", "qoder_reports",
 }
 
 
@@ -40,6 +41,7 @@ def get_db(db_path=None):
     path = db_path or DB_PATH
     conn = sqlite3.connect(path)
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys = ON")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -62,6 +64,7 @@ def get_table_counts(conn):
         table_name = row["name"]
         try:
             validate_table_name(table_name)
+            validate_sql_identifier(table_name)
         except ValueError:
             logger.warning("Skipping unknown table: %s", table_name)
             continue
@@ -82,6 +85,7 @@ def get_table_info(conn, table_name):
         List of column info dicts from PRAGMA table_info.
     """
     validate_table_name(table_name)
+    validate_sql_identifier(table_name)
     rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
     return [dict(row) for row in rows]
 

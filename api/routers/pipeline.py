@@ -1,4 +1,4 @@
-"""Pipeline API router — v0.5.1 P1 endpoint for pipeline command preview."""
+"""Pipeline API router — v0.5.3 P1 endpoint for pipeline command preview."""
 from fastapi import APIRouter, Depends
 
 from api.dependencies import get_current_user

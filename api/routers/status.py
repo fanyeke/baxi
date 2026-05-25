@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from api.dependencies import get_db, get_current_user
+from api.dependencies import _migration_status, get_current_user, get_db
 from api.schemas import StatusResponse
-from api.main import _migration_status
 from services.db_service import get_table_counts as svc_get_table_counts
 from services.status_service import get_last_pipeline_run
 
@@ -22,6 +21,6 @@ def get_status(conn=Depends(get_db)):
             "tables": counts,
         },
         last_pipeline_run=run_dict,
-        version="0.5.1",
+        version="0.5.3",
         migration_status=dict(_migration_status),
     )

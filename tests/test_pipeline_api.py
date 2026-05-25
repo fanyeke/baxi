@@ -20,7 +20,7 @@ def client(app):
 
 @pytest.fixture
 def auth_headers():
-    return {"Authorization": "Bearer test-token"}
+    return {"Authorization": "Bearer test-token-for-baxi-ci-tests-only-32ch"}
 
 
 class TestPipelineRun:
@@ -61,8 +61,10 @@ class TestPipelineRun:
             json={"pipeline_type": "invalid"},
             headers=auth_headers,
         )
-        assert resp.status_code == 200
-        assert "warnings" in resp.json()
+        # Security fix: pipeline_type now uses Literal type for strict validation
+        # Invalid types are rejected at the API schema level (422)
+        assert resp.status_code == 422
+        assert "VALIDATION_ERROR" in str(resp.json())
 
     def test_run_unauthorized_returns_401(self, client):
         resp = client.post("/api/v1/pipeline/run", json={})

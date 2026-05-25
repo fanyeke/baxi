@@ -1,7 +1,9 @@
-import os, sys, yaml, importlib
+import importlib
 from abc import ABC, abstractmethod
 
-from scripts import config
+import yaml
+
+from core import config
 
 
 class ChannelAdapter(ABC):

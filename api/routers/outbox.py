@@ -5,7 +5,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from api.dependencies import get_db, get_current_user
+from adapters.base import load_adapter_registry
+from api.dependencies import get_current_user, get_db
 from api.logging_config import get_request_id
 from api.schemas import (
     DispatchRequest,
@@ -14,7 +15,6 @@ from api.schemas import (
     OutboxItem,
     OutboxListResponse,
 )
-from adapters.base import load_adapter_registry
 from services.dispatch_service import (
     dispatch_one,
     fetch_pending,
@@ -78,7 +78,11 @@ def dispatch_outbox(body: DispatchRequest, conn=Depends(get_db)):
 
         try:
             result = dispatch_one(conn, event_dict, registry, is_dry_run)
-        except Exception as e:
+        except (KeyError, RuntimeError) as e:
+            # Catch unexpected per-event failures to allow the batch to continue.
+            # dispatch_one() already catches adapter-level errors internally;
+            # KeyError covers missing event dict keys, RuntimeError covers
+            # any other unexpected runtime failures.
             result = {"status": "failed", "external_ref": None, "error": str(e), "message": None}
 
         adapter_name = result.get("adapter_name")

@@ -1,10 +1,8 @@
 """Pydantic v2 models for v0.5 API requests and responses."""
 
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
-
 
 # ── Request models ───────────────────────────────────────────────────────
 
@@ -131,7 +129,7 @@ class ErrorResponse(BaseModel):
     suggested_action: str
 
 
-# ── v0.5.1 Logs models ───────────────────────────────────────────────────
+# ── v0.5.3 Logs models ───────────────────────────────────────────────────
 
 
 class ErrorLogEntry(BaseModel):
@@ -189,7 +187,7 @@ class AuditLogListResponse(BaseModel):
     total: int
 
 
-# ── v0.5.1 Feishu models ──────────────────────────────────────────────────
+# ── v0.5.3 Feishu models ──────────────────────────────────────────────────
 
 
 class FeishuExportRequest(BaseModel):
@@ -270,11 +268,13 @@ class FeishuStatusImportResponse(BaseModel):
     tables: list[FeishuTableResult] = []
 
 
-# ── v0.5.1 Pipeline models ────────────────────────────────────────────────
+# ── v0.5.3 Pipeline models ────────────────────────────────────────────────
 
+
+from typing import Literal
 
 class PipelineRunRequest(BaseModel):
-    pipeline_type: str = "daily"
+    pipeline_type: Literal["daily", "full", "db_full"] = "daily"
 
 
 class PipelineRunResponse(BaseModel):

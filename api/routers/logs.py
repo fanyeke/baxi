@@ -1,4 +1,4 @@
-"""Logs API router — v0.5.1 P1 endpoints for reading log files."""
+"""Logs API router — v0.5.3 P1 endpoints for reading log files."""
 import os
 
 from fastapi import APIRouter, Depends, Query
@@ -12,7 +12,7 @@ from api.schemas import (
     RecentLogEntry,
     RecentLogListResponse,
 )
-from scripts import config
+from core import config
 from services.log_reader import read_audit_logs, read_log_errors, read_log_recent
 
 router = APIRouter(dependencies=[Depends(get_current_user)])

@@ -2,6 +2,8 @@ import os, sys, json, sqlite3, yaml, pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 import config
 
+pytestmark = pytest.mark.integration
+
 DB_PATH = os.path.join(config.PROJECT_ROOT, 'data', 'olist_ops.db')
 
 

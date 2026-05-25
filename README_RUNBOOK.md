@@ -4,9 +4,9 @@
 
 **Goal:** End-to-end runbook for deploying and operating the data pipeline, from environment setup to Feishu sync.
 
-**Architecture:** Single-repo Python pipeline with 4 entry points (daily simulation, full evaluation, Feishu sync, status pullback), built on pandas/numpy data model with heuristic/AI decision engine and Feishu Bitable sync.
+**Architecture:** Single-repo Python pipeline with 4 entry points (daily simulation, full evaluation, Feishu sync, status pullback), FastAPI API gateway (port 8765), SQLite (WAL) backend, React console frontend, built on pandas/numpy data model with heuristic/AI decision engine and Feishu Bitable sync.
 
-**Tech Stack:** Python 3.10+, pandas, numpy, pyyaml, requests, pydantic, openai, python-dotenv, matplotlib, seaborn
+**Tech Stack:** Python 3.10+, FastAPI, Uvicorn, Pydantic v2, SQLite (WAL), pandas, numpy, pyyaml, requests, openai, python-dotenv, matplotlib, seaborn, React, TanStack Query
 
 ---
 
@@ -21,7 +21,7 @@
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## 数据下载
@@ -41,13 +41,30 @@ Confirm: `ls data/raw/olist_orders_dataset.csv`
 
 ## 构建基础表
 
+> ⚠️ `scripts/phase02_build_data_model.py` is FROZEN and won't run directly. Use the pipeline instead:
+
 ```bash
-python3 scripts/phase02_build_data_model.py
+python3 scripts/run_db_pipeline.py --mode full
 ```
 
 Produces: `data/interim/order_level_base.csv` (99,441 rows), `data/interim/item_level_base.csv` (112,650 rows)
 
-## 入口 1：每日模拟模式
+## 入口 1：Pipeline Runner（推荐）
+
+```bash
+# Full pipeline (init → ingest → metrics → rules → export → trigger)
+python3 scripts/run_db_pipeline.py --mode full
+
+# Dry-run (no side effects)
+python3 scripts/run_db_pipeline.py --mode full --dry-run
+
+# Dimensional pipeline (includes dimension metrics + dimensional rules)
+python3 scripts/run_db_pipeline.py --mode full --dimensional
+```
+
+See `docs/pipeline.md` for full pipeline documentation.
+
+## 入口 2：每日模拟模式
 
 ```bash
 python3 scripts/run_daily_pipeline.py
@@ -55,7 +72,7 @@ python3 scripts/run_daily_pipeline.py
 
 8-step sequential pipeline: simulate ingestion → data quality → daily metrics → alert detection → AIP objects → context bundle → wake agent → feishu sandbox. Increments `data/system/ingestion_state.json` by 1 day per run.
 
-## 入口 2：全量评估模式
+## 入口 3：全量评估模式
 
 ```bash
 python3 scripts/run_full_pipeline.py
@@ -63,7 +80,7 @@ python3 scripts/run_full_pipeline.py
 
 5-step --mode full pipeline: daily_metrics_full → metric_alerts_full → aip_context_bundle_full → AI decision engine → feishu sandbox full. Produces `_full` suffixed outputs in data/ads/, data/aip/, outputs/ai/, data/feishu/.
 
-## 入口 3：飞书同步
+## 入口 4：飞书同步
 
 ```bash
 # Dry-run (preview only, no API calls)
@@ -74,7 +91,7 @@ python3 scripts/sync_feishu_bitable.py --all --apply
 
 Syncs 5 tables: daily_metrics, alert_events, strategy_recommendations, action_tasks, execution_reviews. Requires `.env` with real Feishu credentials. See `config/feishu_table_ids.yml` for table ID configuration.
 
-## 入口 4：状态回流
+## 入口 5：状态回流
 
 ```bash
 python3 scripts/pull_feishu_status.py --dry-run
@@ -86,7 +103,7 @@ Pulls task status and review retro from Feishu back to local CSV.
 ## 常见错误
 
 - **"No such file: olist_orders_dataset.csv"**: Run data download step first
-- **"ModuleNotFoundError: No module named 'pandas'"**: Run `pip install -r requirements.txt`
+- **"ModuleNotFoundError: No module named 'pandas'"**: Run `pip install -e .`
 - **"LLM API key not found"**: Copy `.env.example` to `.env` and set LLM_API_KEY (or skip: AI engine will fall back to heuristic rules)
 - **"Feishu auth failed"**: Set real FEISHU_APP_ID/FEISHU_APP_SECRET in `.env` (or use --dry-run for local-only)
 - **"ingestion_state.json not found"**: Script auto-initializes on first run (start date: 2016-09-04)

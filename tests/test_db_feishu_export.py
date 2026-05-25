@@ -15,6 +15,8 @@ import pytest
 
 import scripts.config as config
 
+pytestmark = pytest.mark.integration
+
 FEISHU_DIR = config.FEISHU_DIR
 
 EXPECTED_CSV_FILES = [

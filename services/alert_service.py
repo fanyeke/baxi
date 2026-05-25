@@ -1,23 +1,14 @@
 from services.db_service import get_db
+from services._query_utils import _build_conditions
 
 
 def _build_alert_conditions(status, severity, object_type, object_id):
-    conditions = []
-    params = []
-    if status is not None:
-        conditions.append("status = ?")
-        params.append(status)
-    if severity is not None:
-        conditions.append("severity = ?")
-        params.append(severity)
-    if object_type is not None:
-        conditions.append("object_type = ?")
-        params.append(object_type)
-    if object_id is not None:
-        conditions.append("object_id = ?")
-        params.append(object_id)
-    where = "WHERE " + " AND ".join(conditions) if conditions else ""
-    return where, params
+    return _build_conditions({
+        "status": status,
+        "severity": severity,
+        "object_type": object_type,
+        "object_id": object_id,
+    })
 
 
 def get_alerts(conn=None, status=None, severity=None, object_type=None, object_id=None, limit=100):

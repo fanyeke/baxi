@@ -1,6 +1,6 @@
 # Olist Decision Backend — API 接口参考手册
 
-> **版本**: v0.5.3 · **最后更新**: 2026-05-24  
+> **版本**: v0.6.0 · **最后更新**: 2026-05-24  
 > **技术栈**: Python 3.9+ · FastAPI · Pydantic v2 · SQLite (WAL)  
 > **默认端口**: 8765 · **基础路径**: `/api/v1`
 
@@ -45,10 +45,10 @@ Client (React console / CLI / curl)
 │  ├─ Middleware: Rate Limit   │
 │  └─ Exception → Structured   │
 ├──────────────────────────────┤
-│  Routers (10 个)             │
+│  Routers (11 个)             │
 │  health / status / alerts /  │
 │  tasks / outbox / logs /     │
-│  feishu / pipeline /         │
+│  qoder / feishu / pipeline / │
 │  diagnosis / governance      │
 ├──────────────────────────────┤
 │  Services (业务逻辑层)       │
@@ -66,7 +66,7 @@ Client (React console / CLI / curl)
 └──────────────────────────────┘
 ```
 
-### 1.3 端点总览（21 个端点）
+### 1.3 端点总览（24 个端点）
 
 | # | 方法 | 路径 | 分组 | 认证 | 作用 |
 |---|------|------|------|------|------|
@@ -91,6 +91,9 @@ Client (React console / CLI / curl)
 | 19 | GET | `/api/v1/governance/checkpoints` | Governance | ✅ | 检查点规则 |
 | 20 | GET | `/api/v1/governance/health` | Governance | ✅ | 健康检查规则 |
 | 21 | GET | `/api/v1/governance/status` | Governance | ✅ | 治理状态汇总 |
+| 22 | GET | `/api/v1/qoder/capabilities` | Qoder | ✅ | 能力矩阵 |
+| 23 | GET | `/api/v1/qoder/context` | Qoder | ✅ | 决策上下文 |
+| 24 | POST | `/api/v1/qoder/reports` | Qoder | ✅ | 提交运行报告 |
 
 ---
 
@@ -150,7 +153,7 @@ uvicorn api.main:app --host 0.0.0.0 --port 8765
 ```bash
 # 健康检查（无需认证）
 curl http://127.0.0.1:8765/api/v1/health
-# → {"status":"ok","version":"0.5.1","db_connected":true}
+# → {"status":"ok","version":"0.6.0","db_connected":true}
 
 # OpenAPI 文档（需 ENABLE_DOCS=1）
 open http://127.0.0.1:8765/docs
@@ -197,7 +200,7 @@ curl -H "Authorization: Bearer wrong-token" \
 
 ### 3.4 注意事项
 
-- 当前版本 (`v0.5.3`) 使用**单一静态 token**，所有请求被视为同一 actor（`qoder`）
+- 当前版本 (`v0.6.0`) 使用**单一静态 token**，所有请求被视为同一 actor（`qoder`）
 - 不支持多用户 / RBAC（即使配置文件中有 `access_policy.yml`，API 层未启用）
 - Token 不应硬编码在代码或配置文件中，应通过环境变量传递
 
@@ -315,6 +318,7 @@ CORS_ORIGINS=http://localhost:5173,https://console.example.com
 | 503 | `DB_QUERY_FAILED` | SQL 查询失败 |
 | 500 | `INTERNAL_ERROR` | 未捕获的异常 |
 | 500 | `CONFIG_MISSING` | 必需配置文件缺失 |
+| 404 | `OUTBOX_NOT_FOUND` | Outbox 中不存在指定 ID 的事件 |
 | 500/400 | `DISPATCH_FAILED` | 调度执行失败 |
 | 500/400 | `FEISHU_DISPATCH_FAILED` | 飞书操作失败 |
 
@@ -340,7 +344,7 @@ CORS_ORIGINS=http://localhost:5173,https://console.example.com
 ```json
 {
   "status": "ok",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "db_connected": true
 }
 ```
@@ -397,7 +401,7 @@ curl http://127.0.0.1:8765/api/v1/health
     "output_count": 230,
     "error_message": null
   },
-  "version": "0.5.1",
+  "version": "0.6.0",
   "migration_status": {
     "status": "ok",
     "failed": []
@@ -933,6 +937,223 @@ curl -X POST \
 
 ---
 
+### 6.10 Qoder 分组
+
+#### `GET /api/v1/qoder/capabilities`
+
+Qoder 能力矩阵。返回当前 Qoder 实例的操作模式、协议版本、可调用的端点列表，以及每个 `can_*` 标志位的布尔值。
+
+**Auth**: Bearer Token 必填
+
+**请求参数**: 无
+
+**响应** — `CapabilitiesResponse`：
+```json
+{
+  "mode": "read_only",
+  "version": "0.6.0",
+  "can_read_status": true,
+  "can_read_alerts": true,
+  "can_read_tasks": true,
+  "can_read_outbox": true,
+  "can_read_logs": true,
+  "can_dispatch": false,
+  "can_apply": false,
+  "can_sync_feishu": false,
+  "can_run_pipeline": false,
+  "can_modify_rules": false,
+  "allowed_endpoints": [
+    "/api/v1/alerts",
+    "/api/v1/tasks"
+  ],
+  "forbidden_actions": [
+    "dispatch",
+    "apply"
+  ]
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `mode` | string | 运行模式，通常为 `"read_only"` |
+| `version` | string | Qoder 协议版本 |
+| `can_*` | bool | 每个功能的权限标志位 |
+| `allowed_endpoints` | string[] | 当前实例允许调用的端点列表 |
+| `forbidden_actions` | string[] | 当前实例明确禁止的操作列表 |
+
+**示例**：
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8765/api/v1/qoder/capabilities
+```
+
+---
+
+#### `GET /api/v1/qoder/context`
+
+聚合系统上下文，供 Qoder 决策使用。一次性返回当前系统状态、汇总计数、最高优先级告警、开放任务、待调度发件箱和可选错误诊断。
+
+**Auth**: Bearer Token 必填
+
+**Query 参数**：
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|------|------|------|------|------|
+| `severity` | string | 否 | — | 筛选告警级别：`low` / `medium` / `high` / `critical` |
+| `limit_alerts` | int | 否 | 10 | 最大告警数，1~100 |
+| `limit_tasks` | int | 否 | 10 | 最大任务数，1~100 |
+| `limit_outbox` | int | 否 | 10 | 最大发件箱条目数，1~100 |
+| `include_logs` | bool | 否 | false | 是否附加最近错误诊断 |
+
+**响应** — `ContextResponse`：
+```json
+{
+  "request_id": "ctx_a1b2c3d4",
+  "system": {
+    "last_pipeline_run": {
+      "run_id": "run_20260524_001",
+      "run_type": "full",
+      "mode": "full",
+      "status": "completed",
+      "started_at": "2026-05-24T01:00:00",
+      "finished_at": "2026-05-24T01:05:23",
+      "input_count": 99441,
+      "output_count": 230,
+      "error_message": null
+    }
+  },
+  "summary": {
+    "total_alerts": 8,
+    "total_open_tasks": 5,
+    "total_pending_outbox": 3
+  },
+  "top_alerts": [
+    {
+      "event_id": "evt_abc123",
+      "rule_id": "gmv_drop",
+      "severity": "high",
+      "status": "new",
+      "impact_score": 8.5
+    }
+  ],
+  "open_tasks": [],
+  "pending_outbox": [],
+  "recent_diagnosis": [],
+  "allowed_actions": [
+    "can_read_status",
+    "can_read_alerts"
+  ],
+  "forbidden_actions": [
+    "dispatch",
+    "apply"
+  ]
+}
+```
+
+**典型用法**：
+```bash
+# 获取默认上下文（10 条告警、10 条任务、10 条发件箱）
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8765/api/v1/qoder/context
+
+# 筛选 high 级别告警，只取 5 条，附带错误日志
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8765/api/v1/qoder/context?severity=high&limit_alerts=5&include_logs=true"
+
+# 仅获取系统状态和汇总，不拉取详细列表
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8765/api/v1/qoder/context?limit_alerts=0&limit_tasks=0&limit_outbox=0"
+```
+
+---
+
+#### `POST /api/v1/qoder/reports`
+
+提交 Qoder 运行报告。记录一次只读执行的摘要、发现和推荐的人工行动。
+
+**Auth**: Bearer Token 必填
+
+**请求体** — `ReportRequest`：
+
+```json
+{
+  "run_type": "readonly_check",
+  "summary": "Checked 15 alerts, reviewed 3 open tasks, no action taken.",
+  "findings": [
+    {
+      "alert_id": "alert_001",
+      "action": "reviewed"
+    }
+  ],
+  "recommended_human_actions": [
+    "Investigate high-severity alert alert_003"
+  ],
+  "risk_level": "low",
+  "used_endpoints": [
+    "/api/v1/alerts",
+    "/api/v1/tasks"
+  ],
+  "no_apply_performed": true
+}
+```
+
+**响应** — `ReportResponse`：
+```json
+{
+  "report_id": "rpt_e5f6g7h8",
+  "status": "recorded",
+  "business_side_effect": false
+}
+```
+
+**约束与说明**：
+
+| 约束 | 说明 |
+|------|------|
+| `no_apply_performed` | **必须为 `true`**。服务端会校验此字段，如不为 `true` 则返回 422 `VALIDATION_ERROR`。此约束确保 Qoder 运行报告仅记录只读操作。 |
+| `run_type` | 必填，最小长度 1。取值示例：`"readonly_check"`、`"daily"`、`"manual"`、`"incident"` |
+| `summary` | 必填，最小长度 1。人类可读的运行摘要 |
+| `findings` | 可选。结构化发现列表，每个元素是一个字典 |
+| `recommended_human_actions` | 可选。建议人工跟进的操作列表 |
+| `risk_level` | 可选。总体风险评估，如 `"low"`、`"medium"`、`"high"` |
+| `used_endpoints` | 可选。本次运行中调用的端点列表 |
+
+**示例**：
+```bash
+# 基本报告（仅必填字段）
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"run_type":"readonly_check","summary":"Test","no_apply_performed":true}' \
+  http://localhost:8765/api/v1/qoder/reports
+
+# 完整报告
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "run_type": "daily",
+    "summary": "Checked 15 alerts, dispatched 3 outbox items.",
+    "findings": [{"alert_id": "alert_001", "action": "reviewed"}],
+    "recommended_human_actions": ["Review high-severity alert alert_003"],
+    "risk_level": "low",
+    "used_endpoints": ["/api/v1/alerts", "/api/v1/tasks"],
+    "no_apply_performed": true
+  }' \
+  http://localhost:8765/api/v1/qoder/reports
+
+# ❌ 缺少 no_apply_performed → 422 VALIDATION_ERROR
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"run_type":"readonly_check","summary":"Test"}' \
+  http://localhost:8765/api/v1/qoder/reports
+```
+
+---
+
 ## 7. 请求与响应 Schema 详解
 
 ### 7.1 请求模型
@@ -973,6 +1194,9 @@ curl -X POST \
 | `GovernanceConfigResponse` | governance 端点 | extra="allow"，返回 YAML 全部内容 |
 | `GovernanceStatusResponse` | governance/status 端点 | governance_layer, configs |
 | `DiagnosisLogEntry` / `DiagnosisResponse` | diagnosis 端点 | request_id, summary, related_logs |
+| `CapabilitiesResponse` | qoder/capabilities 端点 | mode, version, can_* flags, allowed_endpoints, forbidden_actions |
+| `ContextResponse` | qoder/context 端点 | request_id, system, summary, top_alerts, open_tasks, pending_outbox, allowed_actions |
+| `ReportRequest` / `ReportResponse` | qoder/reports 端点 | run_type, summary, no_apply_performed → report_id, status, business_side_effect |
 | `ErrorResponse` | 所有错误 | request_id, error_code, message, diagnosis, suggested_action |
 
 ---
@@ -986,7 +1210,7 @@ curl -X POST \
 ```bash
 # 健康检查（无需认证，30 req/min 限流）
 curl http://127.0.0.1:8765/api/v1/health
-# 期望: {"status":"ok","version":"...","db_connected":true}
+# 期望: {"status":"ok","version":"0.6.0","db_connected":true}
 
 # 系统状态（需认证）
 curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8765/api/v1/status
@@ -1153,6 +1377,16 @@ cd .. && python3 scripts/run_api.py  # 自动 mount /console
 | `category` | `electronics` | 单个商品品类 |
 | `region` | `SP` | 单个地区 |
 
+### 10.4 外键约束关系（Migration 010）
+
+| 子表 | 外键列 | 父表 | ON DELETE |
+|------|--------|------|-----------|
+| `action_tasks` | `recommendation_id` | `strategy_recommendations` | CASCADE |
+| `qoder_jobs` | `event_id` | `alert_events` | CASCADE |
+| `review_retro` | `recommendation_id` | `strategy_recommendations` | CASCADE |
+
+SQLite `PRAGMA foreign_keys = ON` 已在所有新连接上启用，确保引用完整性。
+
 ---
 
 ## 变更日志
@@ -1160,9 +1394,10 @@ cd .. && python3 scripts/run_api.py  # 自动 mount /console
 | 版本 | 主要变更 |
 |------|----------|
 | v0.5 | 首个 API 网关：FastAPI + 6 个核心端点 + Bearer Token + 限流 |
-| v0.5.1 | 新增 Logs / Feishu / Pipeline / Governance 端点；结构化审计；前端 Alpha |
-| v0.5.2 | 新增 `/logs/diagnosis`；前端硬化；日志诊断优化 |
+| v0.5.3 | 新增 Logs / Feishu / Pipeline / Governance 端点；结构化审计；前端 Alpha |
+| v0.5.3 | 新增 `/logs/diagnosis`；前端硬化；日志诊断优化 |
 | v0.5.3 | Governance 7 个端点 + response model；请求 schema validator；测试隔离优化 |
+| v0.6.0 | 新增 Qoder 端点：`/qoder/capabilities`、`/qoder/context`、`/qoder/reports`；能力矩阵 + 决策上下文 + 只读报告记录 |
 
 ---
 

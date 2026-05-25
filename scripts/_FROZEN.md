@@ -17,14 +17,23 @@ Every script uses **hardcoded relative paths** (e.g., `pd.read_csv('olist_orders
 - ❌ `python scripts/phase02_build_data_model.py` → FileNotFoundError (same issue)
 - ❌ All 14 scripts will fail with path errors
 
-### Phase B (Planned)
+### Phase B (Completed ✅)
 
-The next step will:
-1. Create `scripts/config.py` with centralized path constants
-2. Update all scripts to use config-based paths
-3. Run end-to-end tests to verify
+- ✅ `core/config.py` created with centralized path constants (new code should import from `core.config`)
+- ✅ `scripts/config.py` retained as backward-compatible shim (emits `DeprecationWarning`)
+- ⚠️ FROZEN scripts remain unfixed by design — their analysis outputs are already固化 in `outputs/` and `reports/`
 
-### How to Run a Script (Temporary Workaround)
+### For New Code
+
+```python
+# Recommended: import from core.config
+from core.config import PROJECT_ROOT, RAW_DATA_DIR, OUTPUT_DIR
+
+# Still works but deprecated:
+from scripts import config  # DeprecationWarning
+```
+
+### How to Run a Script (If You Really Need To)
 
 ```bash
 # Example: run Phase 1 data exploration
@@ -34,4 +43,4 @@ python phase01_explore_data.py  # run from data/ (where CSVs live)
 rm phase01_explore_data.py  # clean up
 ```
 
-This is not ideal — it's a temporary workaround until Phase B fixes all paths properly.
+This is a workaround for the frozen scripts only. Active pipeline uses `pipeline/runner.py`.

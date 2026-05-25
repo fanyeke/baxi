@@ -1,7 +1,7 @@
 import json
 
-from scripts import config
 from adapters.base import ChannelAdapter
+from core import config
 from scripts.feishu_client import FeishuClient
 
 

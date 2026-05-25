@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from scripts import config
 from fastapi.testclient import TestClient
 
-os.environ["API_BEARER_TOKEN"] = "test-token"
+os.environ["API_BEARER_TOKEN"] = "test-token-for-baxi-ci-tests-only-32ch"
 
 
 @pytest.fixture(scope="function")
@@ -75,7 +75,7 @@ class TestHealth:
 
     def test_health_has_version(self, client):
         r = client.get("/api/v1/health")
-        assert r.json()["version"] == "0.5.1"
+        assert r.json()["version"] == "0.6.0"
 
     def test_health_db_connected(self, client):
         r = client.get("/api/v1/health")

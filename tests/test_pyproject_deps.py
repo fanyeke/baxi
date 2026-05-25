@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
 REQUIREMENTS_PATH = PROJECT_ROOT / "requirements.txt"
+REQUIREMENTS_DEV_PATH = PROJECT_ROOT / "requirements-dev.txt"
 
 
 class TestDependencyConsolidation:
@@ -19,9 +20,12 @@ class TestDependencyConsolidation:
         assert "dependencies" in data["project"], "Missing [project.dependencies] in pyproject.toml"
         assert len(data["project"]["dependencies"]) >= 10, "Too few dependencies declared"
 
-    def test_requirements_txt_removed(self):
-        """requirements.txt should no longer exist after consolidation."""
-        assert not REQUIREMENTS_PATH.exists(), "requirements.txt still exists — should be deleted"
+    def test_requirements_txt_exists(self):
+        """requirements.txt should exist as a pip-tools lock file."""
+        assert REQUIREMENTS_PATH.exists(), "requirements.txt missing — run pip-compile"
+
+    def test_requirements_dev_txt_exists(self):
+        assert REQUIREMENTS_DEV_PATH.exists(), "requirements-dev.txt missing — run pip-compile --extra dev"
 
     def test_runtime_imports_work(self):
         """All runtime dependencies must be importable."""

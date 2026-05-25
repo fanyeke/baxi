@@ -20,7 +20,7 @@ def client(app):
 
 @pytest.fixture
 def auth_headers():
-    return {"Authorization": "Bearer test-token"}
+    return {"Authorization": "Bearer test-token-for-baxi-ci-tests-only-32ch"}
 
 
 @pytest.fixture

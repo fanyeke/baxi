@@ -1,4 +1,4 @@
-"""Pipeline command preview for v0.5.1 Pipeline API.
+"""Pipeline command preview for v0.5.3 Pipeline API.
 
 Provides preview_pipeline_run() that returns the shell command and metadata
 for each pipeline type — without executing anything.
@@ -6,7 +6,7 @@ for each pipeline type — without executing anything.
 
 import os
 
-from scripts import config
+from core import config
 
 # Pipeline definitions: type -> (script_name, args, estimate)
 _PIPELINES = {

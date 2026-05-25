@@ -1,31 +1,42 @@
 """FastAPI app factory for v0.5 API gateway."""
 
+import logging
 import os
 import sqlite3
-import uuid
 import time
-import logging
+import uuid
 from collections import defaultdict
 from contextvars import ContextVar
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from api.dependencies import _migration_status
 from api.errors import APIError, api_error_handler, validation_exception_handler
-from api.logging_config import setup_logging, set_request_id, get_request_id
-from services.db_service import get_db
+from api.logging_config import get_request_id, set_request_id, setup_logging
 
 
 def _sanitize_error(msg: str) -> str:
     """Remove sensitive patterns from error messages in debug mode."""
     import re
+
     sensitive = [
-        (r'Bearer\s+\S+', '[BEARER_REDACTED]'),
-        (r'(?:api[_-]?bearer[_-]?token|FEISHU_APP_SECRET|LLM_API_KEY)\s*[=:]\s*\S+', '[CREDENTIAL_REDACTED]'),
-        (r'(?:password|secret|token|key)\s*[=:]\s*[\'"][^\'"]+[\'"]', '[CREDENTIAL_REDACTED]'),
-        (r'(?:password|secret|token|key)\s*[=:]\s*\S+', '[CREDENTIAL_REDACTED]'),
+        (r"Bearer\s+\S+", "[BEARER_REDACTED]"),
+        (
+            r"(?:api[_-]?bearer[_-]?token|FEISHU_APP_SECRET|LLM_API_KEY)\s*[=:]\s*\S+",
+            "[CREDENTIAL_REDACTED]",
+        ),
+        (r'(?:password|secret|token|key)\s*[=:]\s*[\'"][^\'"]+[\'"]', "[CREDENTIAL_REDACTED]"),
+        (r"(?:password|secret|token|key)\s*[=:]\s*\S+", "[CREDENTIAL_REDACTED]"),
+        # Security: also redact file paths, database paths, and internal IPs
+        (r'(?:/home/|/tmp/|/var/|/opt/)[^\s\'"]+', "[PATH_REDACTED]"),
+        (
+            r"\b(?:127\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(?:1[6-9]|2[0-9]|3[01])\.\d+\.\d+)\b",
+            "[IP_REDACTED]",
+        ),
+        (r"\b[A-Fa-f0-9]{32,}\b", "[HASH_REDACTED]"),
     ]
     for pattern, replacement in sensitive:
         msg = re.sub(pattern, replacement, msg, flags=re.IGNORECASE)
@@ -40,6 +51,7 @@ _rate_limit_config = {
     "health": ("/api/v1/health", (30, 60)),
     "dispatch": ("/api/v1/outbox/dispatch", (30, 60)),
     "pipeline": ("/api/v1/pipeline/run", (10, 60)),
+    "qoder": ("/api/v1/qoder", (60, 60)),
 }
 _DEFAULT_RATE = (300, 60)
 _RATE_CLEANUP_INTERVAL = 300
@@ -71,8 +83,11 @@ def _check_rate_limit(ip: str, path: str) -> bool:
     now = time.time()
 
     if now - _last_rate_cleanup > _RATE_CLEANUP_INTERVAL:
-        stale = [k for k, v in _rate_limit_buckets.items()
-                 if now - v["last_refill"] > _RATE_CLEANUP_INTERVAL * 2]
+        stale = [
+            k
+            for k, v in _rate_limit_buckets.items()
+            if now - v["last_refill"] > _RATE_CLEANUP_INTERVAL * 2
+        ]
         for k in stale:
             del _rate_limit_buckets[k]
         _last_rate_cleanup = now
@@ -104,46 +119,62 @@ def _reset_rate_limiter():
 _request_id_ctx: ContextVar[str] = ContextVar("request_id", default="")
 
 logger = logging.getLogger("api")
-_migration_status = {"status": "ok", "failed": []}
 
 
 def _apply_migration(db_path: str) -> None:
     """Apply schema migrations if required columns are missing."""
     migration_dir = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
-        "sql", "migrations",
+        "sql",
+        "migrations",
     )
     if not os.path.exists(db_path):
         return
 
     conn = sqlite3.connect(db_path)
     try:
-        _migrate_if_needed(conn, migration_dir, "005_dispatch_adapters.sql",
-                           "event_outbox",
-                           ["dispatch_attempts", "last_dispatch_at",
-                            "external_ref", "adapter_name"])
-        _migrate_if_needed(conn, migration_dir, "006_api_schema_fix.sql",
-                           "alert_events",
-                           ["affected_orders", "affected_gmv", "impact_score"])
-        _migrate_if_needed(conn, migration_dir, "006_api_schema_fix.sql",
-                           "action_tasks",
-                           ["target_object_type", "target_object_id"])
-        _migrate_if_needed(conn, migration_dir, "007_review_retro_status_feedback.sql",
-                           "review_retro", ["status", "feedback"])
+        _migrate_if_needed(
+            conn,
+            migration_dir,
+            "005_dispatch_adapters.sql",
+            "event_outbox",
+            ["dispatch_attempts", "last_dispatch_at", "external_ref", "adapter_name"],
+        )
+        _migrate_if_needed(
+            conn,
+            migration_dir,
+            "006_api_schema_fix.sql",
+            "alert_events",
+            ["affected_orders", "affected_gmv", "impact_score"],
+        )
+        _migrate_if_needed(
+            conn,
+            migration_dir,
+            "006_api_schema_fix.sql",
+            "action_tasks",
+            ["target_object_type", "target_object_id"],
+        )
+        _migrate_if_needed(
+            conn,
+            migration_dir,
+            "007_review_retro_status_feedback.sql",
+            "review_retro",
+            ["status", "feedback"],
+        )
 
         # ── Critical table check ─────────────────────────────────
         critical_tables = ["dwd_order_level", "alert_events"]
-        cur = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        )
+        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         existing_tables = {r[0] for r in cur.fetchall()}
         missing = [t for t in critical_tables if t not in existing_tables]
         if missing:
             _migration_status["status"] = "failed"
-            _migration_status["failed"].extend([
-                {"table": t, "migration": "startup_check", "error": "critical table missing"}
-                for t in missing
-            ])
+            _migration_status["failed"].extend(
+                [
+                    {"table": t, "migration": "startup_check", "error": "critical table missing"}
+                    for t in missing
+                ]
+            )
             logger.critical(
                 "Critical tables missing: %s. API will serve but data may be incomplete.",
                 ", ".join(missing),
@@ -152,11 +183,28 @@ def _apply_migration(db_path: str) -> None:
         conn.close()
 
 
+_VALID_MIGRATION_TABLES = frozenset(
+    {
+        "event_outbox",
+        "alert_events",
+        "action_tasks",
+        "review_retro",
+    }
+)
+
+
+def _validate_identifier(name: str) -> None:
+    """Validate SQL identifier against a known whitelist."""
+    if name not in _VALID_MIGRATION_TABLES:
+        raise ValueError(f"Unknown table name: {name!r}")
+
+
 def _migrate_if_needed(conn, migration_dir, filename, table, columns):
     migration_file = os.path.join(migration_dir, filename)
     if not os.path.exists(migration_file):
         return
 
+    _validate_identifier(table)
     cur = conn.execute(f"PRAGMA table_info({table})")
     existing = [r[1] for r in cur.fetchall()]
     if all(c in existing for c in columns):
@@ -166,8 +214,11 @@ def _migrate_if_needed(conn, migration_dir, filename, table, columns):
         raw = f.read()
 
     for stmt in raw.split(";"):
-        lines = [l.strip() for l in stmt.split("\n")
-                 if l.strip() and not l.strip().startswith("--")]
+        lines = [
+            line.strip()
+            for line in stmt.split("\n")
+            if line.strip() and not line.strip().startswith("--")
+        ]
         stmt_clean = "\n".join(lines).strip()
         if not stmt_clean:
             continue
@@ -175,24 +226,91 @@ def _migrate_if_needed(conn, migration_dir, filename, table, columns):
             conn.execute(stmt_clean)
         except sqlite3.OperationalError as e:
             logger.warning("Migration failed for %s (%s): %s", table, filename, e)
-            _migration_status["failed"].append({
-                "table": table,
-                "migration": filename,
-                "error": str(e),
-            })
+            _migration_status["failed"].append(
+                {
+                    "table": table,
+                    "migration": filename,
+                    "error": str(e),
+                }
+            )
             _migration_status["status"] = "degraded"
 
     conn.commit()
 
 
+def _ensure_qoder_tables() -> None:
+    """Create Qoder tables (qoder_runs, qoder_reports) if they don't exist.
+
+    Uses PRAGMA table_info check (same pattern as _migrate_if_needed).
+    Called at startup since migrations only add columns, not create tables.
+    """
+    from core.config import DB_PATH
+
+    if not os.path.exists(DB_PATH):
+        logger.info("DB not found, skipping Qoder table creation")
+        return
+
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        # ── qoder_runs ────────────────────────────────────────────────
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='qoder_runs'"
+        )
+        if not cur.fetchone():
+            conn.execute("""
+                CREATE TABLE qoder_runs (
+                    run_id TEXT PRIMARY KEY,
+                    run_type TEXT NOT NULL,
+                    mode TEXT NOT NULL DEFAULT 'read_only',
+                    status TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT,
+                    request_id TEXT,
+                    actor TEXT DEFAULT 'qoder',
+                    can_apply INTEGER DEFAULT 0,
+                    error_message TEXT
+                )
+            """)
+            logger.info("Created table: qoder_runs")
+
+        # ── qoder_reports ─────────────────────────────────────────────
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='qoder_reports'"
+        )
+        if not cur.fetchone():
+            conn.execute("""
+                CREATE TABLE qoder_reports (
+                    report_id TEXT PRIMARY KEY,
+                    run_id TEXT,
+                    run_type TEXT NOT NULL,
+                    summary TEXT NOT NULL,
+                    findings_json TEXT,
+                    recommended_human_actions_json TEXT,
+                    risk_level TEXT,
+                    used_endpoints_json TEXT,
+                    no_apply_performed INTEGER NOT NULL DEFAULT 1,
+                    business_side_effect INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    request_id TEXT
+                )
+            """)
+            logger.info("Created table: qoder_reports")
+
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def create_app() -> FastAPI:
     setup_logging()
 
+    # Parse ENABLE_DOCS as boolean: "0", "false", "no" → disabled; "1", "true", "yes" → enabled
+    _enable_docs = os.environ.get("ENABLE_DOCS", "").lower() in ("1", "true", "yes")
     app = FastAPI(
         title="Olist Decision Backend API",
-        version="0.5.1",
-        docs_url="/docs" if os.environ.get("ENABLE_DOCS") else None,
-        openapi_url="/openapi.json" if os.environ.get("ENABLE_DOCS") else None,
+        version="0.6.0",
+        docs_url="/docs" if _enable_docs else None,
+        openapi_url="/openapi.json" if _enable_docs else None,
     )
 
     # ── Request ID middleware ────────────────────────────────────────────
@@ -206,7 +324,10 @@ def create_app() -> FastAPI:
         response.headers["X-Request-ID"] = rid
         logging.getLogger("api").info(
             "%s %s %d %dms",
-            request.method, request.url.path, response.status_code, elapsed,
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed,
             extra={
                 "method": request.method,
                 "path": request.url.path,
@@ -222,13 +343,15 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         path = request.url.path
-        if path.startswith("/docs") or path.startswith("/redoc") or path.startswith("/openapi.json"):
+        if (
+            path.startswith("/docs")
+            or path.startswith("/redoc")
+            or path.startswith("/openapi.json")
+        ):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
                 "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
@@ -283,8 +406,15 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         rid = get_request_id()
+        # Dual-log to both "api" (general) and "api.error" (diagnosis service reads this)
         logging.getLogger("api").error(
-            "Unhandled exception: %s", exc,
+            "Unhandled exception: %s",
+            exc,
+            extra={"request_id": rid, "path": request.url.path},
+        )
+        logging.getLogger("api.error").error(
+            "Unhandled exception: %s",
+            exc,
             extra={"request_id": rid, "path": request.url.path},
         )
         return JSONResponse(
@@ -293,18 +423,22 @@ def create_app() -> FastAPI:
                 "request_id": rid,
                 "error_code": "INTERNAL_ERROR",
                 "message": "An unexpected error occurred",
-                "diagnosis": _sanitize_error(str(exc)) if os.environ.get("DEBUG") else "Internal server error",
+                # Parse DEBUG as boolean: "0", "false", "no" → disabled; "1", "true", "yes" → enabled
+                "diagnosis": _sanitize_error(str(exc))
+                if os.environ.get("DEBUG", "").lower() in ("1", "true", "yes")
+                else "Internal server error",
                 "suggested_action": "Check server logs for details or contact the administrator",
             },
         )
 
-    # ── Startup migration ────────────────────────────────────────────────
-    from scripts.config import DB_PATH
+    # ── Startup migration & table creation ───────────────────────────────
+    from core.config import DB_PATH
 
     _apply_migration(DB_PATH)
+    _ensure_qoder_tables()
 
     # ── Router mounting ──────────────────────────────────────────────────
-    from api.routers import health, status, alerts, tasks, outbox, logs, feishu, pipeline, diagnosis
+    from api.routers import alerts, diagnosis, feishu, health, logs, outbox, pipeline, status, tasks
 
     app.include_router(health.router, prefix="/api/v1", tags=["Health"])
     app.include_router(status.router, prefix="/api/v1", tags=["Status"])
@@ -314,14 +448,28 @@ def create_app() -> FastAPI:
     app.include_router(logs.router, prefix="/api/v1", tags=["Logs"])
     app.include_router(feishu.router, prefix="/api/v1", tags=["Feishu"])
     app.include_router(pipeline.router, prefix="/api/v1", tags=["Pipeline"])
-    app.include_router(diagnosis.router, prefix="/api/v1", tags=["Logs"])
+    app.include_router(diagnosis.router, prefix="/api/v1", tags=["Diagnosis"])
     from api.routers.governance import router as governance_router
+
     app.include_router(governance_router, prefix="/api/v1", tags=["Governance"])
+    from api.routers.qoder import router as qoder_router
+
+    app.include_router(qoder_router, prefix="/api/v1", tags=["Qoder"])
 
     # ── CORS ─────────────────────────────────────────────────────────────
-    _cors_origins = os.environ.get(
-        "CORS_ORIGINS", "http://localhost:5173"
-    ).split(",")
+    _cors_origins_raw = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
+    # Security: reject wildcard origins to prevent cross-origin attacks
+    _cors_origins = []
+    for origin in _cors_origins_raw:
+        origin = origin.strip()
+        if origin == "*":
+            logger.warning("CORS_ORIGINS contains wildcard '*', which is insecure. Rejecting.")
+            continue
+        if origin:
+            _cors_origins.append(origin)
+    if not _cors_origins:
+        _cors_origins = ["http://localhost:5173"]
+        logger.warning("No valid CORS origins configured, defaulting to localhost")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_cors_origins,
@@ -330,11 +478,10 @@ def create_app() -> FastAPI:
     )
 
     # ── Frontend static serving (if built) ────────────────────────────────
-    _frontend_dist = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "frontend", "dist"
-    )
+    _frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
     if os.path.exists(os.path.join(_frontend_dist, "index.html")):
         from fastapi.staticfiles import StaticFiles
+
         app.mount("/console", StaticFiles(directory=_frontend_dist, html=True), name="console")
 
     return app

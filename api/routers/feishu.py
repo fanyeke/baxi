@@ -1,4 +1,4 @@
-"""Feishu API router — v0.5.1 P1 endpoints for Feishu operations."""
+"""Feishu API router — v0.5.3 P1 endpoints for Feishu operations."""
 import csv
 import datetime
 import os
@@ -6,7 +6,7 @@ import os
 from fastapi import APIRouter, Depends
 
 from api.dependencies import get_current_user
-from api.errors import APIError, VALIDATION_ERROR
+from api.errors import VALIDATION_ERROR, APIError
 from api.logging_config import get_request_id
 from api.schemas import (
     FeishuExportRequest,

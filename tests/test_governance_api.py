@@ -10,7 +10,7 @@ def client():
     return TestClient(create_app())
 
 
-HEADERS = {"Authorization": "Bearer test-token"}
+HEADERS = {"Authorization": "Bearer test-token-for-baxi-ci-tests-only-32ch"}
 
 
 def test_get_catalog(client):

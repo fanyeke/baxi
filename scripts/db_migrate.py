@@ -27,6 +27,19 @@ COLUMNS = {
     ],
 }
 
+# Whitelist of known safe SQLite types
+_VALID_SQLITE_TYPES = frozenset({
+    'INTEGER', 'REAL', 'TEXT', 'BLOB', 'NUMERIC',
+    'INTEGER DEFAULT 0', 'REAL DEFAULT 0', 'TEXT DEFAULT \'\'',
+})
+
+
+def _validate_identifier(name, kind, allowed_set):
+    if name not in allowed_set:
+        raise ValueError(
+            f"Unknown {kind}: {name!r}. Must be one of {sorted(allowed_set)}"
+        )
+
 
 def get_db(db_path):
     conn = sqlite3.connect(db_path)
@@ -36,6 +49,7 @@ def get_db(db_path):
 
 
 def get_existing_columns(conn, table):
+    _validate_identifier(table, "table", COLUMNS)
     cur = conn.execute(f"PRAGMA table_info({table})")
     return {row[1] for row in cur.fetchall()}
 
@@ -69,8 +83,13 @@ def migrate(to_version, db_path):
 def _migrate_v03(conn):
     added = 0
     for table, cols in COLUMNS.items():
+        _validate_identifier(table, "table", COLUMNS)
         existing = get_existing_columns(conn, table)
+        valid_cols = {c[0] for c in cols}
         for col_name, col_type in cols:
+            _validate_identifier(col_name, "column", valid_cols)
+            if col_type not in _VALID_SQLITE_TYPES:
+                raise ValueError(f"Unknown column type: {col_type!r}")
             if col_name in existing:
                 print(f"  [skip] {table}.{col_name} already exists")
             else:
@@ -88,9 +107,14 @@ def _migrate_v03(conn):
 
 def _migrate_v04(conn):
     v04_columns = COLUMNS.get('event_outbox', [])
+    _validate_identifier('event_outbox', "table", COLUMNS)
     existing = get_existing_columns(conn, 'event_outbox')
+    valid_cols = {c[0] for c in v04_columns}
     added = 0
     for col_name, col_type in v04_columns:
+        _validate_identifier(col_name, "column", valid_cols)
+        if col_type not in _VALID_SQLITE_TYPES:
+            raise ValueError(f"Unknown column type: {col_type!r}")
         if col_name in existing:
             print(f"  [skip] event_outbox.{col_name} already exists")
         else:

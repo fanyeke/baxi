@@ -17,6 +17,8 @@ import pytest
 
 import scripts.config as config
 
+pytestmark = pytest.mark.integration
+
 DB_PATH = os.path.join(config.PROJECT_ROOT, 'data', 'olist_ops.db')
 
 

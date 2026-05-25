@@ -1,6 +1,5 @@
 import json
 
-import config
 from adapters.base import ChannelAdapter
 
 

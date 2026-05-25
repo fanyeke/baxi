@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from scripts import config
 from fastapi.testclient import TestClient
 
-os.environ["API_BEARER_TOKEN"] = "test-token"
+os.environ["API_BEARER_TOKEN"] = "test-token-for-baxi-ci-tests-only-32ch"
 
 ALL_15_FIELDS = [
     "task_id", "task_title", "task_description", "status", "priority",
@@ -65,7 +65,7 @@ def client(tmp_path, monkeypatch):
 
 @pytest.fixture
 def auth_headers():
-    return {"Authorization": "Bearer test-token"}
+    return {"Authorization": "Bearer test-token-for-baxi-ci-tests-only-32ch"}
 
 
 class TestTaskItemIncludesAllDbFields:

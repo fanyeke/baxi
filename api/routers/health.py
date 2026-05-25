@@ -10,6 +10,6 @@ router = APIRouter()
 def get_health():
     return HealthResponse(
         status="ok",
-        version="0.5.1",
+        version="0.6.0",
         db_connected=db_exists(),
     )

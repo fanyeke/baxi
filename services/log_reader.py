@@ -1,4 +1,4 @@
-"""JSONL tail-read and CSV parsing for the v0.5.1 Logs API.
+"""JSONL tail-read and CSV parsing for the v0.5.3 Logs API.
 
 Provides functions to read and filter JSON log files and CSV audit logs
 from the end of the file (most recent first). All functions return [] for
@@ -155,7 +155,7 @@ def read_audit_logs(
     entries = []
 
     try:
-        with open(audit_csv_path, "r") as f:
+        with open(audit_csv_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 entries.append(row)

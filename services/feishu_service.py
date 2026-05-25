@@ -1,21 +1,20 @@
-"""Feishu service layer wrapping FeishuClient for v0.5.2 API endpoints.
- 
+"""Feishu service layer wrapping FeishuClient for v0.5.3 API endpoints.
+
 Provides export_tables, sync_to_feishu, and import_status_from_feishu
 operations with universal dry_run support and graceful missing-config handling.
-v0.5.2: Added --json flag parsing for real result counts.
+v0.5.3: Added --json flag parsing for real result counts.
 """
 
 import json
 import logging
 import os
-import sys
 import subprocess
-import datetime
+import sys
 from typing import Optional
 
 import yaml
 
-from scripts import config
+from core import config
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class FeishuService:
                 with open(table_ids_file) as f:
                     yml = yaml.safe_load(f) or {}
                 cfg["table_ids"] = yml.get("tables", {})
-            except Exception as e:
+            except (OSError, yaml.YAMLError) as e:
                 logger.warning("Failed to load Feishu table IDs config from %s: %s", table_ids_file, e)
                 cfg["table_ids"] = {}
         else:
@@ -75,7 +74,16 @@ class FeishuService:
         return available
 
     def _run_script(self, script_name, args, timeout=120, parse_json=False):
+        # Security: validate script_name to prevent path traversal
+        if "/" in script_name or "\\" in script_name:
+            raise ValueError(f"Invalid script_name (contains path separator): {script_name!r}")
+        if ".." in script_name:
+            raise ValueError(f"Invalid script_name (contains '..'): {script_name!r}")
         script_path = os.path.join(SCRIPTS_DIR, script_name)
+        # Security: verify resolved path is under SCRIPTS_DIR
+        resolved = os.path.realpath(script_path)
+        if not resolved.startswith(os.path.realpath(SCRIPTS_DIR) + os.sep):
+            raise ValueError(f"Script path {resolved!r} is not under SCRIPTS_DIR {SCRIPTS_DIR!r}")
         if parse_json:
             args = args + ["--json"]
         cmd = [sys.executable, script_path] + args
@@ -176,7 +184,7 @@ class FeishuService:
                 rows = tables_result.get(name, 0)
                 tables.append({"name": name, "rows": rows, "file": csv_path, "status": "exported"})
             return {"status": "exported", "tables": tables}
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as e:
             logger.exception("Feishu export failed")
             return {"status": "failed", "message": str(e), "tables": []}
 
@@ -213,7 +221,7 @@ class FeishuService:
                  "updated": tables_counts.get(t, {}).get("updated", 0), "status": "synced"}
                 for t in resolved
             ]}
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError, subprocess.TimeoutExpired) as e:
             logger.exception("Feishu sync failed")
             return {"status": "failed", "message": str(e), "tables": []}
 
@@ -250,6 +258,6 @@ class FeishuService:
                  "status": "imported"}
                 for t in resolved
             ]}
-        except Exception as e:
+        except (RuntimeError, OSError, subprocess.TimeoutExpired) as e:
             logger.exception("Feishu status import failed")
             return {"status": "failed", "message": str(e), "tables": []}

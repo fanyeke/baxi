@@ -1,20 +1,13 @@
 from services.db_service import get_db
+from services._query_utils import _build_conditions
 
 
 def _build_task_conditions(status, priority, owner_role):
-    conditions = []
-    params = []
-    if status is not None:
-        conditions.append("status = ?")
-        params.append(status)
-    if priority is not None:
-        conditions.append("priority = ?")
-        params.append(priority)
-    if owner_role is not None:
-        conditions.append("owner_role = ?")
-        params.append(owner_role)
-    where = "WHERE " + " AND ".join(conditions) if conditions else ""
-    return where, params
+    return _build_conditions({
+        "status": status,
+        "priority": priority,
+        "owner_role": owner_role,
+    })
 
 
 def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100):
@@ -39,12 +32,12 @@ def get_tasks(conn=None, status=None, priority=None, owner_role=None, limit=100)
 
 
 def get_tasks_with_count(conn=None, status=None, priority=None, owner_role=None, limit=100):
-    where, count_params = _build_task_conditions(status, priority, owner_role)
-    items = get_tasks(conn, status, priority, owner_role, limit)
     should_close = conn is None
     if conn is None:
         conn = get_db()
     try:
+        items = get_tasks(conn, status, priority, owner_role, limit)
+        where, count_params = _build_task_conditions(status, priority, owner_role)
         total = conn.execute(
             f"SELECT COUNT(*) FROM action_tasks {where}", count_params
         ).fetchone()[0]

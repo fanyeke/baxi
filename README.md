@@ -357,8 +357,8 @@ What-If 场景模拟，GMV/评分联动预测。
 | v0.3.1 | 飞书沙盘集成 + 决策质量校准 | ✅ DONE |
 | v0.4 | 分发适配器 (Feishu/GitHub/Local/Manual) | ✅ DONE |
 | v0.5 | API 网关 (FastAPI:8765, OpenAPI, Bearer Token) | ✅ DONE |
-| v0.5.1 | React 控制台 Alpha (7 pages, TanStack Query) | ✅ DONE |
-| v0.5.2 | 控制台 Beta 硬化 (P0修复 + 日志诊断) | ✅ DONE |
+| v0.5.3 | React 控制台 Alpha (7 pages, TanStack Query) | ✅ DONE |
+| v0.5.3 | 控制台 Beta 硬化 (P0修复 + 日志诊断) | ✅ DONE |
 | v0.5.3 | 数据治理层 + API 接口参考文档 + Schema 校验 + 测试隔离优化 | ✅ DONE |
 | Phase I | 全量数据 + AI 决策引擎 (LLM 代码就绪，待激活) | 🟡 核心完成 |
 | Phase II+ | 维度告警扩展 / 真实 LLM 决策 / 自动调度 | ❌ 未启动 |
@@ -373,7 +373,7 @@ What-If 场景模拟，GMV/评分联动预测。
 
 ### 🚀 API 网关（活跃开发）
 
-`scripts/config.py` 已实现集中化路径常量管理。FastAPI API 网关是项目当前最活跃的对外接口。
+`core/config.py` 已实现集中化路径常量管理。FastAPI API 网关是项目当前最活跃的对外接口。
 
 **快速启动**：
 
@@ -399,7 +399,7 @@ python3 scripts/run_api.py --port 8765
 ```bash
 # 健康检查（无需认证）
 curl http://127.0.0.1:8765/api/v1/health
-# → {"status":"ok","version":"0.5.1","db_connected":true}
+# → {"status":"ok","version":"0.5.3","db_connected":true}
 
 # 启用 OpenAPI 文档（可选）
 ENABLE_DOCS=1 python3 scripts/run_api.py
@@ -412,7 +412,7 @@ ENABLE_DOCS=1 python3 scripts/run_api.py
 
 ### Phase B 计划（已完成 ✅）
 
-`scripts/config.py` 已实现集中管理路径常量。新代码应通过 `from scripts import config` 引用路径。
+`core/config.py` 已实现集中管理路径常量。新代码应通过 `from core.config import` 引用路径。`scripts/config.py` 是向后兼容的 shim（已标记 DeprecationWarning），新代码不应再导入。
 
 ## 技术栈
 
@@ -432,12 +432,14 @@ ENABLE_DOCS=1 python3 scripts/run_api.py
 | `services/` | 业务逻辑层（DB、告警、任务、调度、飞书、日志） | 9 .py |
 | `adapters/` | 渠道适配层（Feishu、GitHub、LocalCLI、Manual） | 5 .py |
 | `config/` | 治理/业务 YAML 配置（告警规则、指标、权限、血缘等） | 27 .yml |
-| `tests/` | 单元 + 集成测试 | 27 test_*.py |
+| `core/` | 核心配置模块（路径常量、环境变量读取） | 1 .py |
+| `pipeline/` | 管道步骤定义与编排（steps + runner） | 2 .py |
+| `tests/` | 单元 + 集成测试 | 33 test_*.py |
 | `data/raw/` | 原始数据源 | 12 |
 | `data/interim/` | 中间分析表 | 3 |
 | `data/processed/` | 飞书沙盘产物 | 4 |
 | `scripts/` | 数据管道脚本 + 分析脚本（❄️ FROZEN） | 14 .py + 1 .md |
-| `sql/` | Schema + 迁移脚本 | 1 schema + 6 migrations |
+| `sql/` | Schema + 迁移脚本 | 1 schema + 10 migrations |
 | `outputs/charts/` | 分析图表 | ~34 .png |
 | `outputs/tables/` | 分析结果表 | ~47 .csv |
 | `reports/` | 分析报告 | 6 .md |
@@ -487,6 +489,9 @@ ENABLE_DOCS=1 python3 scripts/run_api.py
 │   ├── local_cli_adapter.py           # 本地 CLI 审计日志
 │   └── manual_adapter.py              # 手动审核队列
 │
+├── core/                              # 核心配置模块
+│   └── config.py                      # 路径常量、环境变量读取、Feishu 凭据加载
+│
 ├── config/                            # 治理 + 业务 YAML 配置（27 个）
 │   ├── alert_rules.yml                # 告警规则
 │   ├── metrics.yml                    # 指标定义
@@ -503,7 +508,7 @@ ENABLE_DOCS=1 python3 scripts/run_api.py
 ├── tests/                             # 测试（27 个文件，305+ 用例）
 │   ├── conftest.py                    # 共享 fixtures
 │   ├── test_api_gateway.py            # API 集成测试
-│   └── test_*.py                      # ...
+│   └── test_*.py                      # ...（共 33 个测试文件，385+ 用例）
 │
 ├── data/                              # 数据
 │   ├── raw/                           # 原始 CSV（❄️ 不可修改）
@@ -511,10 +516,14 @@ ENABLE_DOCS=1 python3 scripts/run_api.py
 │   ├── processed/                     # 飞书产物
 │   └── system/                        # 运行时状态（审计 CSV 等）
 │
+├── pipeline/                          # 管道步骤定义与编排
+│   ├── steps.py                       # 9 个管道步骤函数
+│   └── runner.py                      # 管道编排与执行
+│
 ├── scripts/                           # 数据管道脚本（❄️ FROZEN）
-│   ├── config.py                      # 集中路径常量（✅ 活跃）
+│   ├── config.py                      # 集中路径常量（⚠️ 已弃用，请从 core.config 导入）
 │   ├── run_api.py                     # API 启动入口（✅ 活跃）
-│   ├── run_db_pipeline.py             # DB 管道（✅ 活跃）
+│   ├── run_db_pipeline.py             # DB 管道入口（✅ 活跃，内部调用 pipeline/）
 │   ├── feishu_client.py               # 飞书 SDK 客户端（✅ 活跃）
 │   ├── _FROZEN.md                     # 冻结脚本说明
 │   └── phase01~07_*.py                # 分析脚本（❄️ 路径已失效）
