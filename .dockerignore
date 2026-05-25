@@ -1,0 +1,44 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+requirements*.txt
+pyproject.toml
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/
+
+# Data
+data/
+outputs/
+reports/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+baxi-api
+baxi-worker
+*.test
+*.out
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*
