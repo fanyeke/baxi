@@ -89,11 +89,11 @@ CREATE INDEX idx_ai_review_record_proposal ON ai.review_record(proposal_id);
 -- +goose Down
 -- +goose StatementBegin
 
-DROP INDEX IF EXISTS idx_ai_review_record_proposal;
-DROP INDEX IF EXISTS idx_ai_action_proposal_case;
-DROP INDEX IF EXISTS idx_ai_llm_decision_case;
-DROP INDEX IF EXISTS idx_ai_decision_case_alert;
-DROP INDEX IF EXISTS idx_ai_decision_case_status;
+DROP INDEX IF EXISTS ai.idx_ai_review_record_proposal;
+DROP INDEX IF EXISTS ai.idx_ai_action_proposal_case;
+DROP INDEX IF EXISTS ai.idx_ai_llm_decision_case;
+DROP INDEX IF EXISTS ai.idx_ai_decision_case_alert;
+DROP INDEX IF EXISTS ai.idx_ai_decision_case_status;
 
 DROP TABLE IF EXISTS ai.review_record;
 DROP TABLE IF EXISTS ai.action_proposal;
