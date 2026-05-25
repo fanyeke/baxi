@@ -95,5 +95,7 @@ func allSteps() []pipeline.Step {
 		steps.NewBuildMetricDailyStep(),
 		steps.NewBuildMetricDimensionDailyStep(),
 		steps.NewDetectAlertsStep(),
+		steps.NewGenerateRecommendationsStep(),
+		steps.NewGenerateTasksStep(),
 	}
 }
