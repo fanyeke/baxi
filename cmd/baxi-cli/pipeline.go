@@ -97,5 +97,6 @@ func allSteps() []pipeline.Step {
 		steps.NewDetectAlertsStep(),
 		steps.NewGenerateRecommendationsStep(),
 		steps.NewGenerateTasksStep(),
+		steps.NewCreateOutboxStep(),
 	}
 }
