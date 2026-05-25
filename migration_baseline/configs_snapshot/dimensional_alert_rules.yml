@@ -1,0 +1,66 @@
+rules:
+  - rule_id: seller_late_delivery_spike
+    dimension_type: seller
+    metric_name: late_delivery_rate
+    condition: "value_gt: 0.25"
+    min_sample_size: 20
+    severity: high
+    owner_role: seller_ops
+    target_channel: feishu_cli
+    description: "卖家延迟配送率超过25%且样本>=20单"
+
+  - rule_id: seller_review_score_drop
+    dimension_type: seller
+    metric_name: avg_review_score
+    condition: "value_lt: 3.5"
+    min_sample_size: 20
+    severity: medium
+    owner_role: seller_ops
+    target_channel: local_cli
+    description: "卖家评分低于3.5且样本>=20单"
+
+  - rule_id: category_gmv_drop
+    dimension_type: category
+    metric_name: gmv
+    condition: "change_rate_lt: -0.20"
+    baseline_window: 14
+    min_sample_size: 30
+    severity: medium
+    owner_role: category_ops
+    target_channel: feishu_cli
+    description: "品类GMV环比下降超过20%且样本>=30单"
+
+  - rule_id: category_low_review_cluster
+    dimension_type: category
+    metric_name: low_review_rate
+    condition: "value_gt: 0.15"
+    min_sample_size: 30
+    severity: medium
+    owner_role: category_ops
+    target_channel: local_cli
+    description: "品类差评率超过15%且样本>=30单"
+
+  - rule_id: region_cancel_rate_spike
+    dimension_type: region
+    metric_name: cancel_rate
+    condition: "value_gt: 0.05"
+    min_sample_size: 30
+    severity: medium
+    owner_role: logistics_ops
+    target_channel: manual
+    description: "区域取消率超过5%且样本>=30单"
+
+  - rule_id: region_late_delivery_spike
+    dimension_type: region
+    metric_name: late_delivery_rate
+    condition: "value_gt: 0.20"
+    min_sample_size: 30
+    severity: high
+    owner_role: logistics_ops
+    target_channel: feishu_cli
+    description: "区域延迟配送率超过20%且样本>=30单"
+
+limits:
+  max_alerts_per_run: 50
+  max_recommendations_per_run: 20
+  max_tasks_per_run: 40

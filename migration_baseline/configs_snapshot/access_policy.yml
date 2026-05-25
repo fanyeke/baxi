@@ -1,0 +1,48 @@
+# Role-based access control policy for Baxi data and API endpoints
+# Source: docs/governance/baxi_access_control_model.md
+# Roles define allowed_actions (what operations) and data_access (which tables)
+# Default policy: deny-all unless explicitly granted
+
+access_policy:
+  roles:
+    - role: admin
+      allowed_actions:
+        - create_feishu_report
+        - notify_owner
+        - recommend_business_strategy
+        - modify_business_policy
+        - trigger_pipeline
+        - export_data
+      data_access:
+        - dwd_order_level
+        - dwd_item_level
+        - metric_daily
+        - metric_dimension_daily
+        - alert_events
+        - strategy_recommendations
+        - action_tasks
+        - event_outbox
+    - role: analyst
+      allowed_actions:
+        - notify_owner
+        - create_followup_task
+        - recommend_business_strategy
+      data_access:
+        - dwd_item_level
+        - metric_daily
+        - metric_dimension_daily
+        - alert_events
+    - role: viewer
+      allowed_actions:
+        - view_dashboard
+        - view_reports
+      data_access:
+        - metric_daily
+    - role: marketing_ops
+      allowed_actions:
+        - recommend_business_strategy
+        - notify_owner
+      data_access:
+        - metric_daily
+        - dwd_order_level
+  default_policy: "deny_all"

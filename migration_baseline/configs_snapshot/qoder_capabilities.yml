@@ -1,0 +1,25 @@
+# Qoder read-only capabilities configuration
+# Defines the mode, allowed endpoints, forbidden actions, and write exceptions
+# for the Qoder (Query-Oriented Data Exploration & Reporting) subsystem.
+# Source: actions/qoder.py
+# Default policy: deny-all unless explicitly listed
+
+qoder_capabilities:
+  mode: read_only
+  allowed_endpoints:
+    - GET /api/v1/health
+    - GET /api/v1/status
+    - GET /api/v1/qoder/capabilities
+    - GET /api/v1/qoder/context
+    - GET /api/v1/logs/diagnosis
+    - POST /api/v1/qoder/reports
+  forbidden_actions:
+    - direct_sql
+    - run_shell
+    - edit_files
+    - apply_dispatch
+    - feishu_sync_apply
+    - pipeline_run_apply
+    - modify_config
+  write_exceptions:
+    - POST /api/v1/qoder/reports

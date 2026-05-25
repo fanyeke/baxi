@@ -1,0 +1,83 @@
+investigate_seller_delivery:
+  strategy_title: "排查卖家履约延迟异常"
+  strategy_detail_template: |
+    【问题】卖家 ${object_id} 延迟配送率达到 ${current_value}，高于阈值 0.25。
+    【证据】样本订单数 ${sample_size}，影响 GMV ${affected_gmv}，规则 ${rule_id}。
+    【判断】该卖家可能存在发货、库存或物流交接问题。
+    【建议动作】请卖家运营检查该卖家近期订单履约链路，确认是否需要限制流量或人工沟通。
+    【预期收益】降低延迟配送率，减少差评与取消风险。
+    【验收指标】未来 7 日该卖家 late_delivery_rate 低于 20%。
+  task_title: "排查卖家 ${object_id} 履约延迟"
+  priority: high
+  requires_approval: false
+  success_metric: "late_delivery_rate 7日内低于20%"
+
+investigate_seller_review:
+  strategy_title: "排查卖家评分异常"
+  strategy_detail_template: |
+    【问题】卖家 ${object_id} 平均评分 ${current_value}，低于阈值 3.5。
+    【证据】样本订单数 ${sample_size}，影响 GMV ${affected_gmv}，规则 ${rule_id}。
+    【判断】该卖家可能存在商品质量、描述不符或服务问题。
+    【建议动作】请卖家运营审查该卖家商品评价，确认是否存在质量问题。
+    【预期收益】提升卖家评分，改善买家体验。
+    【验收指标】未来 7 日该卖家 avg_review_score 高于 3.5。
+  task_title: "排查卖家 ${object_id} 评分异常"
+  priority: medium
+  requires_approval: false
+  success_metric: "avg_review_score 7日内高于3.5"
+
+investigate_category_gmv:
+  strategy_title: "排查品类 GMV 下降异常"
+  strategy_detail_template: |
+    【问题】品类 ${object_id} GMV 环比下降 ${current_value}，跌幅超过 20%。
+    【证据】样本订单数 ${sample_size}，规则 ${rule_id}。
+    【判断】该品类可能存在需求下降、库存不足或竞品冲击。
+    【建议动作】请品类运营分析该品类近期销售趋势，确认是否需要调整营销策略。
+    【预期收益】恢复品类 GMV 至正常水平。
+    【验收指标】未来 14 日该品类 GMV 环比跌幅收窄至 10% 以内。
+  task_title: "排查品类 ${object_id} GMV 下降"
+  priority: medium
+  requires_approval: false
+  success_metric: "GMV 14日内环比跌幅收窄至10%以内"
+
+investigate_category_review:
+  strategy_title: "排查品类差评聚集异常"
+  strategy_detail_template: |
+    【问题】品类 ${object_id} 差评率达到 ${current_value}，超过阈值 15%。
+    【证据】样本评价数 ${sample_size}，影响 GMV ${affected_gmv}，规则 ${rule_id}。
+    【判断】该品类可能存在普遍质量问题或描述不符。
+    【建议动作】请品类运营抽查该品类近期差评，确认是否存在系统性问题。
+    【预期收益】降低品类差评率，改善买家满意度。
+    【验收指标】未来 7 日该品类 low_review_rate 低于 12%。
+  task_title: "排查品类 ${object_id} 差评聚集"
+  priority: medium
+  requires_approval: false
+  success_metric: "low_review_rate 7日内低于12%"
+
+investigate_region_cancel:
+  strategy_title: "排查区域取消率异常"
+  strategy_detail_template: |
+    【问题】区域 ${object_id} 取消率达到 ${current_value}，超过阈值 5%。
+    【证据】样本订单数 ${sample_size}，影响 GMV ${affected_gmv}，规则 ${rule_id}。
+    【判断】该区域可能存在物流覆盖不足或卖家集中取消问题。
+    【建议动作】请物流运营分析该区域取消原因，确认是否需要调整物流策略。
+    【预期收益】降低区域取消率，提升订单完成率。
+    【验收指标】未来 7 日该区域 cancel_rate 低于 4%。
+  task_title: "排查区域 ${object_id} 取消率异常"
+  priority: medium
+  requires_approval: false
+  success_metric: "cancel_rate 7日内低于4%"
+
+investigate_region_delivery:
+  strategy_title: "排查区域延迟配送异常"
+  strategy_detail_template: |
+    【问题】区域 ${object_id} 延迟配送率达到 ${current_value}，超过阈值 20%。
+    【证据】样本订单数 ${sample_size}，影响 GMV ${affected_gmv}，规则 ${rule_id}。
+    【判断】该区域可能存在物流配送瓶颈或基础设施问题。
+    【建议动作】请物流运营排查该区域物流链路，确认是否需要增加配送资源。
+    【预期收益】降低区域延迟配送率，改善履约体验。
+    【验收指标】未来 7 日该区域 late_delivery_rate 低于 18%。
+  task_title: "排查区域 ${object_id} 延迟配送"
+  priority: high
+  requires_approval: false
+  success_metric: "late_delivery_rate 7日内低于18%"

@@ -1,0 +1,45 @@
+rules:
+  - rule_id: gmv_drop
+    metric: gmv
+    condition: "current_7d_avg < prev_14d_avg * 0.85"
+    severity: high
+    owner_role: business_ops
+    dimension: overall
+    min_sample_size: 3
+    description: "GMV 7日均值较前14天均值下降超过15%"
+
+  - rule_id: late_delivery_spike
+    metric: late_delivery_rate
+    condition: "value > 0.25 and order_count >= 20"
+    severity: high
+    owner_role: seller_ops
+    dimension: seller
+    min_sample_size: 20
+    description: "卖家延迟配送率超过25%且订单数>=20"
+
+  - rule_id: review_score_drop
+    metric: avg_review_score
+    condition: "baseline - current > 0.3 and order_count >= 30"
+    severity: medium
+    owner_role: category_ops
+    dimension: category
+    min_sample_size: 30
+    description: "品类评分较基线下降超过0.3且订单数>=30"
+
+  - rule_id: cancel_rate_spike
+    metric: cancel_rate
+    condition: "change_rate > 0.5 and value > 0.05"
+    severity: medium
+    owner_role: logistics_ops
+    dimension: region
+    min_sample_size: 5
+    description: "区域取消率变化超过50%且当前值>5%"
+
+  - rule_id: seller_activation_gap
+    metric: order_count
+    condition: "zero_order_sellers / total_sellers > 0.5"
+    severity: high
+    owner_role: seller_ops
+    dimension: seller
+    min_sample_size: 10
+    description: "超过50%的卖家无订单"
