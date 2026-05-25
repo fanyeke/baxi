@@ -428,7 +428,7 @@ func evaluateCondition(condition string, currentValue float64, baselineValue *fl
 // capping at DefaultMaxAlertsPerDimVal is applied.
 func ExecuteDimensionalRule(ctx context.Context, tx pgx.Tx, rule DimensionalRuleConfig) ([]DimensionalAlert, error) {
 	rows, err := tx.Query(ctx, `
-		SELECT metric_date, dimension_value, metric_value, sample_size
+		SELECT metric_date::TEXT, dimension_value, metric_value, sample_size
 		FROM mart.metric_dimension_daily
 		WHERE dimension_type = $1
 		  AND metric_name = $2

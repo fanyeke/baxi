@@ -328,7 +328,6 @@ func Generate(ctx context.Context, tx pgx.Tx, logger *zap.Logger) (int64, error)
 		}
 
 		detail = truncStr(detail, 1000)
-		appr := boolToInt(requiresApproval)
 
 		_, err := tx.Exec(ctx, `
 			INSERT INTO ops.recommendation (
@@ -352,7 +351,7 @@ func Generate(ctx context.Context, tx pgx.Tx, logger *zap.Logger) (int64, error)
 			title, detail,
 			a.ObjectType, a.ObjectID,
 			impact, riskLevel, confidence,
-			appr, a.OwnerRole, successMetric,
+			requiresApproval, a.OwnerRole, successMetric,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("insert recommendation for alert %s: %w", a.AlertID, err)
@@ -404,13 +403,6 @@ func truncStr(s string, maxLen int) string {
 		return s
 	}
 	return strings.TrimSpace(s[:maxLen])
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 // roundTo rounds v to the specified number of decimal places.
