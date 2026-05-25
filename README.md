@@ -414,6 +414,64 @@ ENABLE_DOCS=1 python3 scripts/run_api.py
 
 `core/config.py` 已实现集中管理路径常量。新代码应通过 `from core.config import` 引用路径。`scripts/config.py` 是向后兼容的 shim（已标记 DeprecationWarning），新代码不应再导入。
 
+### 🏭 数据管道（活跃开发）
+
+基于 Go 的数据管道（baxi-cli）支持分步执行和基线验证。
+
+**前提条件**：
+- PostgreSQL 数据库运行中（`make up`）
+- 迁移已应用（`make migrate`）
+- 原始 CSV 文件位于 `data/raw/` 目录
+
+**通过 Makefile 运行**：
+
+```bash
+# 运行全量管道
+make pipeline
+
+# 运行单个步骤
+make pipeline-ingest          # 仅数据摄入
+make pipeline-dwd             # DWD 层构建（order + item level）
+make pipeline-metrics         # 指标构建（daily + dimension daily）
+
+# 基线对比验证
+make pipeline-compare
+
+# 运行管道相关测试
+make test-pipeline
+```
+
+**可用步骤**：
+
+| 步骤名 | 说明 |
+|--------|------|
+| `ingest_raw` | 原始 CSV 数据摄入 |
+| `build_dwd_order_level` | 订单级 DWD 表构建 |
+| `build_dwd_item_level` | 商品级 DWD 表构建 |
+| `build_metric_daily` | 每日指标聚合 |
+| `build_metric_dimension_daily` | 维度指标聚合 |
+| `detect_alerts` | 异常检测告警 |
+| `generate_recommendations` | 建议生成 |
+| `generate_tasks` | 任务生成 |
+| `create_outbox_events` | 事件分发出站 |
+
+**直接调用 CLI**：
+
+```bash
+# 运行指定步骤
+go run ./cmd/baxi-cli pipeline run --step ingest_raw --data-dir ./data/raw
+
+# 基线验证
+go run ./cmd/baxi-cli pipeline validate --data-dir ./data/raw
+```
+
+**环境变量**：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `DATABASE_URL` | `postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable` | PostgreSQL 连接串 |
+| `DATA_DIR` | `./data/raw` | 原始 CSV 数据目录 |
+
 ## 技术栈
 
 - **Python 3.9+** - 主要编程语言
