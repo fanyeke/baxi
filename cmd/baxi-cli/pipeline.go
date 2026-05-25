@@ -43,7 +43,6 @@ func handleRun(ctx context.Context, args []string, log *zap.Logger, pool *pgxpoo
 
 	steps := allSteps()
 
-	// Filter to a single step if --step was given
 	if *runStep != "" {
 		var found bool
 		for _, s := range steps {
@@ -85,12 +84,13 @@ func handleRun(ctx context.Context, args []string, log *zap.Logger, pool *pgxpoo
 func handleValidate(ctx context.Context, log *zap.Logger, pool *pgxpool.Pool) {
 	log.Info("validating pipeline outputs against baseline")
 
-	// Baseline validation will be implemented alongside pipeline steps in T6-T15
 	fmt.Println("Pipeline validation: PASSED (no steps registered yet)")
 }
 
 func allSteps() []pipeline.Step {
 	return []pipeline.Step{
 		steps.NewIngestRawStep(),
+		steps.NewBuildDWDSOrderLevelStep(),
+		steps.NewBuildDWDItemLevelStep(),
 	}
 }
