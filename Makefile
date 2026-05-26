@@ -1,4 +1,4 @@
-.PHONY: up down migrate api worker test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare test-pipeline
+.PHONY: up down migrate api worker test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare api-compare test-pipeline governance-load governance-check test-governance test-governance-integration
 
 DATABASE_URL ?= postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable
 DATA_DIR ?= ./data/raw
@@ -52,8 +52,24 @@ pipeline-metrics:  ## Run metric build steps
 pipeline-compare:  ## Compare output against baseline
 	go run ./cmd/baxi-cli pipeline validate --data-dir $(DATA_DIR)
 
+api-compare:  ## Compare Go API responses against baseline snapshots
+	python3 scripts/migration/compare_api_baseline.py
+
 test-pipeline:  ## Run pipeline tests
 	go test ./internal/pipeline/... ./internal/ingest/... ./internal/alert/... ./internal/recommendation/... ./internal/outbox/... -short -count=1
+
+# Governance
+governance-load:  ## Load YAML governance configs into gov.* tables
+	go run ./cmd/baxi-cli governance load --config-dir ./config
+
+governance-check:  ## Verify governance configs are properly loaded
+	go run ./cmd/baxi-cli governance check
+
+test-governance:  ## Run governance-related tests
+	go test ./internal/configloader/... ./internal/ontology/... ./internal/governance/... -v -count=1
+
+test-governance-integration:  ## Run governance integration tests (requires testcontainers)
+	go test -tags integration ./internal/repository/... ./internal/governance/... ./internal/ontology/... -v -count=1
 
 # Testing and quality
 test:

@@ -26,8 +26,7 @@ type PostgresContainer struct {
 // StartPostgres starts a PostgreSQL 15-alpine container with a test database.
 // Returns the container wrapper or an error.
 func StartPostgres(ctx context.Context) (*PostgresContainer, error) {
-	pgContainer, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/postgres:15-alpine"),
+	pgContainer, err := postgres.Run(ctx, "docker.io/postgres:15-alpine",
 		postgres.WithDatabase("testdb"),
 		postgres.WithUsername("test"),
 		postgres.WithPassword("test"),
