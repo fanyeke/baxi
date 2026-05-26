@@ -173,6 +173,24 @@ func (s *GovernanceService) RequiresCheckpoint(ctx context.Context, action strin
 	return s.checkpoint.RequiresCheckpoint(ctx, action)
 }
 
+// GetCheckpoints returns all checkpoint rules.
+func (s *GovernanceService) GetCheckpoints(ctx context.Context) (*dto.CheckpointsResponse, error) {
+	rules := s.checkpoint.GetRules(ctx)
+
+	checkpointRules := make([]dto.CheckpointRule, len(rules))
+	for i, r := range rules {
+		checkpointRules[i] = dto.CheckpointRule{
+			Action:              r.Action,
+			RequiresReason:      r.RequiresReason,
+			RequiresHumanReview: r.RequiresHumanReview,
+		}
+	}
+
+	return &dto.CheckpointsResponse{
+		Checkpoints: checkpointRules,
+	}, nil
+}
+
 // GetHealthChecks returns the status of all governance health checks.
 func (s *GovernanceService) GetHealthChecks(ctx context.Context) (*dto.HealthChecksResponse, error) {
 	// Run health checks against governance tables
