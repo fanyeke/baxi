@@ -25,7 +25,7 @@ func main() {
 	case "help", "--help", "-h":
 		printHelp()
 		return
-	case "pipeline", "governance":
+	case "pipeline", "governance", "decision":
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
 		printHelp()
@@ -66,6 +66,8 @@ func main() {
 			handlePipeline(ctx, os.Args[2:], zapLog, pool.Pool)
 		case "governance":
 			handleGovernance(ctx, os.Args[2:], zapLog, pool.Pool)
+		case "decision":
+			handleDecision(ctx, os.Args[2:], zapLog, pool.Pool)
 		}
 		cancel()
 	}()
@@ -92,6 +94,10 @@ func printHelp() {
 	fmt.Println("  governance load              Load governance YAML configs into database")
 	fmt.Println("  governance load --config-dir <d>  Config directory (default: ./config)")
 	fmt.Println("  governance check             Check governance configs in database")
+	fmt.Println("  decision create              Create a decision case from an alert")
+	fmt.Println("  decision context             Build context for a decision case")
+	fmt.Println("  decision decide              Generate decision and proposals")
+	fmt.Println("  decision list                List decision cases")
 	fmt.Println("")
 	fmt.Println("Environment:")
 	fmt.Println("  DATABASE_URL              PostgreSQL connection string (required)")

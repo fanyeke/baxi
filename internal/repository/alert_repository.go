@@ -141,6 +141,29 @@ func (r *AlertRepository) ListAlerts(
 	return results, totalCount, nil
 }
 
+func (r *AlertRepository) GetAlertByID(ctx context.Context, pool *pgxpool.Pool, alertID string) (*AlertRow, error) {
+	query := `
+		SELECT alert_id, rule_id, event_date::TEXT, severity, metric_name,
+		       object_type, object_id, current_value, baseline_value,
+		       change_rate, owner_role, status, impact_score
+		FROM ops.metric_alert
+		WHERE alert_id = $1
+	`
+
+	var row AlertRow
+	err := pool.QueryRow(ctx, query, alertID).Scan(
+		&row.AlertID, &row.RuleID, &row.EventDate, &row.Severity,
+		&row.MetricName, &row.ObjectType, &row.ObjectID,
+		&row.CurrentValue, &row.BaselineValue, &row.ChangeRate,
+		&row.OwnerRole, &row.Status, &row.ImpactScore,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query metric_alert by id: %w", err)
+	}
+
+	return &row, nil
+}
+
 // QueryAlerts is a convenience wrapper that accepts pgx.Tx for pipeline contexts.
 func (r *AlertRepository) QueryAlerts(
 	ctx context.Context,

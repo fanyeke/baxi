@@ -3,9 +3,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -39,6 +41,45 @@ type OutboxRepository struct{}
 // NewOutboxRepository creates a new OutboxRepository.
 func NewOutboxRepository() *OutboxRepository {
 	return &OutboxRepository{}
+}
+
+// OutboxDetail represents a full outbox event row for detail/management queries.
+type OutboxDetail struct {
+	EventID          string         `db:"event_id"`
+	EventType        string         `db:"event_type"`
+	SourceType       string         `db:"source_type"`
+	SourceID         string         `db:"source_id"`
+	TargetChannel    string         `db:"target_channel"`
+	Status           string         `db:"status"`
+	Payload          []byte         `db:"payload_json"`
+	CreatedAt        time.Time      `db:"created_at"`
+	DispatchAttempts int            `db:"dispatch_attempts"`
+	LastDispatchAt   *time.Time     `db:"last_dispatch_at"`
+	ErrorMessage     *string        `db:"error_message"`
+}
+
+// GetDetail retrieves a full outbox event row by event_id.
+// Returns nil, nil if not found.
+func (r *OutboxRepository) GetDetail(ctx context.Context, pool *pgxpool.Pool, eventID string) (*OutboxDetail, error) {
+	var d OutboxDetail
+	err := pool.QueryRow(ctx, `
+		SELECT event_id, event_type, source_type, source_id,
+		       target_channel, status, payload_json, created_at,
+		       dispatch_attempts, last_dispatch_at, error_message
+		FROM ops.outbox_event
+		WHERE event_id = $1
+	`, eventID).Scan(
+		&d.EventID, &d.EventType, &d.SourceType, &d.SourceID,
+		&d.TargetChannel, &d.Status, &d.Payload, &d.CreatedAt,
+		&d.DispatchAttempts, &d.LastDispatchAt, &d.ErrorMessage,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get outbox event detail %s: %w", eventID, err)
+	}
+	return &d, nil
 }
 
 // ListOutboxEvents queries ops.outbox_event with optional filters and pagination.

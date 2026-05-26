@@ -71,6 +71,19 @@ test-governance:  ## Run governance-related tests
 test-governance-integration:  ## Run governance integration tests (requires testcontainers)
 	go test -tags integration ./internal/repository/... ./internal/governance/... ./internal/ontology/... -v -count=1
 
+# Decision CLI
+decision-create:
+	go run ./cmd/baxi-cli decision create --alert-id $(ALERT_ID)
+
+decision-context:
+	go run ./cmd/baxi-cli decision context --case-id $(CASE_ID)
+
+decision-decide:
+	go run ./cmd/baxi-cli decision decide --case-id $(CASE_ID)
+
+decision-list:
+	go run ./cmd/baxi-cli decision list
+
 # Testing and quality
 test:
 	go test ./... -v -count=1 2>&1

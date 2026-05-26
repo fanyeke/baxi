@@ -1,30 +1,32 @@
 actions:
-  create_feishu_report:
-    description: "创建飞书日报/异常报告"
-    risk_level: low
-    requires_approval: false
-    allowed_by: [business_ops, seller_ops, category_ops, logistics_ops, marketing_ops]
-
-  notify_owner:
-    description: "通知负责人处理异常"
-    risk_level: low
-    requires_approval: false
-    allowed_by: [business_ops, seller_ops, category_ops, logistics_ops, marketing_ops]
-
   create_followup_task:
+    name: create_followup_task
     description: "创建跟进任务"
     risk_level: medium
     requires_approval: true
-    allowed_by: [business_ops, seller_ops]
+    allowed_by: [analyst, manager]
+    channels: [feishu]
 
-  recommend_business_strategy:
-    description: "推荐业务策略"
+  notify_owner:
+    name: notify_owner
+    description: "通知负责人处理异常"
     risk_level: medium
     requires_approval: true
-    allowed_by: [business_ops, category_ops, marketing_ops]
+    allowed_by: [analyst]
+    channels: [feishu, email]
 
-  modify_business_policy:
-    description: "修改业务策略或规则"
-    risk_level: high
+  export_report:
+    name: export_report
+    description: "导出报告"
+    risk_level: medium
     requires_approval: true
-    allowed_by: [business_ops]
+    allowed_by: [analyst, manager]
+    channels: [feishu, file]
+
+  create_outbox_message:
+    name: create_outbox_message
+    description: "创建出站消息"
+    risk_level: medium
+    requires_approval: true
+    allowed_by: [manager]
+    channels: [feishu, webhook]

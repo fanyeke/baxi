@@ -1,0 +1,817 @@
+openapi: "3.0.3"
+info:
+  title: "Baxi API - Phase 7"
+  description: "API specification for Phase 7 endpoints — Review, Action, and Outbox operations"
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:8765
+    description: "Local development server"
+
+paths:
+  /proposals/{id}/approve:
+    post:
+      tags:
+        - Review
+      summary: "Approve a proposal"
+      description: "Mark a proposal as approved with reviewer feedback."
+      operationId: "approveProposal"
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+            examples:
+              approve:
+                value:
+                  reviewer_id: "reviewer-001"
+                  feedback: "Approved after risk assessment"
+      responses:
+        "200":
+          description: "Proposal approved successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResponse"
+              examples:
+                success:
+                  value:
+                    record_id: "rec-abc123"
+                    proposal_id: "prop-xyz789"
+                    verdict: "approve"
+                    reviewer_id: "reviewer-001"
+                    feedback: "Approved after risk assessment"
+                    created_at: "2026-05-26T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: "Proposal not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal not found"
+        "409":
+          description: "Proposal is in an invalid state for this action"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal is already reviewed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /proposals/{id}/reject:
+    post:
+      tags:
+        - Review
+      summary: "Reject a proposal"
+      description: "Mark a proposal as rejected with reviewer feedback."
+      operationId: "rejectProposal"
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+            examples:
+              reject:
+                value:
+                  reviewer_id: "reviewer-001"
+                  feedback: "Rejected due to high risk level"
+      responses:
+        "200":
+          description: "Proposal rejected successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResponse"
+              examples:
+                success:
+                  value:
+                    record_id: "rec-abc124"
+                    proposal_id: "prop-xyz789"
+                    verdict: "reject"
+                    reviewer_id: "reviewer-001"
+                    feedback: "Rejected due to high risk level"
+                    created_at: "2026-05-26T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: "Proposal not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal not found"
+        "409":
+          description: "Proposal is in an invalid state for this action"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal is already reviewed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /proposals/{id}/cancel:
+    post:
+      tags:
+        - Review
+      summary: "Cancel a proposal"
+      description: "Mark a proposal as cancelled with reviewer feedback."
+      operationId: "cancelProposal"
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+            examples:
+              cancel:
+                value:
+                  reviewer_id: "reviewer-001"
+                  feedback: "Cancelled as no longer needed"
+      responses:
+        "200":
+          description: "Proposal cancelled successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResponse"
+              examples:
+                success:
+                  value:
+                    record_id: "rec-abc125"
+                    proposal_id: "prop-xyz789"
+                    verdict: "cancel"
+                    reviewer_id: "reviewer-001"
+                    feedback: "Cancelled as no longer needed"
+                    created_at: "2026-05-26T10:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: "Proposal not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal not found"
+        "409":
+          description: "Proposal is in an invalid state for this action"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal is already reviewed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /proposals/{id}/review:
+    get:
+      tags:
+        - Review
+      summary: "Get review details for a proposal"
+      description: "Retrieve the review record associated with a given proposal."
+      operationId: "getReview"
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      responses:
+        "200":
+          description: "Review record retrieved successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResponse"
+              examples:
+                success:
+                  value:
+                    record_id: "rec-abc123"
+                    proposal_id: "prop-xyz789"
+                    verdict: "approve"
+                    reviewer_id: "reviewer-001"
+                    feedback: "Approved after risk assessment"
+                    created_at: "2026-05-26T10:00:00Z"
+        "404":
+          description: "Review not found for this proposal"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "review not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /proposals/{id}/execute:
+    post:
+      tags:
+        - Action
+      summary: "Execute a proposal"
+      description: "Execute a proposal, optionally in dry-run mode. Requires the proposal to be in approved state."
+      operationId: "executeProposal"
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteRequest"
+            examples:
+              dry_run:
+                value:
+                  dry_run: true
+              live:
+                value:
+                  dry_run: false
+      responses:
+        "200":
+          description: "Execution result returned"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecuteResponse"
+              examples:
+                dry_run_success:
+                  value:
+                    proposal_id: "prop-xyz789"
+                    apply_status: "approved"
+                    dry_run: true
+                    outbox_event_id: "outbox-evt-001"
+                live_success:
+                  value:
+                    proposal_id: "prop-xyz789"
+                    apply_status: "applied"
+                    dry_run: false
+                    outbox_event_id: "outbox-evt-001"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: "Action not allowed (proposal not approved or not allowed)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal is not approved"
+        "404":
+          description: "Proposal not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /proposals/{id}/status:
+    get:
+      tags:
+        - Action
+      summary: "Get proposal status"
+      description: "Retrieve the current apply status and action type of a proposal."
+      operationId: "getProposalStatus"
+      parameters:
+        - $ref: "#/components/parameters/ProposalId"
+      responses:
+        "200":
+          description: "Proposal status retrieved successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                success:
+                  value:
+                    proposal_id: "prop-xyz789"
+                    apply_status: "pending"
+                    action_type: "no_op_action"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: "Proposal not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "proposal not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /outbox:
+    get:
+      tags:
+        - Outbox
+      summary: "List outbox events"
+      description: "Retrieve a paginated list of outbox events with optional filtering by status, channel, or event_type."
+      operationId: "listOutbox"
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          description: "Filter by status (e.g., pending, dispatched, failed, cancelled)"
+          required: false
+          schema:
+            type: string
+        - name: channel
+          in: query
+          description: "Filter by target channel"
+          required: false
+          schema:
+            type: string
+        - name: event_type
+          in: query
+          description: "Filter by event type"
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "List of outbox events retrieved successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboxListResponse"
+              examples:
+                success:
+                  value:
+                    items:
+                      - outbox_id: "evt-001"
+                        event_type: "no_op_action"
+                        source_type: "proposal"
+                        source_id: "prop-xyz789"
+                        target_channel: "noop"
+                        status: "pending"
+                        created_at: "2026-05-26T10:00:00Z"
+                        dispatch_attempts: 0
+                        last_dispatch_at: null
+                    total: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /outbox/{id}:
+    get:
+      tags:
+        - Outbox
+      summary: "Get outbox event detail"
+      description: "Retrieve detailed information about a specific outbox event, including its payload and dispatch history."
+      operationId: "getOutboxDetail"
+      parameters:
+        - $ref: "#/components/parameters/OutboxId"
+      responses:
+        "200":
+          description: "Outbox event detail retrieved successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboxDetailResponse"
+              examples:
+                success:
+                  value:
+                    event_id: "evt-001"
+                    event_type: "no_op_action"
+                    source_type: "proposal"
+                    source_id: "prop-xyz789"
+                    target_channel: "noop"
+                    status: "pending"
+                    payload_json:
+                      proposal_id: "prop-xyz789"
+                      case_id: "case-abc"
+                      action_type: "no_op_action"
+                      title: "Test Action"
+                    dispatch_attempts: 0
+                    last_error: null
+                    created_at: "2026-05-26T10:00:00Z"
+                    last_dispatch_at: null
+        "404":
+          description: "Event not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "event not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /outbox/{id}/dispatch:
+    post:
+      tags:
+        - Outbox
+      summary: "Dispatch an outbox event"
+      description: "Attempt to dispatch a pending or failed outbox event to its target channel. Only events in 'pending' or 'failed' state can be dispatched."
+      operationId: "dispatchOutboxEvent"
+      parameters:
+        - $ref: "#/components/parameters/OutboxId"
+      responses:
+        "200":
+          description: "Event dispatched successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboxActionResponse"
+              example:
+                event_id: "evt-001"
+                status: "dispatched"
+        "404":
+          description: "Event not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "event not found"
+        "409":
+          description: "Event cannot be dispatched in its current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "event cannot be dispatched in dispatched state"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /outbox/{id}/cancel:
+    post:
+      tags:
+        - Outbox
+      summary: "Cancel an outbox event"
+      description: "Cancel a pending or failed outbox event. Only events in 'pending' or 'failed' state can be cancelled."
+      operationId: "cancelOutboxEvent"
+      parameters:
+        - $ref: "#/components/parameters/OutboxId"
+      responses:
+        "200":
+          description: "Event cancelled successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboxActionResponse"
+              example:
+                event_id: "evt-001"
+                status: "cancelled"
+        "404":
+          description: "Event not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "event not found"
+        "409":
+          description: "Event cannot be cancelled in its current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "event cannot be cancelled in dispatched state"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+components:
+  parameters:
+    ProposalId:
+      name: id
+      in: path
+      required: true
+      description: "Unique identifier of the proposal"
+      schema:
+        type: string
+        example: "prop-xyz789"
+    OutboxId:
+      name: id
+      in: path
+      required: true
+      description: "Unique identifier of the outbox event"
+      schema:
+        type: string
+        example: "evt-001"
+    Page:
+      name: page
+      in: query
+      description: "Page number (1-indexed)"
+      required: false
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    Limit:
+      name: limit
+      in: query
+      description: "Items per page"
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+
+  schemas:
+    ReviewRequest:
+      type: object
+      required:
+        - reviewer_id
+      properties:
+        reviewer_id:
+          type: string
+          description: "Identifier of the reviewer"
+          example: "reviewer-001"
+        feedback:
+          type: string
+          description: "Optional feedback comment for the review action"
+          example: "Approved after risk assessment"
+
+    ReviewResponse:
+      type: object
+      properties:
+        record_id:
+          type: string
+          description: "Unique identifier of the review record"
+          example: "rec-abc123"
+        proposal_id:
+          type: string
+          description: "Associated proposal ID"
+          example: "prop-xyz789"
+        verdict:
+          type: string
+          description: "Review outcome"
+          enum:
+            - approve
+            - reject
+            - cancel
+          example: "approve"
+        reviewer_id:
+          type: string
+          description: "Identifier of the reviewer"
+          example: "reviewer-001"
+        feedback:
+          type: string
+          description: "Reviewer feedback"
+          example: "Approved after risk assessment"
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the review was created"
+          example: "2026-05-26T10:00:00Z"
+
+    ExecuteRequest:
+      type: object
+      properties:
+        dry_run:
+          type: boolean
+          description: "If true, simulate execution without applying changes. Defaults to true."
+          default: true
+          example: false
+
+    ExecuteResponse:
+      type: object
+      properties:
+        proposal_id:
+          type: string
+          description: "Associated proposal ID"
+          example: "prop-xyz789"
+        apply_status:
+          type: string
+          description: "Resulting apply status ('approved' for dry run, 'applied' for live, 'failed' on error)"
+          enum:
+            - approved
+            - applied
+            - failed
+          example: "applied"
+        dry_run:
+          type: boolean
+          description: "Whether this was a dry run"
+          example: false
+        outbox_event_id:
+          type: string
+          description: "ID of the outbox event created for this execution (if applicable)"
+          example: "outbox-evt-001"
+
+    StatusResponse:
+      type: object
+      properties:
+        proposal_id:
+          type: string
+          description: "Associated proposal ID"
+          example: "prop-xyz789"
+        apply_status:
+          type: string
+          description: "Current apply status of the proposal"
+          example: "pending"
+        action_type:
+          type: string
+          description: "The action type of the proposal"
+          example: "no_op_action"
+
+    OutboxItem:
+      type: object
+      properties:
+        outbox_id:
+          type: string
+          description: "Unique identifier of the outbox event"
+          example: "evt-001"
+        event_type:
+          type: string
+          description: "Type of the event"
+          example: "no_op_action"
+        source_type:
+          type: string
+          description: "Source type of the event"
+          example: "proposal"
+        source_id:
+          type: string
+          description: "Identifier of the source entity"
+          example: "prop-xyz789"
+        target_channel:
+          type: string
+          description: "Target dispatch channel"
+          example: "noop"
+        status:
+          type: string
+          description: "Current status of the event"
+          enum:
+            - pending
+            - dispatched
+            - failed
+            - cancelled
+          example: "pending"
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the event was created"
+          example: "2026-05-26T10:00:00Z"
+        dispatch_attempts:
+          type: integer
+          description: "Number of dispatch attempts"
+          example: 0
+        last_dispatch_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Timestamp of the last successful dispatch"
+
+    OutboxListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutboxItem"
+          description: "List of outbox events"
+        total:
+          type: integer
+          description: "Total number of matching events"
+          example: 50
+
+    OutboxDetailResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          description: "Unique identifier of the outbox event"
+          example: "evt-001"
+        event_type:
+          type: string
+          description: "Type of the event"
+          example: "no_op_action"
+        source_type:
+          type: string
+          description: "Source type of the event"
+          example: "proposal"
+        source_id:
+          type: string
+          description: "Identifier of the source entity"
+          example: "prop-xyz789"
+        target_channel:
+          type: string
+          description: "Target dispatch channel"
+          example: "noop"
+        status:
+          type: string
+          description: "Current status of the event"
+          enum:
+            - pending
+            - dispatched
+            - failed
+            - cancelled
+          example: "pending"
+        payload_json:
+          type: object
+          description: "The event payload as a JSON object"
+          nullable: true
+          additionalProperties: true
+          example:
+            proposal_id: "prop-xyz789"
+            case_id: "case-abc"
+            action_type: "no_op_action"
+            title: "Test Action"
+        dispatch_attempts:
+          type: integer
+          description: "Number of dispatch attempts"
+          example: 0
+        last_error:
+          type: string
+          nullable: true
+          description: "Last error message if any"
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the event was created"
+          example: "2026-05-26T10:00:00Z"
+        last_dispatch_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Timestamp of the last successful dispatch"
+
+    OutboxActionResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+          description: "Unique identifier of the outbox event"
+          example: "evt-001"
+        status:
+          type: string
+          description: "Resulting status after the action"
+          enum:
+            - dispatched
+            - cancelled
+          example: "dispatched"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: "Error message describing what went wrong"
+          example: "internal server error"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: "Enter your bearer token in the format: Bearer <token>"
+
+  responses:
+    BadRequest:
+      description: "Invalid request (missing required fields or malformed body)"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "reviewer_id is required"
+    InternalError:
+      description: "Internal server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "internal server error"
+
+security:
+  - BearerAuth: []
