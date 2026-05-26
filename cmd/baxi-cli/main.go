@@ -25,8 +25,8 @@ func main() {
 	case "help", "--help", "-h":
 		printHelp()
 		return
-	}
-	if os.Args[1] != "pipeline" {
+	case "pipeline", "governance":
+	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
 		printHelp()
 		os.Exit(1)
@@ -61,7 +61,12 @@ func main() {
 
 	// Dispatch subcommand
 	go func() {
-		handlePipeline(ctx, os.Args[2:], zapLog, pool.Pool)
+		switch os.Args[1] {
+		case "pipeline":
+			handlePipeline(ctx, os.Args[2:], zapLog, pool.Pool)
+		case "governance":
+			handleGovernance(ctx, os.Args[2:], zapLog, pool.Pool)
+		}
 		cancel()
 	}()
 
@@ -84,6 +89,9 @@ func printHelp() {
 	fmt.Println("  pipeline run --step <name>   Run a specific pipeline step")
 	fmt.Println("  pipeline run --data-dir <p>  Data directory for CSV files")
 	fmt.Println("  pipeline validate            Compare pipeline outputs against baseline")
+	fmt.Println("  governance load              Load governance YAML configs into database")
+	fmt.Println("  governance load --config-dir <d>  Config directory (default: ./config)")
+	fmt.Println("  governance check             Check governance configs in database")
 	fmt.Println("")
 	fmt.Println("Environment:")
 	fmt.Println("  DATABASE_URL              PostgreSQL connection string (required)")
