@@ -21,8 +21,8 @@ type DecisionCase struct {
 	ContextJSON            json.RawMessage
 	CreatedAt              time.Time
 	ResolvedAt             *time.Time
-	SourceType             string
-	SourceID               string
+	SourceType             *string
+	SourceID               *string
 	ObjectType             string
 	ObjectID               string
 	Severity               string
@@ -31,6 +31,12 @@ type DecisionCase struct {
 	CreatedBy              string
 	ErrorMessage           string
 	UpdatedAt              *time.Time
+	AlertRulesVersion      string
+	AlertRulesHash         string
+	ActionRegistryVersion  string
+	ActionRegistryHash     string
+	ContextSnapshotJSON    json.RawMessage
+	DataSnapshotJSON       json.RawMessage
 }
 
 // CaseFilter holds optional filter criteria for listing decision cases.
@@ -53,7 +59,7 @@ type CaseList struct {
 type CaseRepository interface {
 	CreateCase(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error
 	GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
-	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
+	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID *string) (*repository.DecisionCaseRow, error)
 	UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
 	ListCases(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error)
 }
@@ -88,7 +94,8 @@ func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdB
 		return nil, fmt.Errorf("get alert %s: %w", alertID, err)
 	}
 
-	existing, err := s.caseRepo.GetCaseBySource(ctx, s.pool, "alert", alertID)
+	sourceType := "alert"
+	existing, err := s.caseRepo.GetCaseBySource(ctx, s.pool, &sourceType, &alertID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("check existing case for alert %s: %w", alertID, err)
@@ -99,11 +106,12 @@ func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdB
 
 	now := time.Now()
 	caseID := GenerateCaseID()
+	sourceTypeVal := "alert"
 	row := &repository.DecisionCaseRow{
 		CaseID:     caseID,
 		AlertID:    &alertID,
-		SourceType: "alert",
-		SourceID:   alertID,
+		SourceType: &sourceTypeVal,
+		SourceID:   &alertID,
 		ObjectType: &alert.ObjectType,
 		ObjectID:   &alert.ObjectID,
 		Severity:   &alert.Severity,
@@ -195,6 +203,24 @@ func rowToCase(row *repository.DecisionCaseRow) *DecisionCase {
 	}
 	if row.ErrorMessage != nil {
 		c.ErrorMessage = *row.ErrorMessage
+	}
+	if row.AlertRulesVersion != nil {
+		c.AlertRulesVersion = *row.AlertRulesVersion
+	}
+	if row.AlertRulesHash != nil {
+		c.AlertRulesHash = *row.AlertRulesHash
+	}
+	if row.ActionRegistryVersion != nil {
+		c.ActionRegistryVersion = *row.ActionRegistryVersion
+	}
+	if row.ActionRegistryHash != nil {
+		c.ActionRegistryHash = *row.ActionRegistryHash
+	}
+	if row.ContextSnapshotJSON != nil {
+		c.ContextSnapshotJSON = *row.ContextSnapshotJSON
+	}
+	if row.DataSnapshotJSON != nil {
+		c.DataSnapshotJSON = *row.DataSnapshotJSON
 	}
 
 	return c

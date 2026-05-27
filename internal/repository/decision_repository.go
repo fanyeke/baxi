@@ -19,8 +19,8 @@ type DecisionCaseRow struct {
 	ContextJSON            *json.RawMessage
 	CreatedAt              time.Time
 	ResolvedAt             *time.Time
-	SourceType             string
-	SourceID               string
+	SourceType             *string
+	SourceID               *string
 	ObjectType             *string
 	ObjectID               *string
 	Severity               *string
@@ -29,6 +29,12 @@ type DecisionCaseRow struct {
 	CreatedBy              *string
 	ErrorMessage           *string
 	UpdatedAt              *time.Time
+	AlertRulesVersion      *string
+	AlertRulesHash         *string
+	ActionRegistryVersion  *string
+	ActionRegistryHash     *string
+	ContextSnapshotJSON    *json.RawMessage
+	DataSnapshotJSON       *json.RawMessage
 }
 
 // LLMDecisionRow represents a single row from ai.llm_decision.
@@ -90,13 +96,19 @@ func (r *DecisionRepository) CreateCase(ctx context.Context, pool *pgxpool.Pool,
 			created_at, resolved_at,
 			source_type, source_id, object_type, object_id,
 			severity, context_hash, governance_snapshot_json,
-			created_by, error_message, updated_at
+			created_by, error_message, updated_at,
+			alert_rules_version, alert_rules_hash,
+			action_registry_version, action_registry_hash,
+			context_snapshot_json, data_snapshot_json
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7,
 			$8, $9, $10, $11,
 			$12, $13, $14,
-			$15, $16, $17
+			$15, $16, $17,
+			$18, $19,
+			$20, $21,
+			$22, $23
 		)
 	`
 
@@ -118,6 +130,12 @@ func (r *DecisionRepository) CreateCase(ctx context.Context, pool *pgxpool.Pool,
 		row.CreatedBy,
 		row.ErrorMessage,
 		row.UpdatedAt,
+		row.AlertRulesVersion,
+		row.AlertRulesHash,
+		row.ActionRegistryVersion,
+		row.ActionRegistryHash,
+		row.ContextSnapshotJSON,
+		row.DataSnapshotJSON,
 	)
 	if err != nil {
 		return fmt.Errorf("insert ai.decision_case: %w", err)
@@ -132,7 +150,10 @@ func (r *DecisionRepository) GetCaseByID(ctx context.Context, pool *pgxpool.Pool
 		       created_at, resolved_at,
 		       source_type, source_id, object_type, object_id,
 		       severity, context_hash, governance_snapshot_json,
-		       created_by, error_message, updated_at
+		       created_by, error_message, updated_at,
+		       alert_rules_version, alert_rules_hash,
+		       action_registry_version, action_registry_hash,
+		       context_snapshot_json, data_snapshot_json
 		FROM ai.decision_case
 		WHERE case_id = $1
 	`
@@ -156,6 +177,12 @@ func (r *DecisionRepository) GetCaseByID(ctx context.Context, pool *pgxpool.Pool
 		&row.CreatedBy,
 		&row.ErrorMessage,
 		&row.UpdatedAt,
+		&row.AlertRulesVersion,
+		&row.AlertRulesHash,
+		&row.ActionRegistryVersion,
+		&row.ActionRegistryHash,
+		&row.ContextSnapshotJSON,
+		&row.DataSnapshotJSON,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("query ai.decision_case by id: %w", err)
@@ -164,15 +191,20 @@ func (r *DecisionRepository) GetCaseByID(ctx context.Context, pool *pgxpool.Pool
 }
 
 // GetCaseBySource retrieves a single decision case by source_type and source_id.
-func (r *DecisionRepository) GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*DecisionCaseRow, error) {
+// If sourceType or sourceID is nil, matches NULL in the database.
+func (r *DecisionRepository) GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID *string) (*DecisionCaseRow, error) {
 	query := `
 		SELECT case_id, alert_id, case_type, status, context_json,
 		       created_at, resolved_at,
 		       source_type, source_id, object_type, object_id,
 		       severity, context_hash, governance_snapshot_json,
-		       created_by, error_message, updated_at
+		       created_by, error_message, updated_at,
+		       alert_rules_version, alert_rules_hash,
+		       action_registry_version, action_registry_hash,
+		       context_snapshot_json, data_snapshot_json
 		FROM ai.decision_case
-		WHERE source_type = $1 AND source_id = $2
+		WHERE (source_type = $1 OR (source_type IS NULL AND $1 IS NULL))
+		  AND (source_id = $2 OR (source_id IS NULL AND $2 IS NULL))
 	`
 
 	var row DecisionCaseRow
@@ -194,6 +226,12 @@ func (r *DecisionRepository) GetCaseBySource(ctx context.Context, pool *pgxpool.
 		&row.CreatedBy,
 		&row.ErrorMessage,
 		&row.UpdatedAt,
+		&row.AlertRulesVersion,
+		&row.AlertRulesHash,
+		&row.ActionRegistryVersion,
+		&row.ActionRegistryHash,
+		&row.ContextSnapshotJSON,
+		&row.DataSnapshotJSON,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("query ai.decision_case by source: %w", err)
@@ -245,6 +283,9 @@ func (r *DecisionRepository) ListCases(
 		       source_type, source_id, object_type, object_id,
 		       severity, context_hash, governance_snapshot_json,
 		       created_by, error_message, updated_at,
+		       alert_rules_version, alert_rules_hash,
+		       action_registry_version, action_registry_hash,
+		       context_snapshot_json, data_snapshot_json,
 		       COUNT(*) OVER() AS total_count
 		FROM ai.decision_case
 		WHERE 1=1`
@@ -307,6 +348,12 @@ func (r *DecisionRepository) ListCases(
 			&row.CreatedBy,
 			&row.ErrorMessage,
 			&row.UpdatedAt,
+			&row.AlertRulesVersion,
+			&row.AlertRulesHash,
+			&row.ActionRegistryVersion,
+			&row.ActionRegistryHash,
+			&row.ContextSnapshotJSON,
+			&row.DataSnapshotJSON,
 			&rowTotal,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan decision_case row: %w", err)

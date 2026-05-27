@@ -26,6 +26,18 @@ func GenerateDecisionID() string {
 	return generateID("de")
 }
 
+// GenerateLineageEventID generates a unique lineage event ID with prefix "le".
+// Format: le_<timestamp>_<6char_hash>
+func GenerateLineageEventID() string {
+	return generateID("le")
+}
+
+// GenerateDataSnapshotID generates a unique data snapshot ID with prefix "ds".
+// Format: ds_<timestamp>_<6char_hash>
+func GenerateDataSnapshotID() string {
+	return generateID("ds")
+}
+
 // generateID creates an ID string with the given prefix, current Unix timestamp,
 // and a 6-character random hash containing only [A-Za-z0-9].
 func generateID(prefix string) string {

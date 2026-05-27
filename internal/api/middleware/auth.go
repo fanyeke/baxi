@@ -51,8 +51,9 @@ func isWeakToken(token string) bool {
 // health check endpoints). If no publicPaths are provided, the middleware
 // defaults to ["/api/v1/health"].
 //
-// On successful authentication, the actor name ("qoder") is stored in the
-// request context under ActorKey. Use GetActor(ctx) to retrieve it.
+// On successful authentication, the user identity is extracted from the token
+// (or defaults to legacy "qoder" for opaque tokens) and stored in context.
+// Use GetActor(ctx) for the username string or GetIdentity(ctx) for the full identity.
 func NewAuthMiddleware(expectedToken string, publicPaths ...string) func(next http.Handler) http.Handler {
 	if isWeakToken(expectedToken) {
 		log.Printf("WARNING: API_BEARER_TOKEN is set to a known weak/placeholder value; all requests will be rejected")
@@ -133,7 +134,9 @@ func NewAuthMiddleware(expectedToken string, publicPaths ...string) func(next ht
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), ActorKey, "qoder")
+			identity := extractIdentity(token)
+			ctx := context.WithValue(r.Context(), ActorKey, identity.Username)
+			ctx = context.WithValue(ctx, IdentityKey, identity)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

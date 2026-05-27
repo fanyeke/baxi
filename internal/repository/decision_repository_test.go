@@ -33,7 +33,13 @@ CREATE TABLE IF NOT EXISTS ai.decision_case (
     governance_snapshot_json JSONB,
     created_by TEXT,
     error_message TEXT,
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+    alert_rules_version TEXT,
+    alert_rules_hash TEXT,
+    action_registry_version TEXT,
+    action_registry_hash TEXT,
+    context_snapshot_json JSONB,
+    data_snapshot_json JSONB
 );
 
 CREATE TABLE IF NOT EXISTS ai.llm_decision (
@@ -126,8 +132,8 @@ func TestDecisionRepository_CreateAndGet(t *testing.T) {
 		ContextJSON:            &ctxJSON,
 		CreatedAt:              now,
 		ResolvedAt:             nil,
-		SourceType:             "rule_engine",
-		SourceID:               "rule-1",
+		SourceType:             strPtr("rule_engine"),
+		SourceID:               strPtr("rule-1"),
 		ObjectType:             strPtr("seller"),
 		ObjectID:               strPtr("seller-42"),
 		Severity:               strPtr("high"),
@@ -177,21 +183,24 @@ func TestDecisionRepository_GetBySource(t *testing.T) {
 		CaseID:     "case-src-1",
 		Status:     "open",
 		CreatedAt:  now,
-		SourceType: "alert",
-		SourceID:   "src-42",
+		SourceType: strPtr("alert"),
+		SourceID:   strPtr("src-42"),
 	}
 	insertTestDecisionCase(t, pool, row)
 
 	// Retrieve by source
-	fetched, err := repo.GetCaseBySource(ctx, pool, "alert", "src-42")
+	alertStr := "alert"
+	src42Str := "src-42"
+	fetched, err := repo.GetCaseBySource(ctx, pool, &alertStr, &src42Str)
 	require.NoError(t, err)
 	require.NotNil(t, fetched)
 	assert.Equal(t, "case-src-1", fetched.CaseID)
-	assert.Equal(t, "alert", fetched.SourceType)
-	assert.Equal(t, "src-42", fetched.SourceID)
+	assert.Equal(t, "alert", *fetched.SourceType)
+	assert.Equal(t, "src-42", *fetched.SourceID)
 
 	// Non-existent source
-	_, err = repo.GetCaseBySource(ctx, pool, "alert", "nonexistent")
+	alertStr2 := "alert"
+	_, err = repo.GetCaseBySource(ctx, pool, &alertStr2, strPtr("nonexistent"))
 	assert.Error(t, err)
 }
 
@@ -210,8 +219,8 @@ func TestDecisionRepository_UpdateCaseStatus(t *testing.T) {
 		CaseID:     "case-upd-1",
 		Status:     "created",
 		CreatedAt:  now,
-		SourceType: "test",
-		SourceID:   "test-1",
+		SourceType: strPtr("test"),
+		SourceID:   strPtr("test-1"),
 	}
 	insertTestDecisionCase(t, pool, row)
 
@@ -243,9 +252,9 @@ func TestDecisionRepository_ListCases(t *testing.T) {
 	created := "created"
 
 	cases := []*DecisionCaseRow{
-		{CaseID: "case-l-1", Status: "created", CreatedAt: now.Add(-3 * time.Hour), SourceType: "engine", SourceID: "e1", Severity: &high},
-		{CaseID: "case-l-2", Status: "created", CreatedAt: now.Add(-2 * time.Hour), SourceType: "engine", SourceID: "e2", Severity: strPtr("medium")},
-		{CaseID: "case-l-3", Status: "open", CreatedAt: now.Add(-1 * time.Hour), SourceType: "alert", SourceID: "a1", Severity: &high},
+		{CaseID: "case-l-1", Status: "created", CreatedAt: now.Add(-3 * time.Hour), SourceType: strPtr("engine"), SourceID: strPtr("e1"), Severity: &high},
+		{CaseID: "case-l-2", Status: "created", CreatedAt: now.Add(-2 * time.Hour), SourceType: strPtr("engine"), SourceID: strPtr("e2"), Severity: strPtr("medium")},
+		{CaseID: "case-l-3", Status: "open", CreatedAt: now.Add(-1 * time.Hour), SourceType: strPtr("alert"), SourceID: strPtr("a1"), Severity: &high},
 	}
 	for _, c := range cases {
 		insertTestDecisionCase(t, pool, c)
@@ -319,8 +328,8 @@ func TestDecisionRepository_CreateDecision(t *testing.T) {
 		CaseID:     "case-dec-1",
 		Status:     "open",
 		CreatedAt:  now,
-		SourceType: "test",
-		SourceID:   "test-dec-1",
+		SourceType: strPtr("test"),
+		SourceID:   strPtr("test-dec-1"),
 	}
 	insertTestDecisionCase(t, pool, caseRow)
 
@@ -361,8 +370,8 @@ func TestDecisionRepository_CreateProposal(t *testing.T) {
 		CaseID:     "case-prop-1",
 		Status:     "proposal_generated",
 		CreatedAt:  now,
-		SourceType: "test",
-		SourceID:   "test-prop-1",
+		SourceType: strPtr("test"),
+		SourceID:   strPtr("test-prop-1"),
 	}
 	insertTestDecisionCase(t, pool, caseRow)
 
@@ -404,8 +413,8 @@ func TestDecisionRepository_ListProposalsByCase(t *testing.T) {
 		CaseID:     "case-prop-list-1",
 		Status:     "proposal_generated",
 		CreatedAt:  now,
-		SourceType: "test",
-		SourceID:   "test-prop-list",
+		SourceType: strPtr("test"),
+		SourceID:   strPtr("test-prop-list"),
 	}
 	insertTestDecisionCase(t, pool, caseRow)
 
