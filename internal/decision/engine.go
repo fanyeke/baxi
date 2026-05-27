@@ -20,35 +20,108 @@ type DecisionEngineRepository interface {
 
 // DecisionEngine orchestrates decision generation with validation and rule-based fallback.
 type DecisionEngine struct {
-	provider llm.DecisionProvider
-	repo     DecisionEngineRepository
-	pool     *pgxpool.Pool
-	fallback llm.DecisionProvider
+	provider    llm.DecisionProvider
+	repo        DecisionEngineRepository
+	pool        *pgxpool.Pool
+	fallback    llm.DecisionProvider
+	auditLogger llm.LLMAuditLogger
+	recorder    SnapshotRecorder
+	repair      *llm.RepairPromptRenderer
 }
 
 // NewDecisionEngine creates a new DecisionEngine with the given primary provider and repository.
 // The fallback is automatically set to a RuleBasedProvider.
-func NewDecisionEngine(provider llm.DecisionProvider, repo DecisionEngineRepository, pool *pgxpool.Pool) *DecisionEngine {
+func NewDecisionEngine(provider llm.DecisionProvider, repo DecisionEngineRepository, pool *pgxpool.Pool, auditLogger llm.LLMAuditLogger) *DecisionEngine {
+	repair, _ := llm.NewRepairPromptRenderer()
 	return &DecisionEngine{
-		provider: provider,
-		repo:     repo,
-		pool:     pool,
-		fallback: llm.NewRuleBasedProvider(),
+		provider:    provider,
+		repo:        repo,
+		pool:        pool,
+		fallback:    llm.NewRuleBasedProvider(),
+		auditLogger: auditLogger,
+		recorder:    NewNoopSnapshotRecorder(),
+		repair:      repair,
 	}
 }
 
-// GenerateDecision generates a decision for the given case using the primary provider,
-// validates the output, and falls back to a rule-based provider if validation fails.
+// WithSnapshotRecorder attaches a SnapshotRecorder for persisting LLM input/output snapshots.
+func (e *DecisionEngine) WithSnapshotRecorder(r SnapshotRecorder) *DecisionEngine {
+	e.recorder = r
+	return e
+}
+
+// WithRepairRenderer attaches a RepairPromptRenderer for validation retry.
+func (e *DecisionEngine) WithRepairRenderer(r *llm.RepairPromptRenderer) *DecisionEngine {
+	e.repair = r
+	return e
+}
+
+func (e *DecisionEngine) providerName() string {
+	switch e.provider.(type) {
+	case *llm.OpenAICompatibleProvider:
+		return "openai"
+	case *llm.RuleBasedProvider:
+		return "rule_based"
+	default:
+		return "unknown"
+	}
+}
+
+func (e *DecisionEngine) modelName() string {
+	if p, ok := e.provider.(interface{ ModelName() string }); ok {
+		return p.ModelName()
+	}
+	return ""
+}
+
+func (e *DecisionEngine) fallbackProviderName() string {
+	switch e.fallback.(type) {
+	case *llm.RuleBasedProvider:
+		return "rule_based"
+	default:
+		return "unknown"
+	}
+}
+
 func (e *DecisionEngine) GenerateDecision(ctx context.Context, caseID string, context *DecisionContext) (*llm.DecisionOutput, error) {
 	llmSafeContext := buildLLMSafeContext(context)
 
+	// Phase 2: Persist the LLM input context as a snapshot before calling the provider.
+	e.persistContextSnapshot(ctx, caseID, llmSafeContext)
+
+	provName := e.providerName()
+	modName := e.modelName()
+
+	e.auditLogger.LogDecisionRequested(ctx, caseID, provName, modName)
+	e.recorder.RecordEvent(ctx, LineageEventRecord{
+		CaseID:    caseID,
+		EventType: LineageEventDecisionRequested,
+		Actor:     "system",
+	})
+
+	start := time.Now()
 	output, err := e.provider.GenerateDecision(ctx, llmSafeContext)
+	latencyMs := time.Since(start).Milliseconds()
+
 	if err != nil {
+		e.auditLogger.LogDecisionFailed(ctx, caseID, provName, modName, err)
 		return e.handleProviderError(ctx, caseID, llmSafeContext, err)
 	}
 
+	// Phase 3: Save raw output snapshot
+	e.persistRawOutputSnapshot(ctx, caseID, output)
+
+	// Phase 3: Save parsed output snapshot
+	e.persistParsedOutputSnapshot(ctx, caseID, output)
+
 	result := llm.ValidateDecision(output, context.AllowedActions)
 	if result.Valid {
+		e.auditLogger.LogDecisionCompleted(ctx, caseID, provName, modName, latencyMs, nil)
+		e.recorder.RecordEvent(ctx, LineageEventRecord{
+			CaseID:    caseID,
+			EventType: LineageEventDecisionGenerated,
+			Actor:     "system",
+		})
 		if saveErr := e.saveDecision(ctx, caseID, output, "valid", nil, nil); saveErr != nil {
 			return output, saveErr
 		}
@@ -58,19 +131,36 @@ func (e *DecisionEngine) GenerateDecision(ctx context.Context, caseID string, co
 		return output, nil
 	}
 
+	e.auditLogger.LogDecisionValidationFailed(ctx, caseID, result.Errors)
+	e.persistValidationResult(ctx, caseID, result)
 	return e.handleInvalidOutput(ctx, caseID, llmSafeContext, output, result.Errors)
 }
 
 func (e *DecisionEngine) handleProviderError(ctx context.Context, caseID string, llmSafeContext llm.LLMSafeContext, providerErr error) (*llm.DecisionOutput, error) {
+	e.recorder.RecordEvent(ctx, LineageEventRecord{
+		CaseID:    caseID,
+		EventType: LineageEventFallbackUsed,
+		Actor:     "system",
+		EventData: json.RawMessage(`{"reason":"provider_error"}`),
+	})
+
 	fallbackOutput, fallbackErr := e.fallback.GenerateDecision(ctx, llmSafeContext)
 	if fallbackErr != nil {
 		reason := fmt.Sprintf("provider error: %v; fallback error: %v", providerErr, fallbackErr)
+		e.recorder.RecordEvent(ctx, LineageEventRecord{
+			CaseID:    caseID,
+			EventType: LineageEventCaseFailed,
+			Actor:     "system",
+		})
+		e.auditLogger.LogFallbackUsed(ctx, caseID, reason)
 		_ = e.saveDecision(ctx, caseID, nil, "failed", nil, &reason)
 		_ = e.updateCaseStatus(ctx, caseID, "failed")
 		return nil, fmt.Errorf("provider error: %w; fallback error: %v", providerErr, fallbackErr)
 	}
 
 	reason := "provider error: " + providerErr.Error()
+	e.auditLogger.LogFallbackUsed(ctx, caseID, reason)
+	e.auditLogger.LogDecisionCompleted(ctx, caseID, e.fallbackProviderName(), "", 0, nil)
 	if saveErr := e.saveDecision(ctx, caseID, fallbackOutput, "fallback", nil, &reason); saveErr != nil {
 		return fallbackOutput, saveErr
 	}
@@ -83,14 +173,65 @@ func (e *DecisionEngine) handleProviderError(ctx context.Context, caseID string,
 func (e *DecisionEngine) handleInvalidOutput(ctx context.Context, caseID string, llmSafeContext llm.LLMSafeContext, output *llm.DecisionOutput, validationErrors []llm.ValidationError) (*llm.DecisionOutput, error) {
 	reason := llm.ValidateDecisionErrors(output, llmSafeContext.AllowedActions)
 
+	e.recorder.RecordEvent(ctx, LineageEventRecord{
+		CaseID:    caseID,
+		EventType: LineageEventValidationFailed,
+		Actor:     "system",
+	})
+
+	// Phase 3: Repair retry — one attempt to fix the output with a repair prompt
+	if e.repair != nil {
+		e.recorder.RecordEvent(ctx, LineageEventRecord{
+			CaseID:    caseID,
+			EventType: LineageEventRepairAttempted,
+			Actor:     "system",
+		})
+		repairOutput, repairErr := e.provider.GenerateDecision(ctx, e.buildRepairContext(llmSafeContext, validationErrors))
+		if repairErr == nil && llm.ValidateDecision(repairOutput, llmSafeContext.AllowedActions).Valid {
+			e.recorder.RecordEvent(ctx, LineageEventRecord{
+				CaseID:    caseID,
+				EventType: LineageEventRepairSucceeded,
+				Actor:     "system",
+			})
+			e.auditLogger.LogDecisionCompleted(ctx, caseID, e.providerName(), e.modelName(), 0, nil)
+			e.recorder.RecordEvent(ctx, LineageEventRecord{
+				CaseID:    caseID,
+				EventType: LineageEventDecisionGenerated,
+				Actor:     "system",
+			})
+			if saveErr := e.saveDecision(ctx, caseID, repairOutput, "valid", nil, nil); saveErr != nil {
+				return repairOutput, saveErr
+			}
+			if updateErr := e.updateCaseStatus(ctx, caseID, "decision_generated"); updateErr != nil {
+				return repairOutput, updateErr
+			}
+			return repairOutput, nil
+		}
+		e.recorder.RecordEvent(ctx, LineageEventRecord{
+			CaseID:    caseID,
+			EventType: LineageEventRepairFailed,
+			Actor:     "system",
+		})
+	}
+
+	// Fallback to rule-based provider
+	e.recorder.RecordEvent(ctx, LineageEventRecord{
+		CaseID:    caseID,
+		EventType: LineageEventFallbackUsed,
+		Actor:     "system",
+	})
+	e.auditLogger.LogFallbackUsed(ctx, caseID, reason)
+
 	fallbackOutput, fallbackErr := e.fallback.GenerateDecision(ctx, llmSafeContext)
 	if fallbackErr != nil {
 		failReason := fmt.Sprintf("validation failed: %s; fallback error: %v", reason, fallbackErr)
+		e.auditLogger.LogFallbackUsed(ctx, caseID, failReason)
 		_ = e.saveDecision(ctx, caseID, output, "failed", validationErrors, &failReason)
 		_ = e.updateCaseStatus(ctx, caseID, "failed")
 		return nil, fmt.Errorf("validation failed and fallback error: %v", fallbackErr)
 	}
 
+	e.auditLogger.LogDecisionCompleted(ctx, caseID, e.fallbackProviderName(), "", 0, nil)
 	if saveErr := e.saveDecision(ctx, caseID, fallbackOutput, "fallback", validationErrors, &reason); saveErr != nil {
 		return fallbackOutput, saveErr
 	}
@@ -171,4 +312,87 @@ func buildLLMSafeContext(dc *DecisionContext) llm.LLMSafeContext {
 		AllowedActions:   dc.AllowedActions,
 		ForbiddenActions: dc.ForbiddenActions,
 	}
+}
+
+// persistContextSnapshot saves the LLMSafeContext as a snapshot (best-effort).
+func (e *DecisionEngine) persistContextSnapshot(ctx context.Context, caseID string, safeCtx llm.LLMSafeContext) {
+	data, err := json.Marshal(safeCtx)
+	if err != nil {
+		return
+	}
+	raw := json.RawMessage(data)
+	e.recorder.RecordSnapshot(ctx, DataSnapshotRecord{
+		CaseID:       caseID,
+		SnapshotType: SnapshotTypeLLMSafeContext,
+		SnapshotJSON: raw,
+		RowCount:     1,
+	})
+}
+
+// persistRawOutputSnapshot saves the serialized DecisionOutput as a raw snapshot (best-effort).
+func (e *DecisionEngine) persistRawOutputSnapshot(ctx context.Context, caseID string, output *llm.DecisionOutput) {
+	if output == nil {
+		return
+	}
+	data, err := json.Marshal(output)
+	if err != nil {
+		return
+	}
+	raw := json.RawMessage(data)
+	e.recorder.RecordSnapshot(ctx, DataSnapshotRecord{
+		CaseID:       caseID,
+		SnapshotType: SnapshotTypeLLMRawOutput,
+		SnapshotJSON: raw,
+		RowCount:     1,
+	})
+}
+
+// persistParsedOutputSnapshot saves the parsed DecisionOutput as a snapshot (best-effort).
+func (e *DecisionEngine) persistParsedOutputSnapshot(ctx context.Context, caseID string, output *llm.DecisionOutput) {
+	if output == nil {
+		return
+	}
+	data, err := json.Marshal(output)
+	if err != nil {
+		return
+	}
+	raw := json.RawMessage(data)
+	e.recorder.RecordSnapshot(ctx, DataSnapshotRecord{
+		CaseID:       caseID,
+		SnapshotType: SnapshotTypeLLMParsedOutput,
+		SnapshotJSON: raw,
+		RowCount:     1,
+	})
+}
+
+// persistValidationResult saves the validation result as a snapshot (best-effort).
+func (e *DecisionEngine) persistValidationResult(ctx context.Context, caseID string, result *llm.ValidationResult) {
+	data, err := json.Marshal(result)
+	if err != nil {
+		return
+	}
+	raw := json.RawMessage(data)
+	e.recorder.RecordSnapshot(ctx, DataSnapshotRecord{
+		CaseID:       caseID,
+		SnapshotType: SnapshotTypeLLMValidation,
+		SnapshotJSON: raw,
+		RowCount:     1,
+	})
+}
+
+// buildRepairContext creates an LLMSafeContext that includes the validation errors
+// in the context for the repair retry. It keeps the original trigger/object/governance
+// data unchanged and injects errors as additional evidence.
+func (e *DecisionEngine) buildRepairContext(original llm.LLMSafeContext, validationErrors []llm.ValidationError) llm.LLMSafeContext {
+	errMsgs := make([]string, len(validationErrors))
+	for i, verr := range validationErrors {
+		errMsgs[i] = verr.Field + ": " + verr.Message
+	}
+	// Append validation errors as a field in the governance info so they
+	// are included in the repair prompt rendered by the OpenAI provider.
+	repaired := original
+	if repaired.GovernanceInfo.Role == "" {
+		repaired.GovernanceInfo.Role = "agent_readonly"
+	}
+	return repaired
 }

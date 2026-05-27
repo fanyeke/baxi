@@ -1,32 +1,101 @@
 actions:
   create_followup_task:
-    name: create_followup_task
+    version: "v1"
     description: "创建跟进任务"
     risk_level: medium
     requires_approval: true
+    dry_run_default: true
+    adapter: "github"
     allowed_by: [analyst, manager]
-    channels: [feishu]
+    llm_visible: true
+    llm_description: "当需要创建跟进调查任务时使用"
+    payload_schema:
+      type: object
+      required: [task_title, owner_role]
+      properties:
+        task_title:
+          type: string
+          maxLength: 200
+        task_description:
+          type: string
+          maxLength: 2000
+        owner_role:
+          type: string
+          enum: [analyst, marketing_ops, seller_ops, category_ops, logistics_ops]
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
 
   notify_owner:
-    name: notify_owner
+    version: "v1"
     description: "通知负责人处理异常"
     risk_level: medium
     requires_approval: true
+    dry_run_default: true
+    adapter: "feishu"
     allowed_by: [analyst]
-    channels: [feishu, email]
+    llm_visible: true
+    llm_description: "当需要通知负责人处理运营异常时使用"
+    payload_schema:
+      type: object
+      required: [alert_id, owner_role, message]
+      properties:
+        alert_id:
+          type: string
+        owner_role:
+          type: string
+          enum: [analyst, marketing_ops, seller_ops, category_ops, logistics_ops, admin]
+        message:
+          type: string
+          maxLength: 2000
 
   export_report:
-    name: export_report
+    version: "v1"
     description: "导出报告"
     risk_level: medium
     requires_approval: true
+    dry_run_default: true
+    adapter: "feishu"
     allowed_by: [analyst, manager]
-    channels: [feishu, file]
+    llm_visible: true
+    llm_description: "当需要生成并导出正式报告时使用"
+    payload_schema:
+      type: object
+      required: [report_type]
+      properties:
+        report_type:
+          type: string
+          enum: [alert_summary, decision_rationale, impact_analysis]
+        format:
+          type: string
+          enum: [markdown, csv, pdf]
+          default: markdown
+        include_evidence:
+          type: boolean
+          default: true
 
   create_outbox_message:
-    name: create_outbox_message
+    version: "v1"
     description: "创建出站消息"
     risk_level: medium
     requires_approval: true
+    dry_run_default: true
+    adapter: "feishu"
     allowed_by: [manager]
-    channels: [feishu, webhook]
+    llm_visible: true
+    llm_description: "当需要向外部渠道发送通知时使用"
+    payload_schema:
+      type: object
+      required: [target_channel, message]
+      properties:
+        target_channel:
+          type: string
+          enum: [feishu, webhook]
+        message:
+          type: string
+          maxLength: 4000
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium

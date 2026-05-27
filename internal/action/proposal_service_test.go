@@ -66,7 +66,7 @@ func TestGenerateProposals_CreatesProposalsFromDecision(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil)
+	svc := NewProposalService(repo, updater, nil, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
@@ -91,7 +91,7 @@ func TestGenerateProposals_CreatesProposalsFromDecision(t *testing.T) {
 		RequiresHumanReview: true,
 	}
 
-	proposals, err := svc.GenerateProposals(context.Background(), caseID, decisionID, decision)
+	proposals, err := svc.GenerateProposals(context.Background(), caseID, decisionID, decision, "")
 
 	assert.NoError(t, err)
 	assert.Len(t, proposals, 2)
@@ -148,7 +148,7 @@ func TestGenerateProposals_AllProposalsRequireHumanReview(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil)
+	svc := NewProposalService(repo, updater, nil, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "optimize",
@@ -162,7 +162,7 @@ func TestGenerateProposals_AllProposalsRequireHumanReview(t *testing.T) {
 		Confidence: 0.95,
 	}
 
-	proposals, err := svc.GenerateProposals(context.Background(), "case-1", "dec-1", decision)
+	proposals, err := svc.GenerateProposals(context.Background(), "case-1", "dec-1", decision, "")
 
 	assert.NoError(t, err)
 	assert.Len(t, proposals, 3)
@@ -185,7 +185,7 @@ func TestGenerateProposals_AllProposalsHaveApplyStatusProposed(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil)
+	svc := NewProposalService(repo, updater, nil, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "investigate",
@@ -197,7 +197,7 @@ func TestGenerateProposals_AllProposalsHaveApplyStatusProposed(t *testing.T) {
 		Confidence: 0.7,
 	}
 
-	proposals, err := svc.GenerateProposals(context.Background(), "case-2", "dec-2", decision)
+	proposals, err := svc.GenerateProposals(context.Background(), "case-2", "dec-2", decision, "")
 
 	assert.NoError(t, err)
 	assert.Len(t, proposals, 1)
@@ -224,7 +224,7 @@ func TestGenerateProposals_UpdatesCaseStatus(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil)
+	svc := NewProposalService(repo, updater, nil, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "monitor_only",
@@ -236,7 +236,7 @@ func TestGenerateProposals_UpdatesCaseStatus(t *testing.T) {
 		Confidence: 0.9,
 	}
 
-	_, err := svc.GenerateProposals(context.Background(), caseID, decisionID, decision)
+	_, err := svc.GenerateProposals(context.Background(), caseID, decisionID, decision, "")
 
 	assert.NoError(t, err)
 	assert.True(t, statusUpdated, "case status must be updated to proposal_generated")
@@ -256,7 +256,7 @@ func TestGenerateProposals_EmptyDecisionReturnsEmptyList(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil)
+	svc := NewProposalService(repo, updater, nil, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType:       "monitor_only",
@@ -266,7 +266,7 @@ func TestGenerateProposals_EmptyDecisionReturnsEmptyList(t *testing.T) {
 		Confidence:         1.0,
 	}
 
-	proposals, err := svc.GenerateProposals(context.Background(), "case-empty", "dec-empty", decision)
+	proposals, err := svc.GenerateProposals(context.Background(), "case-empty", "dec-empty", decision, "")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, proposals)
@@ -320,7 +320,7 @@ func TestListProposals_ReturnsProposalsForCase(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, &mockCaseUpdater{}, nil)
+	svc := NewProposalService(repo, &mockCaseUpdater{}, nil, nil)
 	proposals, err := svc.ListProposals(context.Background(), caseID)
 
 	assert.NoError(t, err)
@@ -351,7 +351,7 @@ func TestListProposals_EmptyCaseReturnsEmptyList(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, &mockCaseUpdater{}, nil)
+	svc := NewProposalService(repo, &mockCaseUpdater{}, nil, nil)
 	proposals, err := svc.ListProposals(context.Background(), "empty-case")
 
 	assert.NoError(t, err)
@@ -403,7 +403,7 @@ func TestGenerateProposals_TruncatesLongTitle(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil)
+	svc := NewProposalService(repo, updater, nil, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
@@ -415,7 +415,7 @@ func TestGenerateProposals_TruncatesLongTitle(t *testing.T) {
 		Confidence: 0.8,
 	}
 
-	proposals, err := svc.GenerateProposals(context.Background(), "case-trunc", "dec-trunc", decision)
+	proposals, err := svc.GenerateProposals(context.Background(), "case-trunc", "dec-trunc", decision, "")
 
 	assert.NoError(t, err)
 	assert.Len(t, proposals, 1)

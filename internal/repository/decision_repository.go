@@ -66,6 +66,8 @@ type ActionProposalRow struct {
 	Description         *string
 	RiskLevel           *string
 	RequiresHumanReview bool
+	ContextHash         *string // Phase 2: links proposal to the exact LLM context used
+	ActionSchemaVersion *string // Phase 4: links proposal to the action schema version
 }
 
 // CaseFilter holds optional WHERE clause filters for listing decision cases.
@@ -408,12 +410,14 @@ func (r *DecisionRepository) CreateProposal(ctx context.Context, pool *pgxpool.P
 			proposal_id, case_id, decision_id, action_type,
 			payload, apply_status, created_at,
 			applied_at, applied_by,
-			title, description, risk_level, requires_human_review
+			title, description, risk_level, requires_human_review,
+			context_hash, action_schema_version
 		) VALUES (
 			$1, $2, $3, $4,
 			$5, $6, $7,
 			$8, $9,
-			$10, $11, $12, $13
+			$10, $11, $12, $13,
+			$14, $15
 		)
 	`
 
@@ -431,6 +435,8 @@ func (r *DecisionRepository) CreateProposal(ctx context.Context, pool *pgxpool.P
 		row.Description,
 		row.RiskLevel,
 		row.RequiresHumanReview,
+		row.ContextHash,
+		row.ActionSchemaVersion,
 	)
 	if err != nil {
 		return fmt.Errorf("insert ai.action_proposal: %w", err)

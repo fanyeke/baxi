@@ -3,8 +3,10 @@ package decision
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"baxi/internal/governance"
+	"baxi/internal/llm"
 	"baxi/internal/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -259,6 +261,86 @@ func (b *ContextBuilderV2) buildPolicyResult() *PolicyResult {
 		RequiresApprovalActions: requiresApprovalActions,
 		EvidenceSources:         evidenceSources,
 	}
+}
+
+// BuildEnvelope constructs an LLMSafeContextEnvelope for the given case.
+// This is the versioned, auditable wrapper that gets persisted as a snapshot
+// before the LLM call, enabling replay and audit.
+func (b *ContextBuilderV2) BuildEnvelope(ctx context.Context, caseID string, promptVersion string) (*llm.LLMSafeContextEnvelope, error) {
+	decisionCtx, err := b.BuildDecisionContext(ctx, caseID)
+	if err != nil {
+		return nil, fmt.Errorf("build decision context: %w", err)
+	}
+
+	llmSafeCtx := buildLLMSafeContext(decisionCtx)
+	contextHash, err := ComputeContextHash(llmSafeCtx)
+	if err != nil {
+		return nil, fmt.Errorf("compute context hash: %w", err)
+	}
+
+	alertID := ""
+	if decisionCtx.SourceType != nil && *decisionCtx.SourceType == "alert" && decisionCtx.SourceID != nil {
+		alertID = *decisionCtx.SourceID
+	}
+
+	evidence := buildEvidenceItems(decisionCtx)
+
+	redactionSummary := llm.RedactionSummary{
+		TotalFields:   len(decisionCtx.ObjectContext.Properties) + len(decisionCtx.Governance.RedactedFields),
+		RedactedCount: len(decisionCtx.Governance.RedactedFields),
+		RedactedList:  decisionCtx.Governance.RedactedFields,
+		AppliedRole:   decisionCtx.Governance.Role,
+	}
+
+	configVersions := make(map[string]string)
+	if decisionCtx.SourceType != nil {
+		configVersions["source_type"] = *decisionCtx.SourceType
+	}
+
+	envelope := &llm.LLMSafeContextEnvelope{
+		SchemaVersion:    "llm_safe_context.v1",
+		CaseID:           caseID,
+		AlertID:          alertID,
+		ContextHash:      contextHash,
+		BuiltAt:          time.Now(),
+		Trigger:          llmSafeCtx.Trigger,
+		ObjectContext:    llmSafeCtx.ObjectContext,
+		Evidence:         evidence,
+		AllowedActions:   llmSafeCtx.AllowedActions,
+		ForbiddenActions: llmSafeCtx.ForbiddenActions,
+		Governance:       llmSafeCtx.GovernanceInfo,
+		RedactionSummary: redactionSummary,
+		PromptVersion:    promptVersion,
+		ConfigVersions:   configVersions,
+	}
+
+	return envelope, nil
+}
+
+// buildEvidenceItems extracts evidence items from a DecisionContext for inclusion in the envelope.
+func buildEvidenceItems(dc *DecisionContext) []llm.EvidenceItem {
+	var items []llm.EvidenceItem
+
+	if dc.Trigger.AlertID != "" {
+		items = append(items, llm.EvidenceItem{Type: "alert", Key: "alert_id", Value: dc.Trigger.AlertID})
+	}
+	if dc.Trigger.RuleID != "" {
+		items = append(items, llm.EvidenceItem{Type: "alert", Key: "rule_id", Value: dc.Trigger.RuleID})
+	}
+	if dc.Trigger.MetricName != "" {
+		items = append(items, llm.EvidenceItem{Type: "metric", Key: "metric_name", Value: dc.Trigger.MetricName})
+		items = append(items, llm.EvidenceItem{Type: "metric", Key: "current_value", Value: dc.Trigger.CurrentValue})
+		items = append(items, llm.EvidenceItem{Type: "metric", Key: "baseline_value", Value: dc.Trigger.BaselineValue})
+		items = append(items, llm.EvidenceItem{Type: "metric", Key: "delta_pct", Value: dc.Trigger.DeltaPct})
+	}
+	if dc.Governance.Classification != "" {
+		items = append(items, llm.EvidenceItem{Type: "classification", Key: "overall_level", Value: dc.Governance.Classification})
+	}
+
+	if items == nil {
+		items = []llm.EvidenceItem{}
+	}
+	return items
 }
 
 var _ interface {

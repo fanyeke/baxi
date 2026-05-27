@@ -12,27 +12,41 @@ type LineageEventType string
 const (
 	LineageEventCaseCreated         LineageEventType = "case_created"
 	LineageEventContextBuilt        LineageEventType = "context_built"
+	LineageEventDecisionRequested   LineageEventType = "decision_requested"
 	LineageEventDecisionGenerated   LineageEventType = "decision_generated"
 	LineageEventProposalCreated     LineageEventType = "proposal_created"
 	LineageEventProposalApproved    LineageEventType = "proposal_approved"
 	LineageEventProposalRejected    LineageEventType = "proposal_rejected"
+	LineageEventActionApplying      LineageEventType = "action_applying"
 	LineageEventActionApplied       LineageEventType = "action_applied"
+	LineageEventActionFailed        LineageEventType = "action_failed"
 	LineageEventCaseClosed          LineageEventType = "case_closed"
 	LineageEventCaseFailed          LineageEventType = "case_failed"
 	LineageEventFallbackUsed        LineageEventType = "fallback_used"
 	LineageEventValidationFailed    LineageEventType = "validation_failed"
+	LineageEventRepairAttempted     LineageEventType = "repair_attempted"
+	LineageEventRepairSucceeded     LineageEventType = "repair_succeeded"
+	LineageEventRepairFailed        LineageEventType = "repair_failed"
+	LineageEventDispatchSucceeded   LineageEventType = "dispatch_succeeded"
+	LineageEventDispatchFailed      LineageEventType = "dispatch_failed"
 )
 
 // SnapshotType represents the type of data snapshot.
 type SnapshotType string
 
 const (
-	SnapshotTypeAlertContext   SnapshotType = "alert_context"
-	SnapshotTypeObjectContext  SnapshotType = "object_context"
-	SnapshotTypeGovernance     SnapshotType = "governance"
-	SnapshotTypeDecisionInput  SnapshotType = "decision_input"
-	SnapshotTypeDecisionOutput SnapshotType = "decision_output"
+	SnapshotTypeAlertContext    SnapshotType = "alert_context"
+	SnapshotTypeObjectContext   SnapshotType = "object_context"
+	SnapshotTypeGovernance      SnapshotType = "governance"
+	SnapshotTypeDecisionInput   SnapshotType = "decision_input"
+	SnapshotTypeDecisionOutput  SnapshotType = "decision_output"
 	SnapshotTypeProposalPayload SnapshotType = "proposal_payload"
+	// Phase 2: LLM audit snapshots
+	SnapshotTypeLLMSafeContext   SnapshotType = "llm_safe_context"
+	SnapshotTypeLLMRawOutput     SnapshotType = "llm_raw_output"
+	SnapshotTypeLLMParsedOutput  SnapshotType = "llm_parsed_output"
+	SnapshotTypeLLMValidation    SnapshotType = "llm_validation_result"
+	SnapshotTypeLLMRepairAttempt SnapshotType = "llm_repair_attempt"
 )
 
 // DecisionLineageEvent represents a single event in the decision lineage chain.

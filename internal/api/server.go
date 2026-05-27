@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,14 +16,19 @@ import (
 	"go.uber.org/zap"
 
 	"baxi/internal/action"
+	"baxi/internal/adapter"
 	"baxi/internal/api/dto"
 	"baxi/internal/api/handler"
 	apimw "baxi/internal/api/middleware"
+	"baxi/internal/config"
 	"baxi/internal/decision"
+	"baxi/internal/eval"
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/ontology"
 	"baxi/internal/outbox"
+	"baxi/internal/pipeline"
+	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
 	"baxi/internal/review"
 	"baxi/internal/service"
@@ -34,18 +41,22 @@ type Server struct {
 	pool             *pgxpool.Pool
 	http             *http.Server
 	taskSvc          *service.TaskService
-	bearerToken      string
+	bearerToken       string
 	corsAllowedOrigins string
+	cfg               *config.Config
 	decisionHandlerVal  *handler.DecisionHandler
 	actionHandlerVal    *handler.ActionHandler
+	llmHandlerVal       *handler.LLMHandler
+	feishuHandlerVal    *handler.FeishuHandler
 }
 
 // New creates a new API server instance.
-func New(logger *zap.Logger, pool *pgxpool.Pool) *Server {
+func New(logger *zap.Logger, pool *pgxpool.Pool, cfg *config.Config) *Server {
 	s := &Server{
 		router:             chi.NewRouter(),
 		logger:             logger,
 		pool:               pool,
+		cfg:                cfg,
 		taskSvc:            service.NewTaskService(repository.NewTaskRepository(), pool),
 		bearerToken:        os.Getenv("API_BEARER_TOKEN"),
 		corsAllowedOrigins: os.Getenv("CORS_ALLOWED_ORIGINS"),
@@ -115,6 +126,31 @@ func (s *Server) alertHandler() *handler.AlertHandler {
 	return handler.NewAlertHandler(svc)
 }
 
+// llmHandler lazily initializes the LLM handler.
+func (s *Server) llmHandler() *handler.LLMHandler {
+	if s.llmHandlerVal == nil {
+		s.llmHandlerVal = handler.NewLLMHandler(s.cfg, eval.NewMetricsCollector())
+	}
+	return s.llmHandlerVal
+}
+
+// feishuHandler lazily initializes the Feishu handler.
+func (s *Server) feishuHandler() *handler.FeishuHandler {
+	if s.feishuHandlerVal == nil {
+		feishuWebhookURL := ""
+		if s.cfg != nil {
+			feishuWebhookURL = s.cfg.FeishuWebhookURL
+		}
+		feishuAdapter := adapter.NewFeishuAdapter(adapter.FeishuConfig{
+			WebhookURL: feishuWebhookURL,
+			Enabled:    feishuWebhookURL != "",
+		})
+		svc := handler.NewFeishuService(feishuAdapter)
+		s.feishuHandlerVal = handler.NewFeishuHandler(svc)
+	}
+	return s.feishuHandlerVal
+}
+
 // decisionHandler lazily initializes the decision handler.
 func (s *Server) decisionHandler() *handler.DecisionHandler {
 	if s.decisionHandlerVal == nil {
@@ -126,14 +162,40 @@ func (s *Server) decisionHandler() *handler.DecisionHandler {
 		objectSvc := ontology.NewObjectQueryService(ontologyRepo, s.pool)
 		govRepo := repository.NewGovernanceRepository()
 		classSvc := governance.NewClassificationService(s.pool, govRepo)
-		ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool)
+		reg, err := action.NewActionRegistry("")
+		if err != nil {
+			log.Printf("WARNING: failed to load action registry: %v, using empty fallback", err)
+			reg = action.NewEmptyRegistry()
+		}
+		ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool, action.NewActionTypeProviderAdapter(reg))
 
+		var decisionProvider llm.DecisionProvider
+		decisionProvider = llm.NewRuleBasedProvider()
+		if s.cfg != nil {
+			promptReg, _ := llm.NewPromptRegistry()
+			factory := llm.NewProviderFactory(s.cfg, promptReg)
+			if p, err := factory.CreateProvider(); err == nil {
+				decisionProvider = p
+			} else {
+				log.Printf("WARNING: failed to create LLM provider: %v, falling back to rule-based", err)
+			}
+		}
+		engine := decision.NewDecisionEngine(decisionProvider, decisionRepo, s.pool, llm.NewDBAuditLogger(s.pool))
+
+		proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg, s.pool)
+
+		// Build the replay service using the same provider and audit logger.
+		replayRepo := eval.NewPGReplayRepository(s.pool)
+		auditLogger := llm.NewDBAuditLogger(s.pool)
+		replaySvc := eval.NewReplayService(replayRepo, decisionProvider, auditLogger)
+
+		// Create a rule-based provider for comparison.
 		ruleProvider := llm.NewRuleBasedProvider()
-		engine := decision.NewDecisionEngine(ruleProvider, decisionRepo, s.pool)
 
-		proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, s.pool)
-
-		svc := service.NewDecisionService(caseSvc, ctxBuilder, engine, proposalSvc, s.pool)
+		svc := service.NewDecisionService(caseSvc, ctxBuilder, engine, proposalSvc, s.pool).
+			WithMetrics(eval.NewMetricsCollector()).
+			WithReplayService(replaySvc).
+			WithRuleProvider(ruleProvider)
 		s.decisionHandlerVal = handler.NewDecisionHandler(svc)
 	}
 	return s.decisionHandlerVal
@@ -242,6 +304,47 @@ func (a *outboxServiceAdapter) DispatchEvent(ctx context.Context, id string) err
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func (a *outboxServiceAdapter) BatchDispatch(ctx context.Context, dryRun bool, channel string, limit int) (*handler.BatchDispatchResponse, error) {
+	events, err := a.writeRepo.GetPendingEvents(ctx, a.pool, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get pending events: %w", err)
+	}
+
+	if channel != "" {
+		var filtered []outbox.OutboxEvent
+		for _, e := range events {
+			if e.TargetChannel == channel {
+				filtered = append(filtered, e)
+			}
+		}
+		events = filtered
+	}
+
+	resp := &handler.BatchDispatchResponse{
+		DryRun:   dryRun,
+		EventIDs: make([]string, 0, len(events)),
+	}
+
+	if dryRun {
+		resp.Dispatched = len(events)
+		for _, e := range events {
+			resp.EventIDs = append(resp.EventIDs, e.EventID)
+		}
+		return resp, nil
+	}
+
+	for _, e := range events {
+		if err := a.DispatchEvent(ctx, e.EventID); err != nil {
+			resp.Failed++
+		} else {
+			resp.Dispatched++
+			resp.EventIDs = append(resp.EventIDs, e.EventID)
+		}
+	}
+
+	return resp, nil
 }
 
 func (a *outboxServiceAdapter) CancelEvent(ctx context.Context, id string) error {
@@ -367,9 +470,31 @@ func (a *actionHandlerSvc) GetProposalByID(ctx context.Context, pool *pgxpool.Po
 func (s *Server) actionHandler() *handler.ActionHandler {
 	if s.actionHandlerVal == nil {
 		repo := review.NewReviewRepository()
-		reg, _ := action.NewActionRegistry("")
+		reg, err := action.NewActionRegistry("")
+		if err != nil {
+			log.Printf("WARNING: failed to load action registry: %v, using empty fallback", err)
+			reg = action.NewEmptyRegistry()
+		}
 		loader := &proposalLoaderAdapter{repo: repo}
-		applySvc := action.NewApplyService(reg, nil, loader)
+		feishuWebhookURL := ""
+		githubToken := ""
+		if s.cfg != nil {
+			feishuWebhookURL = s.cfg.FeishuWebhookURL
+			githubToken = s.cfg.GitHubToken
+		}
+		feishuExec := adapter.NewFeishuAdapter(adapter.FeishuConfig{
+			WebhookURL: feishuWebhookURL,
+			Enabled:    feishuWebhookURL != "",
+		})
+		githubExec := adapter.NewGitHubAdapter(adapter.GitHubConfig{
+			Token:   githubToken,
+			Enabled: githubToken != "",
+		})
+		executors := map[string]action.ActionExecutor{
+			"feishu": feishuExec,
+			"github": githubExec,
+		}
+		applySvc := action.NewApplyService(reg, executors, loader, nil, nil, s.pool)
 		adapter := &actionHandlerSvc{
 			applySvc: applySvc,
 			repo:     repo,
@@ -378,6 +503,49 @@ func (s *Server) actionHandler() *handler.ActionHandler {
 		s.actionHandlerVal = handler.NewActionHandler(adapter, s.pool)
 	}
 	return s.actionHandlerVal
+}
+
+// pipelineRunService adapts pipeline.Runner to handler.PipelineRunner.
+type pipelineRunService struct {
+	runner *pipeline.Runner
+	log    *zap.Logger
+}
+
+func (s *pipelineRunService) Run(ctx context.Context, config string) (string, error) {
+	runID := newPipelineRunID()
+	s.log.Info("pipeline run requested",
+		zap.String("run_id", runID),
+		zap.String("config", config),
+	)
+	go func() {
+		input := pipeline.RunInput{
+			RunType: config,
+			Mode:    "api",
+			DataDir: "./data/raw",
+		}
+		if err := s.runner.Run(context.Background(), input); err != nil {
+			s.log.Error("pipeline run failed",
+				zap.String("run_id", runID),
+				zap.String("config", config),
+				zap.Error(err),
+			)
+			return
+		}
+		s.log.Info("pipeline run completed",
+			zap.String("run_id", runID),
+			zap.String("config", config),
+		)
+	}()
+	return runID, nil
+}
+
+func newPipelineRunID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
 // reviewHandler lazily initializes the review handler.
@@ -392,11 +560,33 @@ func (s *Server) reviewHandler() *handler.ReviewHandler {
 	return handler.NewReviewHandler(adapter)
 }
 
+// pipelineHandler lazily initializes the pipeline handler.
+func (s *Server) pipelineHandler() *handler.PipelineHandler {
+	pipelineSteps := []pipeline.Step{
+		steps.NewIngestRawStep(),
+		steps.NewBuildDWDSOrderLevelStep(),
+		steps.NewBuildDWDItemLevelStep(),
+		steps.NewBuildMetricDailyStep(),
+		steps.NewBuildMetricDimensionDailyStep(),
+		steps.NewDetectAlertsStep(),
+		steps.NewGenerateRecommendationsStep(),
+		steps.NewGenerateTasksStep(),
+		steps.NewCreateOutboxStep(),
+	}
+	runner := &pipeline.Runner{
+		DB:    s.pool,
+		Steps: pipelineSteps,
+		Log:   s.logger,
+	}
+	svc := &pipelineRunService{runner: runner, log: s.logger}
+	return handler.NewPipelineHandler(svc)
+}
+
 func (s *Server) setupRoutes() {
 	s.router.Use(apimw.RequestIDMiddleware)
 	s.router.Use(middleware.RealIP)
 	s.router.Use(middleware.Logger)
-	s.router.Use(middleware.Recoverer)
+	s.router.Use(apimw.RecoveryMiddleware)
 	s.router.Use(middleware.Timeout(30 * time.Second))
 	s.router.Use(apimw.NewCORSMiddleware(s.corsAllowedOrigins))
 
@@ -404,15 +594,18 @@ func (s *Server) setupRoutes() {
 		// Public routes (no auth required)
 		r.Get("/health", s.handleHealth)
 
-		// Protected routes (auth required when API_BEARER_TOKEN is set)
+		// Public routes (no auth required)
+		r.Get("/qoder/capabilities", s.qoderHandler().HandleCapabilities)
+		r.Get("/qoder/context", s.qoderHandler().HandleContext)
+
+		// Protected routes (auth required)
 		r.Group(func(r chi.Router) {
-			if s.bearerToken != "" {
-				r.Use(apimw.NewAuthMiddleware(s.bearerToken))
-			}
+			r.Use(apimw.NewAuthMiddleware(s.bearerToken))
 
 			r.Get("/status", s.statusHandler().HandleStatus)
 			r.Get("/alerts", s.alertHandler().HandleListAlerts)
 			r.Get("/tasks", s.handleListTasks)
+			r.Post("/outbox/dispatch", s.outboxHandler().HandleBatchDispatch)
 			r.Get("/outbox", s.outboxHandler().HandleListOutbox)
 			r.Get("/outbox/{id}", s.outboxHandler().HandleGetDetail)
 			r.Post("/outbox/{id}/dispatch", s.outboxHandler().HandleDispatch)
@@ -427,8 +620,10 @@ func (s *Server) setupRoutes() {
 			r.Get("/logs/recent", s.logHandler().HandleListRecent)
 			r.Get("/logs/errors", s.logHandler().HandleListErrors)
 			r.Get("/logs/audit", s.logHandler().HandleListAudit)
-			r.Get("/qoder/capabilities", s.qoderHandler().HandleCapabilities)
-			r.Get("/qoder/context", s.qoderHandler().HandleContext)
+
+			// LLM endpoints
+			r.Get("/llm/status", s.llmHandler().Status)
+			r.Get("/llm/metrics", s.llmHandler().Metrics)
 
 			// Decision case endpoints
 			r.Post("/decisions/cases", s.decisionHandler().CreateCase)
@@ -437,6 +632,13 @@ func (s *Server) setupRoutes() {
 			r.Post("/decisions/cases/{case_id}/context", s.decisionHandler().BuildContext)
 			r.Post("/decisions/cases/{case_id}/decide", s.decisionHandler().Decide)
 			r.Get("/decisions/cases/{case_id}/proposals", s.decisionHandler().ListProposals)
+
+			// LLM-specific decision endpoints
+			r.Post("/decisions/cases/{case_id}/decide/llm", s.decisionHandler().DecideLLM)
+			r.Post("/decisions/cases/{case_id}/compare", s.decisionHandler().Compare)
+			r.Post("/decisions/cases/{case_id}/replay", s.decisionHandler().Replay)
+			r.Get("/decisions/cases/{case_id}/llm-decisions", s.decisionHandler().ListLLMDecisions)
+			r.Get("/decisions/cases/{case_id}/evals", s.decisionHandler().ListEvals)
 
 			// Review endpoints
 			r.Post("/proposals/{id}/approve", s.reviewHandler().HandleApprove)
@@ -447,6 +649,8 @@ func (s *Server) setupRoutes() {
 			// Action execution endpoints
 			r.Post("/proposals/{id}/execute", s.actionHandler().HandleExecute)
 			r.Get("/proposals/{id}/status", s.actionHandler().HandleStatus)
+
+			r.Post("/pipeline/run", s.pipelineHandler().HandleRun)
 		})
 	})
 }

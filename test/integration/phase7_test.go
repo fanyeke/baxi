@@ -102,7 +102,7 @@ func TestPhase7_FullApprovalFlow(t *testing.T) {
 	}
 
 	loader := &proposalLoaderAdapter{repo: reviewRepo}
-	applySvc := action.NewApplyService(actionRegistry, executors, loader)
+	applySvc := action.NewApplyService(actionRegistry, executors, loader, nil, nil, nil)
 
 	result, err := applySvc.ExecuteProposal(ctx, pool, proposalID, "actor-1", action.WithDryRun(true))
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestPhase7_RejectionFlow(t *testing.T) {
 		"feishu": adapter.NewFeishuAdapter(adapter.FeishuConfig{}),
 	}
 	loader := &proposalLoaderAdapter{repo: reviewRepo}
-	applySvc := action.NewApplyService(actionRegistry, executors, loader)
+	applySvc := action.NewApplyService(actionRegistry, executors, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "actor-1", action.WithDryRun(false))
 	require.Error(t, err)
@@ -233,7 +233,7 @@ func TestPhase7_Security_UnapprovedExecution(t *testing.T) {
 		"feishu": adapter.NewFeishuAdapter(adapter.FeishuConfig{}),
 	}
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(actionRegistry, executors, loader)
+	applySvc := action.NewApplyService(actionRegistry, executors, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "attacker", action.WithDryRun(false))
 	require.Error(t, err)
@@ -290,7 +290,7 @@ func TestPhase7_Whitelist_NonWhitelistedAction(t *testing.T) {
 		"feishu": adapter.NewFeishuAdapter(adapter.FeishuConfig{WebhookURL: "http://localhost:9999/test"}),
 	}
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(actionRegistry, executors, loader)
+	applySvc := action.NewApplyService(actionRegistry, executors, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "actor-1", action.WithDryRun(false))
 	require.Error(t, err)

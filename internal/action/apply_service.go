@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	ErrNotApproved      = errors.New("proposal is not approved")
-	ErrActionNotAllowed = errors.New("action type is not allowed")
-	ErrProposalNotFound = errors.New("proposal not found")
+	ErrNotApproved       = errors.New("proposal is not approved")
+	ErrActionNotAllowed  = errors.New("action type is not allowed")
+	ErrProposalNotFound  = errors.New("proposal not found")
+	ErrLineageIncomplete = errors.New("decision lineage incomplete: missing required lineage events")
 )
 
 // ProposalLoader retrieves action proposals by ID.
@@ -25,24 +26,42 @@ type ProposalLoader interface {
 
 // ApplyService executes approved action proposals with dry-run support
 // and whitelist enforcement.
+// LineageVerifier checks whether a decision case has complete lineage before execution.
+type LineageVerifier interface {
+	HasCompleteLineage(ctx context.Context, caseID string) (bool, error)
+}
+
+// LineageRecorder records decision lineage events in the apply flow.
+type LineageRecorder interface {
+	RecordApplyEvent(ctx context.Context, pool *pgxpool.Pool, caseID, proposalID, eventType, actor string, eventData map[string]interface{}) error
+}
+
+// ApplyService executes approved action proposals with dry-run support
+// and whitelist enforcement.
 type ApplyService struct {
-	registry  *ActionRegistry
-	executors map[string]ActionExecutor
-	loader    ProposalLoader
+	registry      *ActionRegistry
+	executors     map[string]ActionExecutor
+	loader        ProposalLoader
+	lineageVerify  LineageVerifier
+	lineageRecord LineageRecorder
+	pool          *pgxpool.Pool
 }
 
 // NewApplyService creates a new ApplyService.
 // registry: whitelist enforcement via ActionRegistry.
 // executors: channel-name → ActionExecutor mapping (e.g. "feishu", "github").
 // loader: retrieves proposals by ID.
-func NewApplyService(registry *ActionRegistry, executors map[string]ActionExecutor, loader ProposalLoader) *ApplyService {
+func NewApplyService(registry *ActionRegistry, executors map[string]ActionExecutor, loader ProposalLoader, lineageVerify LineageVerifier, lineageRecord LineageRecorder, pool *pgxpool.Pool) *ApplyService {
 	if executors == nil {
 		executors = make(map[string]ActionExecutor)
 	}
 	return &ApplyService{
-		registry:  registry,
-		executors: executors,
-		loader:    loader,
+		registry:      registry,
+		executors:     executors,
+		loader:        loader,
+		lineageVerify: lineageVerify,
+		lineageRecord: lineageRecord,
+		pool:          pool,
 	}
 }
 
@@ -85,6 +104,13 @@ func (s *ApplyService) ExecuteProposal(ctx context.Context, pool *pgxpool.Pool, 
 	}
 
 	traceID := generateTraceID()
+
+	// Phase 5: Check lineage completeness before allowing execution
+	if !executeOpts.DryRun && s.lineageVerify != nil {
+		if ok, err := s.lineageVerify.HasCompleteLineage(ctx, proposal.CaseID); err != nil || !ok {
+			return nil, ErrLineageIncomplete
+		}
+	}
 
 	if executeOpts.DryRun {
 		noop := NewNoOpExecutor()
@@ -210,6 +236,25 @@ func updateProposalToApplied(ctx context.Context, tx pgx.Tx, proposalID string, 
 	}
 	if res.RowsAffected() == 0 {
 		return fmt.Errorf("proposal %s not found", proposalID)
+	}
+	return nil
+}
+
+func insertExecutionOutcome(ctx context.Context, tx pgx.Tx, proposalID, caseID, actionType, actor string, success bool) error {
+	status := "applied"
+	if !success {
+		status = "failed"
+	}
+	outcomeID := fmt.Sprintf("out_%d", time.Now().UnixNano())
+	query := `
+		INSERT INTO ai.action_outcome (
+			outcome_id, case_id, proposal_id, action_type,
+			execution_status, recorded_by, recorded_at
+		) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+	`
+	_, err := tx.Exec(ctx, query, outcomeID, caseID, proposalID, actionType, status, actor)
+	if err != nil {
+		return fmt.Errorf("insert outcome: %w", err)
 	}
 	return nil
 }

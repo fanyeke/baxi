@@ -1,0 +1,222 @@
+[
+  {
+    "case_id": "golden_gmv_drop_001",
+    "name": "GMV drop in SP region",
+    "trigger": {
+      "alert_id": "alert_golden_gmv_001",
+      "rule_id": "gmv_drop",
+      "severity": "high",
+      "metric_name": "gmv",
+      "current_value": 8500,
+      "baseline_value": 12000,
+      "delta_pct": -29.17
+    },
+    "object_context": {
+      "object_type": "region",
+      "object_id": "SP"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "medium",
+    "forbidden_actions": ["execute_dispatch", "modify_raw_data"],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["analyst", "logistics_ops"]
+  },
+  {
+    "case_id": "golden_late_delivery_spike_001",
+    "name": "Late delivery spike for a seller",
+    "trigger": {
+      "alert_id": "alert_golden_late_001",
+      "rule_id": "late_delivery_spike",
+      "severity": "high",
+      "metric_name": "late_delivery_rate",
+      "current_value": 0.35,
+      "baseline_value": 0.10,
+      "delta_pct": 250.0
+    },
+    "object_context": {
+      "object_type": "seller",
+      "object_id": "seller_test_001"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "high",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["seller_ops", "analyst"]
+  },
+  {
+    "case_id": "golden_cancel_rate_spike_001",
+    "name": "Cancel rate spike in a region",
+    "trigger": {
+      "alert_id": "alert_golden_cancel_001",
+      "rule_id": "cancel_rate_spike",
+      "severity": "medium",
+      "metric_name": "cancel_rate",
+      "current_value": 0.12,
+      "baseline_value": 0.04,
+      "delta_pct": 200.0
+    },
+    "object_context": {
+      "object_type": "region",
+      "object_id": "RJ"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "low",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["logistics_ops", "analyst"]
+  },
+  {
+    "case_id": "golden_review_score_drop_001",
+    "name": "Review score drop in a category",
+    "trigger": {
+      "alert_id": "alert_golden_review_001",
+      "rule_id": "review_score_drop",
+      "severity": "medium",
+      "metric_name": "avg_review_score",
+      "current_value": 2.8,
+      "baseline_value": 4.2,
+      "delta_pct": -33.33
+    },
+    "object_context": {
+      "object_type": "category",
+      "object_id": "pet_shop"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "low",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["category_ops", "analyst"]
+  },
+  {
+    "case_id": "golden_low_severity_monitor_001",
+    "name": "Low severity metric, monitor-only expected",
+    "trigger": {
+      "alert_id": "alert_golden_low_001",
+      "rule_id": "seller_activation_gap",
+      "severity": "low",
+      "metric_name": "active_sellers",
+      "current_value": 85,
+      "baseline_value": 100,
+      "delta_pct": -15.0
+    },
+    "object_context": {
+      "object_type": "global",
+      "object_id": "global"
+    },
+    "expected_decision_type": "monitor_only",
+    "expected_min_severity": "low",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 0,
+    "expected_owner_roles": ["analyst"]
+  },
+  {
+    "case_id": "golden_missing_evidence_001",
+    "name": "Alert with partial evidence only",
+    "trigger": {
+      "alert_id": "alert_golden_noev_001",
+      "rule_id": "gmv_drop",
+      "severity": "medium",
+      "metric_name": "gmv",
+      "current_value": 9000,
+      "baseline_value": 11000,
+      "delta_pct": -18.18
+    },
+    "object_context": {
+      "object_type": "region",
+      "object_id": "MG"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "low",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["analyst"]
+  },
+  {
+    "case_id": "golden_seller_late_delivery_001",
+    "name": "Seller-specific late delivery spike (dimensional rule)",
+    "trigger": {
+      "alert_id": "alert_golden_seller_late_001",
+      "rule_id": "seller_late_delivery_spike",
+      "severity": "high",
+      "metric_name": "late_delivery_rate",
+      "current_value": 0.30,
+      "baseline_value": 0.08,
+      "delta_pct": 275.0
+    },
+    "object_context": {
+      "object_type": "seller",
+      "object_id": "seller_test_002"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "high",
+    "forbidden_actions": ["execute_dispatch"],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["seller_ops", "analyst"]
+  },
+  {
+    "case_id": "golden_category_gmv_drop_001",
+    "name": "Category-level GMV drop (dimensional rule)",
+    "trigger": {
+      "alert_id": "alert_golden_cat_gmv_001",
+      "rule_id": "category_gmv_drop",
+      "severity": "medium",
+      "metric_name": "gmv",
+      "current_value": 5000,
+      "baseline_value": 7500,
+      "delta_pct": -33.33
+    },
+    "object_context": {
+      "object_type": "category",
+      "object_id": "electronics"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "low",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["category_ops", "analyst"]
+  },
+  {
+    "case_id": "golden_critical_severity_001",
+    "name": "Critical severity demands intervention decision",
+    "trigger": {
+      "alert_id": "alert_golden_crit_001",
+      "rule_id": "gmv_drop",
+      "severity": "critical",
+      "metric_name": "gmv",
+      "current_value": 3000,
+      "baseline_value": 15000,
+      "delta_pct": -80.0
+    },
+    "object_context": {
+      "object_type": "region",
+      "object_id": "SP"
+    },
+    "expected_decision_type": "",
+    "expected_min_severity": "high",
+    "forbidden_actions": ["execute_dispatch", "modify_raw_data", "modify_business_policy"],
+    "minimum_rationale_count": 2,
+    "expected_owner_roles": ["admin", "manager"]
+  },
+  {
+    "case_id": "golden_region_late_delivery_001",
+    "name": "Region-level late delivery (dimensional)",
+    "trigger": {
+      "alert_id": "alert_golden_reg_late_001",
+      "rule_id": "region_late_delivery_spike",
+      "severity": "high",
+      "metric_name": "late_delivery_rate",
+      "current_value": 0.28,
+      "baseline_value": 0.12,
+      "delta_pct": 133.33
+    },
+    "object_context": {
+      "object_type": "region",
+      "object_id": "BA"
+    },
+    "expected_decision_type": "investigate",
+    "expected_min_severity": "high",
+    "forbidden_actions": [],
+    "minimum_rationale_count": 1,
+    "expected_owner_roles": ["logistics_ops", "analyst"]
+  }
+]

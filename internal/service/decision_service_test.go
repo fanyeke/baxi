@@ -50,12 +50,12 @@ func (m *mockDecisionEngine) GenerateDecision(ctx context.Context, caseID string
 }
 
 type mockProposalService struct {
-	generateProposalsFn func(ctx context.Context, caseID, decisionID string, dec *llm.DecisionOutput) ([]action.ActionProposal, error)
+	generateProposalsFn func(ctx context.Context, caseID, decisionID string, dec *llm.DecisionOutput, contextHash string) ([]action.ActionProposal, error)
 	listProposalsFn     func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
 }
 
-func (m *mockProposalService) GenerateProposals(ctx context.Context, caseID, decisionID string, dec *llm.DecisionOutput) ([]action.ActionProposal, error) {
-	return m.generateProposalsFn(ctx, caseID, decisionID, dec)
+func (m *mockProposalService) GenerateProposals(ctx context.Context, caseID, decisionID string, dec *llm.DecisionOutput, contextHash string) ([]action.ActionProposal, error) {
+	return m.generateProposalsFn(ctx, caseID, decisionID, dec, contextHash)
 }
 
 func (m *mockProposalService) ListProposals(ctx context.Context, caseID string) ([]action.ActionProposal, error) {
@@ -77,8 +77,8 @@ func testDecisionCase() *decision.DecisionCase {
 	return &decision.DecisionCase{
 		CaseID:     "dc_1000000_testabc",
 		AlertID:    strPtr("alert-1"),
-		SourceType: "alert",
-		SourceID:   "alert-1",
+		SourceType: strPtr("alert"),
+		SourceID:   strPtr("alert-1"),
 		Status:     "created",
 		CreatedAt:  time.Now(),
 		CreatedBy:  "test-user",
@@ -88,8 +88,8 @@ func testDecisionCase() *decision.DecisionCase {
 func testDecisionContext() *decision.DecisionContext {
 	return &decision.DecisionContext{
 		DecisionCaseID: "dc_1000000_testabc",
-		SourceType:     "alert",
-		SourceID:       "alert-1",
+		SourceType:     strPtr("alert"),
+		SourceID:       strPtr("alert-1"),
 		Trigger: decision.TriggerInfo{
 			AlertID:  "alert-1",
 			Severity: "high",
@@ -201,7 +201,7 @@ func TestDecisionService_Decide(t *testing.T) {
 		},
 	}
 	proposalSvc := &mockProposalService{
-		generateProposalsFn: func(_ context.Context, caseID, decisionID string, dec *llm.DecisionOutput) ([]action.ActionProposal, error) {
+		generateProposalsFn: func(_ context.Context, caseID, decisionID string, dec *llm.DecisionOutput, _ string) ([]action.ActionProposal, error) {
 			recordedGenerateProposalsCaseID = caseID
 			recordedGenerateProposalsDecisionID = decisionID
 			recordedGenerateProposalsOutput = dec
@@ -297,7 +297,7 @@ func TestDecisionService_Decide_GenerateProposalsError(t *testing.T) {
 		},
 	}
 	proposalSvc := &mockProposalService{
-		generateProposalsFn: func(_ context.Context, caseID, decisionID string, dec *llm.DecisionOutput) ([]action.ActionProposal, error) {
+		generateProposalsFn: func(_ context.Context, caseID, decisionID string, dec *llm.DecisionOutput, _ string) ([]action.ActionProposal, error) {
 			return nil, assert.AnError
 		},
 	}

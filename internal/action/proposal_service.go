@@ -43,26 +43,36 @@ type CaseStatusUpdater interface {
 type ProposalService struct {
 	repo    ProposalRepository
 	caseSvc CaseStatusUpdater
+	registry *ActionRegistry
 	pool    *pgxpool.Pool
 }
 
 // NewProposalService creates a new ProposalService.
-func NewProposalService(repo ProposalRepository, caseSvc CaseStatusUpdater, pool *pgxpool.Pool) *ProposalService {
+func NewProposalService(repo ProposalRepository, caseSvc CaseStatusUpdater, registry *ActionRegistry, pool *pgxpool.Pool) *ProposalService {
 	return &ProposalService{
-		repo:    repo,
-		caseSvc: caseSvc,
-		pool:    pool,
+		repo:     repo,
+		caseSvc:  caseSvc,
+		registry: registry,
+		pool:     pool,
 	}
 }
 
 // GenerateProposals creates action proposals from a decision output.
 // For each recommended action, a proposal is created and persisted.
 // The case status is then updated to "proposal_generated".
-func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisionID string, dec *llm.DecisionOutput) ([]ActionProposal, error) {
+func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisionID string, dec *llm.DecisionOutput, contextHash string) ([]ActionProposal, error) {
 	var proposals []ActionProposal
 
 	for _, action := range dec.RecommendedActions {
 		proposalID := decision.GenerateProposalID()
+
+		// Phase 4: Validate payload against action registry schema
+		if s.registry != nil {
+			if errs := s.registry.ValidatePayload(action.ActionType, action.Payload); len(errs) > 0 {
+				// Payload invalid — skip this proposal, log validation failure
+				continue
+			}
+		}
 
 		// Build title: "{action_type}: {decision.summary}" truncated to 200 chars
 		title := fmt.Sprintf("%s: %s", action.ActionType, dec.Summary)
@@ -87,6 +97,14 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 			payloadJSON = &msg
 		}
 
+		// Phase 4: Resolve action schema version
+		schemaVersion := "v1"
+		if s.registry != nil {
+			if cfg, ok := s.registry.GetActionConfig(action.ActionType); ok && cfg.Version != "" {
+				schemaVersion = cfg.Version
+			}
+		}
+
 		// Phase 6: all proposals require human review
 		row := &repository.ActionProposalRow{
 			ProposalID:          proposalID,
@@ -100,6 +118,8 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 			Description:         &description,
 			RiskLevel:           &riskLevel,
 			RequiresHumanReview: true,
+			ContextHash:         &contextHash,
+			ActionSchemaVersion: &schemaVersion,
 		}
 
 		if err := s.repo.CreateProposal(ctx, s.pool, row); err != nil {

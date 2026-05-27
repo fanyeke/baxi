@@ -53,12 +53,9 @@ docs/external/
 # Frontend build artifacts
 frontend/tsconfig.tsbuildinfo
 
-# Go
-*.exe
-*.dll
-*.so
-*.dylib
+# Go binaries and test artifacts
 /baxi-api
+/baxi-cli
 /baxi-worker
 *.test
 *.out

@@ -375,7 +375,7 @@ func TestOutboxIntegration_DryRunDoesNotCreateOutboxEvent(t *testing.T) {
 	reg := setupTestRegistry(t)
 	repo := review.NewReviewRepository()
 	loader := &reviewProposalAdapter{repo: repo}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-dryrun-1", "actor-dryrun-1")
 
@@ -407,7 +407,7 @@ func TestOutboxIntegration_DoesNotCreateOutboxOnFailure(t *testing.T) {
 
 	exec := &mockExecutor{result: ExecutionResult{Success: false, DryRun: false, Error: "dispatch failed"}}
 	executors := map[string]ActionExecutor{"feishu": exec}
-	svc := NewApplyService(reg, executors, loader)
+	svc := NewApplyService(reg, executors, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-fail-outbox-1", "actor-fail-outbox-1", WithDryRun(false))
 
@@ -433,7 +433,7 @@ func TestOutboxIntegration_RealExecutionCreatesOutboxEvent(t *testing.T) {
 
 	exec := &mockExecutor{result: ExecutionResult{Success: true, DryRun: false}}
 	executors := map[string]ActionExecutor{"feishu": exec}
-	svc := NewApplyService(reg, executors, loader)
+	svc := NewApplyService(reg, executors, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-outbox-real-1", "actor-outbox-real-1", WithDryRun(false))
 

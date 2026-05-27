@@ -87,7 +87,7 @@ func newTestProposal(applyStatus string, actionType string) *ActionProposal {
 func TestApplyService_DryRunDefault(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{proposal: newTestProposal("approved", "notify_owner")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	result, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1")
@@ -101,7 +101,7 @@ func TestApplyService_DryRunDefault(t *testing.T) {
 func TestApplyService_DryRunExplicitTrue(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{proposal: newTestProposal("approved", "notify_owner")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	result, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1", WithDryRun(true))
@@ -115,7 +115,7 @@ func TestApplyService_DryRunExplicitTrue(t *testing.T) {
 func TestApplyService_NotApproved(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{proposal: newTestProposal("proposed", "notify_owner")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	_, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1")
@@ -127,7 +127,7 @@ func TestApplyService_NotApproved(t *testing.T) {
 func TestApplyService_ActionNotAllowed(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{proposal: newTestProposal("approved", "hack_database")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	_, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1")
@@ -139,7 +139,7 @@ func TestApplyService_ActionNotAllowed(t *testing.T) {
 func TestApplyService_ProposalNotFound(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{proposal: nil}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	_, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1")
@@ -151,7 +151,7 @@ func TestApplyService_ProposalNotFound(t *testing.T) {
 func TestApplyService_LoaderError(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{err: errors.New("db down")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	_, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1")
@@ -163,7 +163,7 @@ func TestApplyService_LoaderError(t *testing.T) {
 func TestApplyService_DryRunSkipsWhitelistCheck(t *testing.T) {
 	reg := setupTestRegistry(t)
 	loader := &mockProposalLoader{proposal: newTestProposal("approved", "notify_owner")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	ctx := context.Background()
 	result, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1", WithDryRun(true))
@@ -323,7 +323,7 @@ func TestApplyService_Integration_DryRun(t *testing.T) {
 	reg := setupTestRegistry(t)
 	repo := review.NewReviewRepository()
 	loader := &reviewProposalAdapter{repo: repo}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-dry-1", "actor-dry-1")
 
@@ -360,7 +360,7 @@ func TestApplyService_Integration_RealExecution_Success(t *testing.T) {
 
 	exec := &mockExecutor{result: ExecutionResult{Success: true, DryRun: false}}
 	executors := map[string]ActionExecutor{"feishu": exec}
-	svc := NewApplyService(reg, executors, loader)
+	svc := NewApplyService(reg, executors, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-real-1", "actor-real-1", WithDryRun(false))
 
@@ -401,7 +401,7 @@ func TestApplyService_Integration_RealExecution_Failure(t *testing.T) {
 
 	exec := &mockExecutor{result: ExecutionResult{Success: false, DryRun: false, Error: "dispatch error"}}
 	executors := map[string]ActionExecutor{"feishu": exec}
-	svc := NewApplyService(reg, executors, loader)
+	svc := NewApplyService(reg, executors, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-fail-1", "actor-fail-1", WithDryRun(false))
 
@@ -438,7 +438,7 @@ func TestApplyService_Integration_AdapterNotFound(t *testing.T) {
 	loader := &reviewProposalAdapter{repo: repo}
 
 	// No executors configured
-	svc := NewApplyService(reg, map[string]ActionExecutor{}, loader)
+	svc := NewApplyService(reg, map[string]ActionExecutor{}, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-na-1", "actor-na-1", WithDryRun(false))
 
@@ -473,7 +473,7 @@ func TestApplyService_Integration_NotApproved(t *testing.T) {
 	reg := setupTestRegistry(t)
 	repo := review.NewReviewRepository()
 	loader := &reviewProposalAdapter{repo: repo}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	_, err := svc.ExecuteProposal(ctx, pool, "prop-nap-1", "actor-nap-1", WithDryRun(false))
 
@@ -498,7 +498,7 @@ func TestApplyService_Integration_ActionNotAllowed(t *testing.T) {
 	reg := setupTestRegistry(t)
 	// Override loader to return a non-whitelisted action type
 	loader := &mockProposalLoader{proposal: newTestProposal("approved", "hack_database")}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	_, err := svc.ExecuteProposal(ctx, pool, "prop-nal-1", "actor-nal-1", WithDryRun(false))
 
@@ -517,7 +517,7 @@ func TestApplyService_Integration_ProposalNotFound(t *testing.T) {
 	reg := setupTestRegistry(t)
 	repo := review.NewReviewRepository()
 	loader := &reviewProposalAdapter{repo: repo}
-	svc := NewApplyService(reg, nil, loader)
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
 
 	_, err := svc.ExecuteProposal(ctx, pool, "nonexistent", "actor-nf-1", WithDryRun(false))
 
@@ -542,7 +542,7 @@ func TestApplyService_Integration_GithubChannelSuccess(t *testing.T) {
 
 	exec := &mockExecutor{result: ExecutionResult{Success: true, DryRun: false}}
 	executors := map[string]ActionExecutor{"github": exec}
-	svc := NewApplyService(reg, executors, loader)
+	svc := NewApplyService(reg, executors, loader, nil, nil, nil)
 
 	result, err := svc.ExecuteProposal(ctx, pool, "prop-gh-1", "actor-gh-1", WithDryRun(false))
 
@@ -572,7 +572,7 @@ func TestApplyService_Integration_TransactionRolledBackOnUpdateError(t *testing.
 
 	exec := &mockExecutor{result: ExecutionResult{Success: true, DryRun: false}}
 	executors := map[string]ActionExecutor{"feishu": exec}
-	svc := NewApplyService(reg, executors, loader)
+	svc := NewApplyService(reg, executors, loader, nil, nil, nil)
 
 	// First execution succeeds
 	_, err := svc.ExecuteProposal(ctx, pool, "prop-tx-1", "actor-tx-1", WithDryRun(false))

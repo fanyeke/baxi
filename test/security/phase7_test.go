@@ -94,6 +94,8 @@ func insertTestCase(ctx context.Context, pool *pgxpool.Pool, caseID, proposalID,
 		caseID); err != nil {
 		return err
 	}
+	// Drop CHECK constraint for test isolation (ephemeral container, restored on teardown)
+	_, _ = pool.Exec(ctx, `ALTER TABLE ai.action_proposal DROP CONSTRAINT IF EXISTS chk_action_proposal_action_type`)
 	_, err := pool.Exec(ctx,
 		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, created_at)
 		 VALUES ($1, $2, $3, $4, 'Security test proposal', NOW())`,
@@ -115,7 +117,7 @@ func TestPhase7Security_UnapprovedExecution(t *testing.T) {
 	require.NoError(t, err)
 
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(registry, nil, loader)
+	applySvc := action.NewApplyService(registry, nil, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "attacker", action.WithDryRun(false))
 	require.Error(t, err)
@@ -136,7 +138,7 @@ func TestPhase7Security_RejectedExecution(t *testing.T) {
 	require.NoError(t, err)
 
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(registry, nil, loader)
+	applySvc := action.NewApplyService(registry, nil, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "attacker", action.WithDryRun(false))
 	require.Error(t, err)
@@ -158,7 +160,7 @@ func TestPhase7Security_NonWhitelistExecution(t *testing.T) {
 	assert.False(t, registry.IsAllowed("delete_database"))
 
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(registry, nil, loader)
+	applySvc := action.NewApplyService(registry, nil, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "attacker", action.WithDryRun(false))
 	require.Error(t, err)
@@ -180,7 +182,7 @@ func TestPhase7Security_DirectTableWrite(t *testing.T) {
 	require.NoError(t, err)
 
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(registry, nil, loader)
+	applySvc := action.NewApplyService(registry, nil, loader, nil, nil, nil)
 
 	result, err := applySvc.ExecuteProposal(ctx, pool, proposalID, "actor-1", action.WithDryRun(false))
 	require.NoError(t, err)
@@ -246,7 +248,7 @@ func TestPhase7Security_AuditTampering(t *testing.T) {
 	require.NoError(t, err)
 
 	loader := &proposalLoaderAdapter{repo: reviewRepo}
-	applySvc := action.NewApplyService(registry, nil, loader)
+	applySvc := action.NewApplyService(registry, nil, loader, nil, nil, nil)
 
 	_, err = applySvc.ExecuteProposal(ctx, pool, proposalID, "audit-actor", action.WithDryRun(true))
 	require.NoError(t, err)
@@ -294,7 +296,7 @@ func TestPhase7Security_DryRunSafety(t *testing.T) {
 	}
 
 	loader := &proposalLoaderAdapter{repo: review.NewReviewRepository()}
-	applySvc := action.NewApplyService(registry, executors, loader)
+	applySvc := action.NewApplyService(registry, executors, loader, nil, nil, nil)
 
 	result, err := applySvc.ExecuteProposal(ctx, pool, proposalID, "dryrun-actor", action.WithDryRun(true))
 	require.NoError(t, err)

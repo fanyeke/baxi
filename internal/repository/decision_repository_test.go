@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS ai.action_proposal (
     title TEXT NOT NULL DEFAULT '',
     description TEXT,
     risk_level TEXT,
-    requires_human_review BOOLEAN DEFAULT TRUE
+    requires_human_review BOOLEAN DEFAULT TRUE,
+    context_hash TEXT,
+    action_schema_version TEXT
 );
 `
 

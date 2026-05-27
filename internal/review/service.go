@@ -19,6 +19,12 @@ var (
 	ErrInvalidState = errors.New("invalid proposal state for operation")
 )
 
+// LineageRecorder defines a minimal interface for recording lineage events in the review flow.
+// This avoids importing the decision package to prevent circular dependencies.
+type LineageRecorder interface {
+	RecordLineageEvent(ctx context.Context, tx pgx.Tx, caseID, eventType, actor string, eventData map[string]interface{}) error
+}
+
 // ReviewServiceInterface defines the contract for review operations.
 type ReviewServiceInterface interface {
 	ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*ReviewRecord, error)
@@ -30,8 +36,9 @@ type ReviewServiceInterface interface {
 
 // ReviewService handles the review/approval lifecycle for action proposals.
 type ReviewService struct {
-	repo *ReviewRepository
-	pool *pgxpool.Pool
+	repo    *ReviewRepository
+	pool    *pgxpool.Pool
+	lineage LineageRecorder
 }
 
 // NewReviewService creates a new ReviewService.
@@ -40,6 +47,12 @@ func NewReviewService(repo *ReviewRepository, pool *pgxpool.Pool) *ReviewService
 		repo: repo,
 		pool: pool,
 	}
+}
+
+// WithLineageRecorder attaches a LineageRecorder for automatic lineage events.
+func (s *ReviewService) WithLineageRecorder(l LineageRecorder) *ReviewService {
+	s.lineage = l
+	return s
 }
 
 // ApproveProposal approves an action proposal with transaction-safe state transitions.
@@ -107,12 +120,26 @@ func (s *ReviewService) transitionProposal(ctx context.Context, proposalID, revi
 		return nil, fmt.Errorf("insert review record: %w", err)
 	}
 
-	// 5. UPDATE case status if 'proposal_generated' -> 'review_required'
+	// 5. Record lineage event (Phase 5: automatic lineage)
+	if s.lineage != nil {
+		caseID := ""
+		if proposal != nil {
+			caseID = proposal.CaseID
+		}
+		_ = s.lineage.RecordLineageEvent(ctx, tx, caseID, auditAction, reviewerID, map[string]interface{}{
+			"proposal_id":  proposalID,
+			"action_type":  proposal.ActionType,
+			"verdict":      string(verdict),
+			"feedback":     feedback,
+		})
+	}
+
+	// 6. UPDATE case status if 'proposal_generated' -> 'review_required'
 	if err := s.updateCaseStatusIfNeeded(ctx, tx, proposal.CaseID); err != nil {
 		return nil, err
 	}
 
-	// 6. INSERT audit_log
+	// 7. INSERT audit_log
 	metadata := map[string]interface{}{
 		"verdict":  string(verdict),
 		"feedback": feedback,

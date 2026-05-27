@@ -65,11 +65,12 @@ const (
 	ActionTypeCreateFollowupTask = "create_followup_task"
 	ActionTypeNotifyOwner        = "notify_owner"
 	ActionTypeExportReport       = "export_report"
-	ActionTypeEscalateToHuman    = "escalate_to_human"
+	ActionTypeCreateOutboxMessage = "create_outbox_message"
 )
 
 // DecisionOutput is the structured result from a DecisionProvider.
 type DecisionOutput struct {
+	SchemaVersion      string               `json:"schema_version"`        // "decision_output.v1" or empty for legacy
 	DecisionType       string               `json:"decision_type"`
 	Severity           string               `json:"severity"`
 	Summary            string               `json:"summary"`

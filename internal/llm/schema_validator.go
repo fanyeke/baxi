@@ -32,6 +32,14 @@ func ValidateDecision(output *DecisionOutput, allowedActions []string) *Validati
 		return result
 	}
 
+	// 0. schema_version must be valid (if present, must be known version)
+	if output.SchemaVersion != "" && output.SchemaVersion != "decision_output.v1" {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "schema_version",
+			Message: fmt.Sprintf("unknown schema_version: %s (expected decision_output.v1 or empty)", output.SchemaVersion),
+		})
+	}
+
 	// 1. decision_type must be valid
 	validTypes := map[string]bool{
 		DecisionTypeMonitor:      true,
@@ -94,7 +102,7 @@ func ValidateDecision(output *DecisionOutput, allowedActions []string) *Validati
 			ActionTypeCreateFollowupTask: true,
 			ActionTypeNotifyOwner:        true,
 			ActionTypeExportReport:       true,
-			ActionTypeEscalateToHuman:    true,
+			ActionTypeCreateOutboxMessage:    true,
 		}
 		if !validActions[action.ActionType] {
 			result.Errors = append(result.Errors, ValidationError{
