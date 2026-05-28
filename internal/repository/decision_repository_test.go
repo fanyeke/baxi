@@ -191,9 +191,7 @@ func TestDecisionRepository_GetBySource(t *testing.T) {
 	insertTestDecisionCase(t, pool, row)
 
 	// Retrieve by source
-	alertStr := "alert"
-	src42Str := "src-42"
-	fetched, err := repo.GetCaseBySource(ctx, pool, &alertStr, &src42Str)
+	fetched, err := repo.GetCaseBySource(ctx, pool, "alert", "src-42")
 	require.NoError(t, err)
 	require.NotNil(t, fetched)
 	assert.Equal(t, "case-src-1", fetched.CaseID)
@@ -201,8 +199,7 @@ func TestDecisionRepository_GetBySource(t *testing.T) {
 	assert.Equal(t, "src-42", *fetched.SourceID)
 
 	// Non-existent source
-	alertStr2 := "alert"
-	_, err = repo.GetCaseBySource(ctx, pool, &alertStr2, strPtr("nonexistent"))
+	_, err = repo.GetCaseBySource(ctx, pool, "alert", "nonexistent")
 	assert.Error(t, err)
 }
 
