@@ -5,6 +5,7 @@ import os
 import importlib
 import pytest
 
+pytestmark = pytest.mark.skip(reason="Script deleted during Go migration cleanup")
 
 SCRIPT_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
