@@ -1,111 +1,55 @@
+// DEPRECATED: Use baxi/internal/repository/status instead.
+// This file is a compatibility layer during migration.
+
 package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"baxi/internal/repository/common"
+	statusRepo "baxi/internal/repository/status"
 )
 
 // TableCount maps a response table name to its row count.
-type TableCount struct {
-	TableName string
-	RowCount  int
-}
+// DEPRECATED: Use status.TableCount instead.
+type TableCount = statusRepo.TableCount
 
 // PipelineRunRow represents the last pipeline execution from audit.pipeline_run.
-type PipelineRunRow struct {
-	RunID        string
-	RunType      string
-	Mode         string
-	Status       string
-	StartedAt    string
-	FinishedAt   *string
-	InputCount   int64
-	OutputCount  int64
-	ErrorMessage *string
+// DEPRECATED: Use status.PipelineRunRow instead.
+type PipelineRunRow = statusRepo.PipelineRunRow
+
+// StatusRepository handles read queries for system status aggregation (DEPRECATED).
+// Use status.Repository instead for new code.
+type StatusRepository struct {
+	inner *statusRepo.Repository
 }
 
-// StatusRepository handles read queries for system status aggregation.
-type StatusRepository struct{}
-
-// NewStatusRepository creates a new StatusRepository.
+// NewStatusRepository creates a new StatusRepository (DEPRECATED).
 func NewStatusRepository() *StatusRepository {
 	return &StatusRepository{}
 }
 
-// GetTableCounts queries row counts from all tracked tables.
-// Uses a single UNION ALL query for efficiency.
-// Returns old (backward-compatible) table names with new (PostgreSQL) table queries.
-func (r *StatusRepository) GetTableCounts(ctx context.Context, pool *pgxpool.Pool) ([]TableCount, error) {
-	query := `
-		SELECT table_name, row_count FROM (
-			SELECT 'alert_events' AS table_name, COUNT(*) AS row_count FROM ops.metric_alert
-			UNION ALL
-			SELECT 'action_tasks', COUNT(*) FROM ops.task
-			UNION ALL
-			SELECT 'event_outbox', COUNT(*) FROM ops.outbox_event
-			UNION ALL
-			SELECT 'dwd_order_level', COUNT(*) FROM dwd.order_level
-			UNION ALL
-			SELECT 'dwd_item_level', COUNT(*) FROM dwd.item_level
-			UNION ALL
-			SELECT 'metric_daily', COUNT(*) FROM mart.metric_daily
-			UNION ALL
-			SELECT 'metric_dimension_daily', COUNT(*) FROM mart.metric_dimension_daily
-		) AS counts
-		ORDER BY table_name
-	`
-
-	rows, err := pool.Query(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("query table counts: %w", err)
-	}
-	defer rows.Close()
-
-	var results []TableCount
-	for rows.Next() {
-		var tc TableCount
-		if err := rows.Scan(&tc.TableName, &tc.RowCount); err != nil {
-			return nil, fmt.Errorf("scan table count: %w", err)
-		}
-		results = append(results, tc)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate table counts: %w", err)
-	}
-
-	if results == nil {
-		results = []TableCount{}
-	}
-
-	return results, nil
+// SetPool initializes the inner repository with a pool provider.
+func (r *StatusRepository) SetPool(pool *pgxpool.Pool) {
+	r.inner = statusRepo.NewRepository(common.NewPoolProvider(pool))
 }
 
-// GetLastPipelineRun queries the most recent pipeline run from audit.pipeline_run.
-func (r *StatusRepository) GetLastPipelineRun(ctx context.Context, pool *pgxpool.Pool) (*PipelineRunRow, error) {
-	query := `
-		SELECT run_id, run_type, mode, status,
-		       started_at::TEXT, finished_at::TEXT,
-		       COALESCE(input_count, 0), COALESCE(output_count, 0),
-		       error_message
-		FROM audit.pipeline_run
-		ORDER BY started_at DESC
-		LIMIT 1
-	`
-
-	row := pool.QueryRow(ctx, query)
-
-	var pr PipelineRunRow
-	err := row.Scan(
-		&pr.RunID, &pr.RunType, &pr.Mode, &pr.Status,
-		&pr.StartedAt, &pr.FinishedAt,
-		&pr.InputCount, &pr.OutputCount,
-		&pr.ErrorMessage,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("query last pipeline run: %w", err)
+// ensureInitialized lazily initializes the inner repo if needed.
+func (r *StatusRepository) ensureInitialized(pool *pgxpool.Pool) *statusRepo.Repository {
+	if r.inner == nil {
+		r.SetPool(pool)
 	}
+	return r.inner
+}
 
-	return &pr, nil
+// GetTableCounts queries row counts from all tracked tables (DEPRECATED).
+func (r *StatusRepository) GetTableCounts(ctx context.Context, pool *pgxpool.Pool) ([]TableCount, error) {
+	return r.ensureInitialized(pool).GetTableCounts(ctx)
+}
+
+// GetLastPipelineRun queries the most recent pipeline run from audit.pipeline_run (DEPRECATED).
+func (r *StatusRepository) GetLastPipelineRun(ctx context.Context, pool *pgxpool.Pool) (*PipelineRunRow, error) {
+	return r.ensureInitialized(pool).GetLastPipelineRun(ctx)
 }
