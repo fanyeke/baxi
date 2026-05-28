@@ -1,4 +1,4 @@
-.PHONY: up down migrate api worker test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare api-compare test-pipeline governance-load governance-check test-governance test-governance-integration decision-create decision-context decision-decide decision-list decision-compare decision-replay decision-evals llm-status llm-metrics backup restore rollback verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-all
+.PHONY: up down migrate api worker test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare api-compare test-pipeline governance-load governance-check test-governance test-governance-integration decision-create decision-context decision-decide decision-list decision-compare decision-replay decision-evals llm-status llm-metrics backup restore rollback verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-all coverage
 
 DATABASE_URL ?= postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable
 DATA_DIR ?= ./data/raw
@@ -137,25 +137,23 @@ test:
 test-go:
 	go test ./... -count=1
 
-test-python:
-	pytest tests -q --timeout=120
-
 test-frontend:
 	npm --prefix frontend test -- --run || true
 
-test-all: test-go test-python test-frontend
+test-all: test-go test-frontend
+
+coverage:  ## Run tests with coverage profile
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
 
 vet:
 	go vet ./...
 
 lint:
-	echo "=== Go vet ===" && go vet ./...
-	@echo ""
-	echo "=== Python Ruff ===" && ruff check api services adapters core
+	go vet ./...
 
 fmt:
 	go fmt ./...
-	ruff format api services adapters core 2>/dev/null || true
 
 tidy:
 	go mod tidy

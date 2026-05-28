@@ -38,7 +38,7 @@ jobs:
 
       - name: Run unit tests (no DB)
         run: |
-          go test -v -count=1 -race \
+          go test -v -count=1 -race -coverprofile=coverage.out \
             ./internal/llm/... \
             ./internal/action/... \
             ./internal/governance/... \
@@ -83,10 +83,30 @@ jobs:
 
       - name: Run integration tests
         run: |
-          go test -v -count=1 -race -timeout 300s \
+          go test -v -count=1 -race -timeout 300s -coverprofile=coverage.out \
             ./internal/repository/... \
             ./internal/service/... \
             ./internal/outbox/... \
             ./internal/worker/... \
             ./internal/api/handler/... \
             ./internal/review/...
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run frontend tests
+        run: npm test
+        working-directory: frontend
