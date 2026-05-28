@@ -1,323 +1,217 @@
-// Package repository provides data access for querying database tables.
+// DEPRECATED: Use baxi/internal/repository/governance instead.
+// This file is a compatibility layer during migration.
+
 package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"baxi/internal/repository/common"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 // ConfigSnapshotRow represents a row from gov.config_snapshot.
-type ConfigSnapshotRow struct {
-	ConfigKey string
-	Status    string // "loaded" if present in the table
+// DEPRECATED: Use governance.ConfigSnapshotRow instead.
+type ConfigSnapshotRow = governanceRepo.ConfigSnapshotRow
+
+// GovernanceRepository provides data access for governance (DEPRECATED).
+// Use governance.Repository instead for new code.
+type GovernanceRepository struct {
+	inner *governanceRepo.Repository
 }
 
-// GovernanceRepository provides read-only access to gov.* tables.
-type GovernanceRepository struct{}
-
-// NewGovernanceRepository creates a new GovernanceRepository.
+// NewGovernanceRepository creates a new GovernanceRepository (DEPRECATED).
 func NewGovernanceRepository() *GovernanceRepository {
 	return &GovernanceRepository{}
 }
 
-// GetConfigSnapshots queries gov.config_snapshot for all loaded configuration entries.
-// Returns the config key and empty string (all rows in config_snapshot are considered "loaded").
+// SetPool initializes the inner repository with a pool provider.
+func (r *GovernanceRepository) SetPool(pool *pgxpool.Pool) {
+	r.inner = governanceRepo.NewRepository(common.NewPoolProvider(pool))
+}
+
+// ensureInitialized lazily initializes the inner repo if needed.
+func (r *GovernanceRepository) ensureInitialized(pool *pgxpool.Pool) *governanceRepo.Repository {
+	if r.inner == nil {
+		r.SetPool(pool)
+	}
+	return r.inner
+}
+
+// GetConfigSnapshots queries gov.config_snapshot for all loaded configuration entries (DEPRECATED).
 func (r *GovernanceRepository) GetConfigSnapshots(ctx context.Context, pool *pgxpool.Pool) ([]ConfigSnapshotRow, error) {
-	query := `
-		SELECT config_key
-		FROM gov.config_snapshot
-		ORDER BY config_key
-	`
-
-	rows, err := pool.Query(ctx, query)
-	if err != nil {
-		return nil, fmt.Errorf("query gov.config_snapshot: %w", err)
-	}
-	defer rows.Close()
-
-	var results []ConfigSnapshotRow
-	for rows.Next() {
-		var row ConfigSnapshotRow
-		if err := rows.Scan(&row.ConfigKey); err != nil {
-			return nil, fmt.Errorf("scan config_snapshot row: %w", err)
-		}
-		row.Status = "loaded"
-		results = append(results, row)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate config_snapshot rows: %w", err)
-	}
-
-	if results == nil {
-		results = []ConfigSnapshotRow{}
-	}
-
-	return results, nil
+	return r.ensureInitialized(pool).GetConfigSnapshots(ctx)
 }
 
-// CountTableRows returns the number of rows in the given schema.table.
-// Returns 0 if the table does not exist or is empty (error is swallowed for missing tables).
+// CountTableRows returns the number of rows in the given schema.table (DEPRECATED).
 func (r *GovernanceRepository) CountTableRows(ctx context.Context, pool *pgxpool.Pool, schema, table string) int {
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s.%s`, schema, table)
-	var count int
-	err := pool.QueryRow(ctx, query).Scan(&count)
-	if err != nil {
-		// Table may not exist or not be accessible; treat as 0
-		return 0
-	}
-	return count
+	return r.ensureInitialized(pool).CountTableRows(ctx, schema, table)
 }
 
-// ──── Object Schema ───────────────────────────────────────────────────────────
-
-// GetObjectSchemas queries all rows from gov.object_schema.
+// GetObjectSchemas queries all rows from gov.object_schema (DEPRECATED).
 func (r *GovernanceRepository) GetObjectSchemas(ctx context.Context, pool *pgxpool.Pool) ([]ObjectSchemaRow, error) {
-	query := `
-		SELECT object_type, object_name, schema_jsonb, version
-		FROM gov.object_schema
-		ORDER BY object_type
-	`
-	rows, err := pool.Query(ctx, query)
+	schemas, err := r.ensureInitialized(pool).GetObjectSchemas(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("query gov.object_schema: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []ObjectSchemaRow
-	for rows.Next() {
-		var row ObjectSchemaRow
-		if err := rows.Scan(&row.ObjectType, &row.ObjectName, &row.SchemaJSONB, &row.Version); err != nil {
-			return nil, fmt.Errorf("scan object_schema row: %w", err)
+	// Convert governanceRepo.ObjectSchemaRow to repository.ObjectSchemaRow
+	results := make([]ObjectSchemaRow, len(schemas))
+	for i, s := range schemas {
+		results[i] = ObjectSchemaRow{
+			ObjectType:  s.ObjectType,
+			ObjectName:  s.ObjectName,
+			SchemaJSONB: s.SchemaJSONB,
+			Version:     s.Version,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate object_schema rows: %w", err)
-	}
-	if results == nil {
-		results = []ObjectSchemaRow{}
 	}
 	return results, nil
 }
 
-// CountObjectSchemas returns the number of rows in gov.object_schema.
+// CountObjectSchemas returns the number of rows in gov.object_schema (DEPRECATED).
 func (r *GovernanceRepository) CountObjectSchemas(ctx context.Context, pool *pgxpool.Pool) int {
-	var count int
-	err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM gov.object_schema`).Scan(&count)
-	if err != nil {
-		return 0
-	}
-	return count
+	return r.ensureInitialized(pool).CountObjectSchemas(ctx)
 }
 
-// ──── Data Classification ─────────────────────────────────────────────────────
-
-// GetDataClassifications queries all rows from gov.data_classification.
+// GetDataClassifications queries all rows from gov.data_classification (DEPRECATED).
 func (r *GovernanceRepository) GetDataClassifications(ctx context.Context, pool *pgxpool.Pool) ([]DataClassificationRow, error) {
-	query := `
-		SELECT field_path, classification_level, sensitivity_score, description
-		FROM gov.data_classification
-		ORDER BY field_path
-	`
-	rows, err := pool.Query(ctx, query)
+	classifications, err := r.ensureInitialized(pool).GetDataClassifications(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("query gov.data_classification: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []DataClassificationRow
-	for rows.Next() {
-		var row DataClassificationRow
-		if err := rows.Scan(&row.FieldPath, &row.ClassificationLevel, &row.SensitivityScore, &row.Description); err != nil {
-			return nil, fmt.Errorf("scan data_classification row: %w", err)
+	// Convert governanceRepo.DataClassificationRow to repository.DataClassificationRow
+	results := make([]DataClassificationRow, len(classifications))
+	for i, c := range classifications {
+		results[i] = DataClassificationRow{
+			FieldPath:           c.FieldPath,
+			ClassificationLevel: c.ClassificationLevel,
+			SensitivityScore:    c.SensitivityScore,
+			Description:         c.Description,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate data_classification rows: %w", err)
-	}
-	if results == nil {
-		results = []DataClassificationRow{}
 	}
 	return results, nil
 }
 
-// GetByFieldPath queries a single classification by field_path.
+// GetByFieldPath queries a single classification by field_path (DEPRECATED).
 func (r *GovernanceRepository) GetByFieldPath(ctx context.Context, pool *pgxpool.Pool, fieldPath string) (*DataClassificationRow, error) {
-	query := `
-		SELECT field_path, classification_level, sensitivity_score, description
-		FROM gov.data_classification
-		WHERE field_path = $1
-	`
-	var row DataClassificationRow
-	err := pool.QueryRow(ctx, query, fieldPath).Scan(&row.FieldPath, &row.ClassificationLevel, &row.SensitivityScore, &row.Description)
+	row, err := r.ensureInitialized(pool).GetByFieldPath(ctx, fieldPath)
 	if err != nil {
-		return nil, fmt.Errorf("query data_classification by field_path: %w", err)
+		return nil, err
 	}
-	return &row, nil
+	return &DataClassificationRow{
+		FieldPath:           row.FieldPath,
+		ClassificationLevel: row.ClassificationLevel,
+		SensitivityScore:    row.SensitivityScore,
+		Description:         row.Description,
+	}, nil
 }
 
-// ──── Data Lineage ────────────────────────────────────────────────────────────
-
-// GetDataLineage queries all rows from gov.data_lineage.
+// GetDataLineage queries all rows from gov.data_lineage (DEPRECATED).
 func (r *GovernanceRepository) GetDataLineage(ctx context.Context, pool *pgxpool.Pool) ([]DataLineageRow, error) {
-	query := `
-		SELECT source_table, source_column, target_table, target_column,
-		       transformation_logic, confidence
-		FROM gov.data_lineage
-		ORDER BY source_table, target_table
-	`
-	rows, err := pool.Query(ctx, query)
+	lineage, err := r.ensureInitialized(pool).GetDataLineage(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("query gov.data_lineage: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []DataLineageRow
-	for rows.Next() {
-		var row DataLineageRow
-		if err := rows.Scan(&row.SourceTable, &row.SourceColumn, &row.TargetTable, &row.TargetColumn, &row.TransformationLogic, &row.Confidence); err != nil {
-			return nil, fmt.Errorf("scan data_lineage row: %w", err)
+	// Convert governanceRepo.DataLineageRow to repository.DataLineageRow
+	results := make([]DataLineageRow, len(lineage))
+	for i, l := range lineage {
+		results[i] = DataLineageRow{
+			SourceTable:         l.SourceTable,
+			SourceColumn:        l.SourceColumn,
+			TargetTable:         l.TargetTable,
+			TargetColumn:        l.TargetColumn,
+			TransformationLogic: l.TransformationLogic,
+			Confidence:          l.Confidence,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate data_lineage rows: %w", err)
-	}
-	if results == nil {
-		results = []DataLineageRow{}
 	}
 	return results, nil
 }
 
-// GetLineageBySource queries lineage rows where source_table matches.
+// GetLineageBySource queries lineage rows where source_table matches (DEPRECATED).
 func (r *GovernanceRepository) GetLineageBySource(ctx context.Context, pool *pgxpool.Pool, sourceTable string) ([]DataLineageRow, error) {
-	query := `
-		SELECT source_table, source_column, target_table, target_column,
-		       transformation_logic, confidence
-		FROM gov.data_lineage
-		WHERE source_table = $1
-		ORDER BY target_table
-	`
-	rows, err := pool.Query(ctx, query, sourceTable)
+	lineage, err := r.ensureInitialized(pool).GetLineageBySource(ctx, sourceTable)
 	if err != nil {
-		return nil, fmt.Errorf("query data_lineage by source: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []DataLineageRow
-	for rows.Next() {
-		var row DataLineageRow
-		if err := rows.Scan(&row.SourceTable, &row.SourceColumn, &row.TargetTable, &row.TargetColumn, &row.TransformationLogic, &row.Confidence); err != nil {
-			return nil, fmt.Errorf("scan data_lineage row: %w", err)
+	// Convert governanceRepo.DataLineageRow to repository.DataLineageRow
+	results := make([]DataLineageRow, len(lineage))
+	for i, l := range lineage {
+		results[i] = DataLineageRow{
+			SourceTable:         l.SourceTable,
+			SourceColumn:        l.SourceColumn,
+			TargetTable:         l.TargetTable,
+			TargetColumn:        l.TargetColumn,
+			TransformationLogic: l.TransformationLogic,
+			Confidence:          l.Confidence,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate data_lineage rows: %w", err)
-	}
-	if results == nil {
-		results = []DataLineageRow{}
 	}
 	return results, nil
 }
 
-// GetLineageByTarget queries lineage rows where target_table matches.
+// GetLineageByTarget queries lineage rows where target_table matches (DEPRECATED).
 func (r *GovernanceRepository) GetLineageByTarget(ctx context.Context, pool *pgxpool.Pool, targetTable string) ([]DataLineageRow, error) {
-	query := `
-		SELECT source_table, source_column, target_table, target_column,
-		       transformation_logic, confidence
-		FROM gov.data_lineage
-		WHERE target_table = $1
-		ORDER BY source_table
-	`
-	rows, err := pool.Query(ctx, query, targetTable)
+	lineage, err := r.ensureInitialized(pool).GetLineageByTarget(ctx, targetTable)
 	if err != nil {
-		return nil, fmt.Errorf("query data_lineage by target: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []DataLineageRow
-	for rows.Next() {
-		var row DataLineageRow
-		if err := rows.Scan(&row.SourceTable, &row.SourceColumn, &row.TargetTable, &row.TargetColumn, &row.TransformationLogic, &row.Confidence); err != nil {
-			return nil, fmt.Errorf("scan data_lineage row: %w", err)
+	// Convert governanceRepo.DataLineageRow to repository.DataLineageRow
+	results := make([]DataLineageRow, len(lineage))
+	for i, l := range lineage {
+		results[i] = DataLineageRow{
+			SourceTable:         l.SourceTable,
+			SourceColumn:        l.SourceColumn,
+			TargetTable:         l.TargetTable,
+			TargetColumn:        l.TargetColumn,
+			TransformationLogic: l.TransformationLogic,
+			Confidence:          l.Confidence,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate data_lineage rows: %w", err)
-	}
-	if results == nil {
-		results = []DataLineageRow{}
 	}
 	return results, nil
 }
 
-// ──── Access Policy ───────────────────────────────────────────────────────────
-
-// GetAccessPolicies queries all rows from gov.access_policy.
+// GetAccessPolicies queries all rows from gov.access_policy (DEPRECATED).
 func (r *GovernanceRepository) GetAccessPolicies(ctx context.Context, pool *pgxpool.Pool) ([]AccessPolicyRow, error) {
-	query := `
-		SELECT policy_name, resource_type, resource_pattern, action,
-		       principal_type, principal_pattern, effect, conditions_jsonb
-		FROM gov.access_policy
-		ORDER BY policy_name
-	`
-	rows, err := pool.Query(ctx, query)
+	policies, err := r.ensureInitialized(pool).GetAccessPolicies(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("query gov.access_policy: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []AccessPolicyRow
-	for rows.Next() {
-		var row AccessPolicyRow
-		if err := rows.Scan(&row.PolicyName, &row.ResourceType, &row.ResourcePattern, &row.Action, &row.PrincipalType, &row.PrincipalPattern, &row.Effect, &row.ConditionsJSONB); err != nil {
-			return nil, fmt.Errorf("scan access_policy row: %w", err)
+	// Convert governanceRepo.AccessPolicyRow to repository.AccessPolicyRow
+	results := make([]AccessPolicyRow, len(policies))
+	for i, p := range policies {
+		results[i] = AccessPolicyRow{
+			PolicyName:       p.PolicyName,
+			ResourceType:     p.ResourceType,
+			ResourcePattern:  p.ResourcePattern,
+			Action:           p.Action,
+			PrincipalType:    p.PrincipalType,
+			PrincipalPattern: p.PrincipalPattern,
+			Effect:           p.Effect,
+			ConditionsJSONB:  p.ConditionsJSONB,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate access_policy rows: %w", err)
-	}
-	if results == nil {
-		results = []AccessPolicyRow{}
 	}
 	return results, nil
 }
 
-// GetAccessPoliciesByRole queries access policies for a specific role (principal_pattern).
+// GetAccessPoliciesByRole queries access policies for a specific role (DEPRECATED).
 func (r *GovernanceRepository) GetAccessPoliciesByRole(ctx context.Context, pool *pgxpool.Pool, role string) ([]AccessPolicyRow, error) {
-	query := `
-		SELECT policy_name, resource_type, resource_pattern, action,
-		       principal_type, principal_pattern, effect, conditions_jsonb
-		FROM gov.access_policy
-		WHERE principal_pattern = $1
-		ORDER BY policy_name
-	`
-	rows, err := pool.Query(ctx, query, role)
+	policies, err := r.ensureInitialized(pool).GetAccessPoliciesByRole(ctx, role)
 	if err != nil {
-		return nil, fmt.Errorf("query access_policy by role: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var results []AccessPolicyRow
-	for rows.Next() {
-		var row AccessPolicyRow
-		if err := rows.Scan(&row.PolicyName, &row.ResourceType, &row.ResourcePattern, &row.Action, &row.PrincipalType, &row.PrincipalPattern, &row.Effect, &row.ConditionsJSONB); err != nil {
-			return nil, fmt.Errorf("scan access_policy row: %w", err)
+	// Convert governanceRepo.AccessPolicyRow to repository.AccessPolicyRow
+	results := make([]AccessPolicyRow, len(policies))
+	for i, p := range policies {
+		results[i] = AccessPolicyRow{
+			PolicyName:       p.PolicyName,
+			ResourceType:     p.ResourceType,
+			ResourcePattern:  p.ResourcePattern,
+			Action:           p.Action,
+			PrincipalType:    p.PrincipalType,
+			PrincipalPattern: p.PrincipalPattern,
+			Effect:           p.Effect,
+			ConditionsJSONB:  p.ConditionsJSONB,
 		}
-		results = append(results, row)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate access_policy rows: %w", err)
-	}
-	if results == nil {
-		results = []AccessPolicyRow{}
 	}
 	return results, nil
 }
