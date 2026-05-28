@@ -23,6 +23,9 @@ import (
 	"baxi/internal/pipeline"
 	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
+	"baxi/internal/repository/agent_execution"
+	"baxi/internal/repository/common"
+	"baxi/internal/repository/mcp_call"
 	"baxi/internal/review"
 	"baxi/internal/service"
 )
@@ -79,6 +82,15 @@ func (s *Server) logHandler() *handler.LogHandler {
 	repo := repository.NewLogRepository()
 	svc := service.NewLogService(repo, s.pool)
 	return handler.NewLogHandler(svc)
+}
+
+// agentLogHandler lazily initializes the agent execution logs handler.
+func (s *Server) agentLogHandler() *handler.AgentLogHandler {
+	provider := common.NewPoolProvider(s.pool)
+	agentExecRepo := agent_execution.NewRepository(provider)
+	mcpCallRepo := mcp_call.NewRepository(provider)
+	svc := service.NewAgentLogService(agentExecRepo, mcpCallRepo)
+	return handler.NewAgentLogHandler(svc)
 }
 
 // alertHandler lazily initializes the alerts handler.

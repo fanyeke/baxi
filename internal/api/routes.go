@@ -45,6 +45,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/logs/errors", s.logHandler().HandleListErrors)
 			r.Get("/logs/audit", s.logHandler().HandleListAudit)
 			r.Get("/logs/diagnosis", s.diagnosisHandler().HandleDiagnosis)
+			r.Get("/logs/agent", s.agentLogHandler().HandleListAgentLogs)
 
 			r.Get("/llm/status", s.llmHandler().Status)
 			r.Get("/llm/metrics", s.llmHandler().Metrics)
