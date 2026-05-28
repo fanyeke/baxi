@@ -319,6 +319,7 @@ class TestQoderDiagnosisRequestId:
         assert not diag_called[0], "diagnose_by_request_id should not be called without include_logs"
 
 
+@pytest.mark.skip(reason="Python pipeline layer removed during Go migration; run_db_pipeline.py depends on deleted db_*.py modules")
 class TestPipelineDryRun:
     """Regression: Pipeline dry-run semantics.
 
@@ -326,6 +327,11 @@ class TestPipelineDryRun:
                 Script required --dry-run flag for safety.
     After fix:  run_pipeline() defaults to dry_run=True (safe).
                 Script uses --apply flag to opt into mutations.
+
+    NOTE: This test class is skipped because the Python pipeline layer
+    (pipeline/runner.py, pipeline/steps.py, scripts/run_db_pipeline.py)
+    has been removed during the Go/PostgreSQL migration. The Go pipeline
+    at internal/pipeline/ is the active replacement.
     """
 
     def test_run_pipeline_default_dry_run_is_true(self):
