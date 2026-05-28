@@ -25,6 +25,7 @@ type Config struct {
 	LLMProvider       string
 	LLMFallbackEnabled bool
 	LLMStoreRawOutput  bool
+	LLMMaxRetries      int
 
 	// Phase 7: Review / Action / Outbox
 	ActionApplyDryRun  bool
@@ -56,6 +57,7 @@ func Load() (*Config, error) {
 	if v := getEnv("LLM_STORE_RAW_OUTPUT", "false"); v == "true" {
 		llmStoreRawOutput = true
 	}
+	llmMaxRetries, _ := strconv.Atoi(getEnv("LLM_MAX_RETRIES", "3"))
 
 	cfg := &Config{
 		DatabaseURL:        os.Getenv("DATABASE_URL"),
@@ -75,6 +77,7 @@ func Load() (*Config, error) {
 		LLMProvider:        getEnv("LLM_PROVIDER", "disabled"),
 		LLMFallbackEnabled: llmFallbackEnabled,
 		LLMStoreRawOutput:  llmStoreRawOutput,
+		LLMMaxRetries:      llmMaxRetries,
 
 		// Phase 7: Review / Action / Outbox
 		ActionApplyDryRun:  actionApplyDryRun,
