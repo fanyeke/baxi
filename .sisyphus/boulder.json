@@ -1,9 +1,51 @@
 {
-  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/go-postgres-migration-phase0.md",
-  "started_at": "2026-05-25T09:06:57.156Z",
+  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/phase-5-governance.md",
+  "started_at": "2026-05-26T01:22:49.400Z",
   "session_ids": [
-    "ses_1a1ceab9effeFXQgo30fApjW3v"
+    "ses_19e322b9effeV75F7iviGcx7gi",
+    "ses_19e1e59aaffe1QsZ0jr5NaOrKZ",
+    "ses_19e1eacf2ffevyGloJTYnlRFqS",
+    "ses_19e1e82c8ffeP0eVaDOtP3yDPM",
+    "ses_19e1e68ccffeH6RvFCoq3PhlAn",
+    "ses_19e1e3e1fffeYQ3f0dEk6CLZUD",
+    "ses_19e1a6ce0ffeSmpaOet2FXtQne",
+    "ses_19e1a1a08ffe2hqCkjcAMSWeYY",
+    "ses_19e1a4470ffe1uuQsG0Uggyu1J",
+    "ses_19e1a95bbffeOOI66E2MHtTBvp",
+    "ses_19e14ab99ffegJTYqA1c7L65yw",
+    "ses_19e14d284ffe7Qr4p4P7N3RPtp",
+    "ses_19e148bd1ffekylzjWittA3Dhu",
+    "ses_19e1498ffffeWaKwirP67KFGy6",
+    "ses_19e0da75dffeyyIBo1wZCasdLO",
+    "ses_19e0db140ffeIyajxFnVSLXPCX",
+    "ses_19e0d8694ffeAq977sUnH8p0lC",
+    "ses_19e0d949dffebl615oygDXfXpJ",
+    "ses_19e0dd063ffeumA672mHrgdHsr",
+    "ses_19e09290dffeiIGM9FJEqt7x35",
+    "ses_19e091a1effecu6YXERbKQe15W",
+    "ses_19e09317fffeNZh6h6dZMf0NqW",
+    "ses_19e093ca1ffeiv2oh43kza0wI1"
   ],
-  "plan_name": "go-postgres-migration-phase0",
-  "agent": "atlas"
+  "plan_name": "phase-5-governance",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Modernize testcontainers and add repository interfaces",
+      "session_id": "ses_19e1e3e1fffeYQ3f0dEk6CLZUD",
+      "agent": "Sisyphus-Junior",
+      "category": "writing",
+      "updated_at": "2026-05-26T01:27:03.346Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "Implement ConfigLoader",
+      "session_id": "ses_19e1a4470ffe1uuQsG0Uggyu1J",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-26T01:33:39.199Z"
+    }
+  }
 }

@@ -1,0 +1,136 @@
+objects:
+  - object_type_id: customer
+    display_name: "客户"
+    source_tables: [order_level_base]
+    grain: customer_unique_id
+    allow_sync_to_feishu: false
+    properties:
+      customer_unique_id: { type: string, is_pk: true }
+      customer_state: { type: string }
+      customer_city: { type: string }
+      order_count: { type: int, source: order_id, agg: nunique }
+      gmv_total: { type: float, source: total_payment_value, agg: sum }
+      avg_review_score: { type: float }
+      first_order_date: { type: datetime, source: order_purchase_timestamp, agg: min }
+      last_order_date: { type: datetime, source: order_purchase_timestamp, agg: max }
+    alert_fields:
+      - avg_review_score
+      - last_order_date
+
+  - object_type_id: order
+    display_name: "订单"
+    source_tables: [order_level_base]
+    grain: order_id
+    allow_sync_to_feishu: false
+    properties:
+      order_id: { type: string, is_pk: true }
+      order_status: { type: string }
+      order_purchase_timestamp: { type: datetime }
+      total_payment_value: { type: float }
+      payment_type: { type: string }
+      review_score: { type: float }
+      delivery_status: { type: string }
+    alert_fields:
+      - review_score
+      - order_status
+
+  - object_type_id: seller
+    display_name: "卖家"
+    source_tables: [item_level_base]
+    grain: seller_id
+    allow_sync_to_feishu: false
+    properties:
+      seller_id: { type: string, is_pk: true }
+      seller_state: { type: string }
+      seller_city: { type: string }
+      gmv: { type: float, source: price, agg: sum }
+      order_count: { type: int, source: order_id, agg: nunique }
+      avg_review_score: { type: float }
+      late_delivery_rate: { type: float }
+    relationships:
+      has_items: { to: order, grain: order_id }
+      has_products: { to: product, grain: product_id }
+    alert_fields:
+      - late_delivery_rate
+      - avg_review_score
+      - order_count
+
+  - object_type_id: product
+    display_name: "产品"
+    source_tables: [item_level_base]
+    grain: product_id
+    allow_sync_to_feishu: false
+    properties:
+      product_id: { type: string, is_pk: true }
+      product_category_name: { type: string }
+      product_category_name_english: { type: string }
+      price: { type: float }
+      freight_value: { type: float }
+      product_weight_g: { type: float }
+      sales_count: { type: int, source: order_id, agg: count }
+      avg_review_score: { type: float }
+    alert_fields:
+      - avg_review_score
+      - sales_count
+
+  - object_type_id: category
+    display_name: "品类"
+    source_tables: [item_level_base]
+    grain: product_category_name
+    allow_sync_to_feishu: false
+    properties:
+      product_category_name: { type: string, is_pk: true }
+      product_category_name_english: { type: string }
+      gmv: { type: float, source: price, agg: sum }
+      order_count: { type: int, source: order_id, agg: nunique }
+      avg_review_score: { type: float }
+      late_delivery_rate: { type: float }
+    alert_fields:
+      - avg_review_score
+      - gmv
+
+  - object_type_id: region
+    display_name: "区域"
+    source_tables: [order_level_base, item_level_base]
+    grain: state
+    allow_sync_to_feishu: false
+    properties:
+      state: { type: string, is_pk: true }
+      customer_count: { type: int }
+      seller_count: { type: int }
+      gmv: { type: float }
+      avg_review_score: { type: float }
+      avg_delivery_days: { type: float }
+    alert_fields:
+      - avg_delivery_days
+      - avg_review_score
+
+  - object_type_id: marketing_lead
+    display_name: "营销线索"
+    source_tables: [channel_classification]
+    grain: origin
+    allow_sync_to_feishu: false
+    properties:
+      origin: { type: string, is_pk: true }
+      mql_count: { type: int }
+      conversion_count: { type: int }
+      conversion_rate: { type: float }
+      gmv_per_seller: { type: float }
+      category: { type: string }
+    alert_fields:
+      - conversion_rate
+
+  - object_type_id: metric_alert
+    display_name: "异常事件"
+    source_tables: [metric_alerts]
+    grain: alert_id
+    allow_sync_to_feishu: true
+    properties:
+      alert_id: { type: string, is_pk: true }
+      rule_id: { type: string }
+      metric: { type: string }
+      severity: { type: string }
+      current_value: { type: float }
+      baseline_value: { type: float }
+      owner_role: { type: string }
+      status: { type: string }

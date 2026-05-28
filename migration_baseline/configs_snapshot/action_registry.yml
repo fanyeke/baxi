@@ -1,0 +1,30 @@
+actions:
+  create_feishu_report:
+    description: "创建飞书日报/异常报告"
+    risk_level: low
+    requires_approval: false
+    allowed_by: [business_ops, seller_ops, category_ops, logistics_ops, marketing_ops]
+
+  notify_owner:
+    description: "通知负责人处理异常"
+    risk_level: low
+    requires_approval: false
+    allowed_by: [business_ops, seller_ops, category_ops, logistics_ops, marketing_ops]
+
+  create_followup_task:
+    description: "创建跟进任务"
+    risk_level: medium
+    requires_approval: true
+    allowed_by: [business_ops, seller_ops]
+
+  recommend_business_strategy:
+    description: "推荐业务策略"
+    risk_level: medium
+    requires_approval: true
+    allowed_by: [business_ops, category_ops, marketing_ops]
+
+  modify_business_policy:
+    description: "修改业务策略或规则"
+    risk_level: high
+    requires_approval: true
+    allowed_by: [business_ops]

@@ -1,0 +1,58 @@
+# Checkpoint rules for sensitive operations v0.5.3
+# Reference: docs/governance/baxi_checkpoint_policy.md
+# Checkpoint scopes (Foundry: Organization > Space > Endpoint)
+# Organization: applies across all spaces
+# Space: applies within a specific space/project
+# Endpoint: applies to a specific API endpoint
+
+checkpoints:
+  feishu_sync_apply:
+    scope: endpoint
+    endpoint: "POST /api/v1/feishu/sync"
+    requires_justification: true
+    prompt: "Why is this Feishu sync being applied?"
+    record_fields: [actor, request_id, tables, dry_run, apply, justification]
+    checkpoint_types: [export, sync]
+  outbox_dispatch_apply:
+    scope: endpoint
+    endpoint: "POST /api/v1/outbox/dispatch"
+    requires_justification: true
+    prompt: "Why are these outbox events being dispatched?"
+    record_fields: [actor, request_id, event_count, channel, dry_run, apply, justification]
+    checkpoint_types: [export, dispatch]
+  pipeline_run:
+    scope: endpoint
+    endpoint: "POST /api/v1/pipeline/run"
+    requires_justification: false
+  feishu_export:
+    scope: endpoint
+    endpoint: "POST /api/v1/feishu/export"
+    requires_justification: true
+    prompt: "Why is this data being exported to Feishu?"
+    checkpoint_types: [export]
+  data_deletion:
+    scope: organization
+    requires_justification: true
+    prompt: "Why is this data being deleted? Confirm lineage-aware cascade impact."
+    checkpoint_types: [deletion, sensitive_action]
+
+# Checkpoint audit file configuration
+checkpoint_audit:
+  file: "system_dir/governance_checkpoints.csv"
+  format: csv
+  columns:
+    - request_id
+    - timestamp
+    - user_id
+    - rule_id
+    - endpoint
+    - justification_type
+    - justification_value
+    - status
+  retention_days: 2555  # 7 years compliance
+
+# Frequency configuration (for future enforcement v0.5.4+)
+frequency:
+  default: every_time
+  cache_same_rule: false  # v0.5.3: always prompt
+  # v0.5.4+: cache_same_rule: true, cache_duration_hours: 24

@@ -1,0 +1,19 @@
+alert_event_status:
+  values: [new, investigating, strategy_generated, task_created, resolved, ignored]
+  initial: new
+  terminal: [resolved, ignored]
+
+strategy_status:
+  values: [draft, pending_review, approved, rejected, executing, completed, invalidated]
+  initial: draft
+  terminal: [completed, invalidated, rejected]
+
+task_status:
+  values: [todo, in_progress, blocked, done, cancelled]
+  initial: todo
+  terminal: [done, cancelled]
+
+feishu_sync_status:
+  values: [not_synced, synced, sync_failed, updated]
+  initial: not_synced
+  terminal: [synced, updated]

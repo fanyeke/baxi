@@ -52,3 +52,11 @@ docs/external/
 
 # Frontend build artifacts
 frontend/tsconfig.tsbuildinfo
+
+# Go binaries and test artifacts
+/baxi-api
+/baxi-cli
+/baxi-worker
+*.test
+*.out
+vendor/

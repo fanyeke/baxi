@@ -1,0 +1,109 @@
+classifications:
+- asset_ref: raw_customers
+  level: pii
+  rationale: Contains customer_unique_id, a direct PII identifier
+  applies_to_fields:
+    customer_unique_id: pii
+- asset_ref: raw_geolocation
+  level: internal
+  rationale: Zip code prefixes + lat/lng; can re-identify when combined with customer
+    data
+- asset_ref: raw_orders
+  level: sensitive
+  rationale: Contains customer_id linkages and payment timestamps
+  applies_to_fields:
+    customer_id: pii
+- asset_ref: raw_order_items
+  level: internal
+  rationale: Price/freight data by item; seller_id linkable
+  applies_to_fields:
+    price: internal
+    freight_value: internal
+    seller_id: internal
+- asset_ref: raw_order_payments
+  level: sensitive
+  rationale: Payment amounts and types are financial data
+  applies_to_fields:
+    payment_value: sensitive
+- asset_ref: raw_order_reviews
+  level: public_internal
+  rationale: Review scores are aggregateable; comment text may contain PII
+  applies_to_fields:
+    review_comment_message: sensitive
+- asset_ref: raw_products
+  level: public_internal
+  rationale: Product catalog with no sensitive data
+- asset_ref: raw_sellers
+  level: internal
+  rationale: Seller location info (zip/city/state)
+  applies_to_fields:
+    seller_id: internal
+- asset_ref: raw_category_translation
+  level: public_internal
+  rationale: Public category name mapping
+- asset_ref: raw_mql
+  level: internal
+  rationale: Marketing lead metadata (origin, landing page)
+- asset_ref: raw_closed_deals
+  level: sensitive
+  rationale: Deal data with seller_id and business segment info
+- asset_ref: dwd_order_level
+  level: sensitive
+  rationale: Enriched order data with customer_unique_id and payment details
+  applies_to_fields:
+    customer_unique_id: pii
+    payment_value: internal
+- asset_ref: dwd_item_level
+  level: internal
+  rationale: Price/freight per item; seller_id linkable
+- asset_ref: metric_daily
+  level: derived_sensitive
+  rationale: "GMV and order_count derived from order-level data containing PII and financial data"
+  applies_to_fields:
+    gmv: derived_sensitive
+    order_count: derived_sensitive
+- asset_ref: metric_dimension_daily
+  level: public_internal
+  rationale: Dimension aggregations by seller/category/region
+- asset_ref: alert_events
+  level: internal
+  rationale: Operational alert data with metric references
+- asset_ref: strategy_recommendations
+  level: internal
+  rationale: AI-generated strategy content
+- asset_ref: action_tasks
+  level: internal
+  rationale: Internal operational tasks
+- asset_ref: review_retro
+  level: internal
+  rationale: Post-execution reviews with operational details
+- asset_ref: event_outbox
+  level: internal
+  rationale: Dispatch queue with operational payload_json
+- asset_ref: pipeline_runs
+  level: public_internal
+  rationale: Pipeline execution metadata only
+- asset_ref: ingestion_batches
+  level: public_internal
+  rationale: Batch ingestion metadata
+- asset_ref: qoder_jobs
+  level: internal
+  rationale: Job tracking; job_context_json may contain operational data
+- asset_ref: api_feishu
+  level: sensitive
+  rationale: External data export endpoint
+- asset_ref: api_outbox_dispatch
+  level: sensitive
+  rationale: Write endpoint triggering external dispatch
+- asset_ref: feishu_daily_metrics
+  level: public_internal
+  rationale: Aggregated GMV/order metrics
+- asset_ref: feishu_alert_events
+  level: internal
+  rationale: Alert data with operational descriptions
+- asset_ref: log_api
+  level: internal
+  rationale: May contain path parameters with identifiers
+- asset_ref: log_error
+  level: internal
+  rationale: May expose internal application details

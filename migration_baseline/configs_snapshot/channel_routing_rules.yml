@@ -1,0 +1,25 @@
+# Channel Routing Rules
+# Defines which output channel each dimensional alert severity level routes to.
+# Channels:
+#   feishu_cli  - Push to Feishu bitable via CLI (high visibility, team-facing)
+#   local_cli   - Output to local CLI/CSV only (machine-readable, ops-facing)
+#   manual      - Flag for human review (no automated action)
+
+rules:
+  seller_late_delivery_spike:
+    high: feishu_cli
+  seller_review_score_drop:
+    medium: local_cli
+  category_gmv_drop:
+    medium: feishu_cli
+  category_low_review_cluster:
+    medium: local_cli
+  region_cancel_rate_spike:
+    medium: manual
+  region_late_delivery_spike:
+    high: feishu_cli
+
+defaults:
+  high: feishu_cli
+  medium: local_cli
+  low: manual

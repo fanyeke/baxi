@@ -1,0 +1,41 @@
+# Adapter Registry — v0.4
+# Maps target channels to adapter implementations.
+# Used by db_dispatch_outbox.py to resolve which adapter handles each event.
+
+adapters:
+  feishu:
+    enabled: true
+    module: adapters.feishu_adapter
+    class: FeishuAdapter
+    allowed_target_channels:
+      - feishu_cli
+      - feishu_message
+    dry_run_only: false
+    max_retries: 3
+
+  github_issue:
+    enabled: true
+    module: adapters.github_issue_adapter
+    class: GitHubIssueAdapter
+    allowed_target_channels:
+      - github_issue
+    dry_run_only: true
+    max_retries: 0
+
+  local_cli:
+    enabled: true
+    module: adapters.local_cli_adapter
+    class: LocalCLIAdapter
+    allowed_target_channels:
+      - local_cli
+    dry_run_only: false
+    max_retries: 0
+
+  manual:
+    enabled: true
+    module: adapters.manual_adapter
+    class: ManualAdapter
+    allowed_target_channels:
+      - manual
+    dry_run_only: false
+    max_retries: 0

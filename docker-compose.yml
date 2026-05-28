@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: baxi-postgres
+    environment:
+      POSTGRES_DB: baxi
+      POSTGRES_USER: baxi
+      POSTGRES_PASSWORD: baxi_dev
+      TZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - baxi_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baxi -d baxi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: baxi-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://baxi:baxi_dev@postgres:5432/baxi?sslmode=disable
+      API_PORT: "8080"
+      LOG_LEVEL: info
+      TZ: UTC
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: baxi-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://baxi:baxi_dev@postgres:5432/baxi?sslmode=disable
+      LOG_LEVEL: info
+      TZ: UTC
+    restart: unless-stopped
+
+volumes:
+  baxi_postgres_data:

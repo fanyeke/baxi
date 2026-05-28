@@ -1,30 +1,101 @@
 actions:
-  create_feishu_report:
-    description: "创建飞书日报/异常报告"
-    risk_level: low
-    requires_approval: false
-    allowed_by: [business_ops, seller_ops, category_ops, logistics_ops, marketing_ops]
-
-  notify_owner:
-    description: "通知负责人处理异常"
-    risk_level: low
-    requires_approval: false
-    allowed_by: [business_ops, seller_ops, category_ops, logistics_ops, marketing_ops]
-
   create_followup_task:
+    version: "v1"
     description: "创建跟进任务"
     risk_level: medium
     requires_approval: true
-    allowed_by: [business_ops, seller_ops]
+    dry_run_default: true
+    adapter: "github"
+    allowed_by: [analyst, manager]
+    llm_visible: true
+    llm_description: "当需要创建跟进调查任务时使用"
+    payload_schema:
+      type: object
+      required: [task_title, owner_role]
+      properties:
+        task_title:
+          type: string
+          maxLength: 200
+        task_description:
+          type: string
+          maxLength: 2000
+        owner_role:
+          type: string
+          enum: [analyst, marketing_ops, seller_ops, category_ops, logistics_ops]
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
 
-  recommend_business_strategy:
-    description: "推荐业务策略"
+  notify_owner:
+    version: "v1"
+    description: "通知负责人处理异常"
     risk_level: medium
     requires_approval: true
-    allowed_by: [business_ops, category_ops, marketing_ops]
+    dry_run_default: true
+    adapter: "feishu"
+    allowed_by: [analyst]
+    llm_visible: true
+    llm_description: "当需要通知负责人处理运营异常时使用"
+    payload_schema:
+      type: object
+      required: [alert_id, owner_role, message]
+      properties:
+        alert_id:
+          type: string
+        owner_role:
+          type: string
+          enum: [analyst, marketing_ops, seller_ops, category_ops, logistics_ops, admin]
+        message:
+          type: string
+          maxLength: 2000
 
-  modify_business_policy:
-    description: "修改业务策略或规则"
-    risk_level: high
+  export_report:
+    version: "v1"
+    description: "导出报告"
+    risk_level: medium
     requires_approval: true
-    allowed_by: [business_ops]
+    dry_run_default: true
+    adapter: "feishu"
+    allowed_by: [analyst, manager]
+    llm_visible: true
+    llm_description: "当需要生成并导出正式报告时使用"
+    payload_schema:
+      type: object
+      required: [report_type]
+      properties:
+        report_type:
+          type: string
+          enum: [alert_summary, decision_rationale, impact_analysis]
+        format:
+          type: string
+          enum: [markdown, csv, pdf]
+          default: markdown
+        include_evidence:
+          type: boolean
+          default: true
+
+  create_outbox_message:
+    version: "v1"
+    description: "创建出站消息"
+    risk_level: medium
+    requires_approval: true
+    dry_run_default: true
+    adapter: "feishu"
+    allowed_by: [manager]
+    llm_visible: true
+    llm_description: "当需要向外部渠道发送通知时使用"
+    payload_schema:
+      type: object
+      required: [target_channel, message]
+      properties:
+        target_channel:
+          type: string
+          enum: [feishu, webhook]
+        message:
+          type: string
+          maxLength: 4000
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium

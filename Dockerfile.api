@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+# Install ca-certificates for HTTPS
+RUN apk --no-cache add ca-certificates
+
+# Copy dependency files first for layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build static binary
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+RUN go build -o /app/baxi-api ./cmd/baxi-api
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata
+ENV TZ=UTC
+
+COPY --from=builder /app/baxi-api /app/baxi-api
+
+EXPOSE 8080
+
+CMD ["/app/baxi-api"]

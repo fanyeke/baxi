@@ -9,6 +9,8 @@ import subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'scripts'))
 import config
 
+pytestmark = pytest.mark.skip(reason="Script deleted during Go migration cleanup")
+
 PAYLOAD = json.dumps({"rule_id": "gmv_drop", "metric_name": "gmv", "current_value": 1000, "baseline_value": 1500, "severity": "high", "owner_role": "business_ops"})
 
 

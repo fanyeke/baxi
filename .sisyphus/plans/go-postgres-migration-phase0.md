@@ -155,7 +155,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ## TODOs
 
-- [ ] 1. Commit cleanup — stage and commit 64 unstaged files + selected untracked
+- [x] 1. Commit cleanup — stage and commit 64 unstaged files + selected untracked
 
   **What to do**:
   1. Review unstaged changes: `git diff --stat` to understand scope
@@ -196,7 +196,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 2. Create annotated tag `v0.5.3-python-sqlite-freeze`
+- [x] 2. Create annotated tag `v0.5.3-python-sqlite-freeze`
 
   **What to do**:
   1. Verify `pyproject.toml` version is `0.5.3`
@@ -232,7 +232,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 3. Create `legacy/python-sqlite` branch
+- [x] 3. Create `legacy/python-sqlite` branch
 
   **What to do**:
   1. Create branch from current HEAD: `git checkout -b legacy/python-sqlite`
@@ -268,7 +268,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 4. Create `migration/go-postgres` branch
+- [x] 4. Create `migration/go-postgres` branch
 
   **What to do**:
   1. Checkout main (or stay on current branch)
@@ -305,7 +305,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 5. Export SQLite schema + row counts
+- [x] 5. Export SQLite schema + row counts
 
   **What to do**:
   1. Create `scripts/migration/export_schema.py`:
@@ -355,7 +355,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 6. Export pipeline CSV samples
+- [x] 6. Export pipeline CSV samples
 
   **What to do**:
   1. Create `scripts/migration/export_pipeline_samples.py`:
@@ -402,7 +402,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 7. Export API response snapshots
+- [x] 7. Export API response snapshots
 
   **What to do**:
   1. Create `scripts/migration/export_api_responses.py`:
@@ -451,7 +451,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 8. Export governance YAML snapshot
+- [x] 8. Export governance YAML snapshot
 
   **What to do**:
   1. Create `scripts/migration/export_config_snapshot.py`:
@@ -490,7 +490,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 9. Generate `migration_baseline/README.md`
+- [x] 9. Generate `migration_baseline/README.md`
 
   **What to do**:
   1. Create `migration_baseline/README.md` with:
@@ -531,7 +531,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 10. Write `docs/migration/go-postgres-migration-plan.md`
+- [x] 10. Write `docs/migration/go-postgres-migration-plan.md`
 
   **What to do**:
   1. Write comprehensive migration plan document with:
@@ -583,7 +583,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 11. Commit 1: Add migration scripts
+- [x] 11. Commit 1: Add migration scripts
 
   **What to do**:
   1. Stage `scripts/migration/` directory (5 export scripts)
@@ -617,7 +617,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 12. Commit 2: Capture baseline artifacts
+- [x] 12. Commit 2: Capture baseline artifacts
 
   **What to do**:
   1. Stage `migration_baseline/` directory
@@ -651,7 +651,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 13. Commit 3: Add migration plan document
+- [x] 13. Commit 3: Add migration plan document
 
   **What to do**:
   1. Stage `docs/migration/` directory
@@ -685,7 +685,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ---
 
-- [ ] 14. Push `migration/go-postgres` branch to remote
+- [x] 14. Push `migration/go-postgres` branch to remote
 
   **What to do**:
   1. Ensure on `migration/go-postgres` branch
@@ -723,7 +723,7 @@ Wave FINAL (After ALL tasks — verification):
 
 ## Final Verification Wave
 
-- [ ] F1. **Git Compliance Audit**
+- [x] F1. **Git Compliance Audit**
 
   **What to verify**:
   - Tag `v0.5.3-python-sqlite-freeze` exists and is annotated
@@ -741,7 +741,7 @@ Wave FINAL (After ALL tasks — verification):
   git log --oneline origin/migration/go-postgres | wc -l  # expected: >= 4
   ```
 
-- [ ] F2. **Baseline Artifact Completeness**
+- [x] F2. **Baseline Artifact Completeness**
 
   **What to verify**:
   - `migration_baseline/README.md` exists
@@ -762,7 +762,7 @@ Wave FINAL (After ALL tasks — verification):
   ls migration_baseline/configs_snapshot/*.yml | wc -l   # expected: 29
   ```
 
-- [ ] F3. **API Response Validity**
+- [x] F3. **API Response Validity**
 
   **What to verify**:
   - All JSON files are valid
@@ -776,7 +776,7 @@ Wave FINAL (After ALL tasks — verification):
   python3 -c "import json; d=json.load(open('migration_baseline/api_responses/health.json')); assert 'status' in d"
   ```
 
-- [ ] F4. **Scope Fidelity Check**
+- [x] F4. **Scope Fidelity Check**
 
   **What to verify**:
   - No changes to `api/`, `services/`, `adapters/`, `core/`, `pipeline/` (except new files in `scripts/migration/`)
