@@ -172,3 +172,20 @@ export interface PipelineRunResponse {
   warnings: string[]
   description: string
 }
+
+export interface AgentExecutionLog {
+  execution_id: string
+  session_id: string | null
+  tool_name: string
+  status: string
+  error_message: string | null
+  duration_ms: number | null
+  llm_model: string | null
+  llm_tokens: number | null
+  created_at: string
+}
+
+export interface AgentLogListResponse {
+  items: AgentExecutionLog[]
+  total: number
+}

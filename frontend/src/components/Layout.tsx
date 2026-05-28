@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: "/feishu", label: "飞书同步", icon: "🔗" },
   { to: "/pipeline", label: "运行管道", icon: "▶" },
   { to: "/governance", label: "治理中心", icon: "🏛" },
+  { to: "/agent-logs", label: "Agent 日志", icon: "🤖" },
 ]
 
 export default function Layout() {

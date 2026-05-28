@@ -8,6 +8,7 @@ import Logs from "./pages/Logs"
 import Feishu from "./pages/Feishu"
 import Pipeline from "./pages/Pipeline"
 import Governance from "./pages/Governance"
+import AgentLogs from "./pages/AgentLogs"
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/feishu" element={<Feishu />} />
         <Route path="/pipeline" element={<Pipeline />} />
         <Route path="/governance" element={<Governance />} />
+        <Route path="/agent-logs" element={<AgentLogs />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
