@@ -13,7 +13,7 @@ import (
 )
 
 func TestCapabilitiesEndpoint_ResponseFormat(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
 	s.router.ServeHTTP(w, r)
@@ -38,7 +38,7 @@ func TestCapabilitiesEndpoint_ResponseFormat(t *testing.T) {
 }
 
 func TestCapabilitiesEndpoint_ObjectShape(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
 	s.router.ServeHTTP(w, r)
@@ -65,7 +65,7 @@ func TestCapabilitiesEndpoint_ObjectShape(t *testing.T) {
 }
 
 func TestCapabilitiesEndpoint_NoAuthRequired(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
 	s.router.ServeHTTP(w, r)
@@ -74,7 +74,7 @@ func TestCapabilitiesEndpoint_NoAuthRequired(t *testing.T) {
 }
 
 func TestCapabilitiesEndpoint_NoDBRequired(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
 	s.router.ServeHTTP(w, r)
@@ -83,7 +83,7 @@ func TestCapabilitiesEndpoint_NoDBRequired(t *testing.T) {
 }
 
 func TestCapabilitiesEndpoint_RejectsNonGET(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch} {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(method, "/api/v1/qoder/capabilities", nil)
@@ -93,7 +93,7 @@ func TestCapabilitiesEndpoint_RejectsNonGET(t *testing.T) {
 }
 
 func TestContextEndpoint_Registered(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/context", nil)
 	s.router.ServeHTTP(w, r)
@@ -103,7 +103,7 @@ func TestContextEndpoint_Registered(t *testing.T) {
 }
 
 func TestContextEndpoint_ObjectShape(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/context", nil)
 	s.router.ServeHTTP(w, r)
@@ -123,7 +123,7 @@ func TestContextEndpoint_ObjectShape(t *testing.T) {
 }
 
 func TestContextEndpoint_RejectsNonGET(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch} {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(method, "/api/v1/qoder/context", nil)

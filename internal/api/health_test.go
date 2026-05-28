@@ -11,7 +11,7 @@ import (
 )
 
 func TestHealthEndpoint_ResponseFormat(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
 	s.router.ServeHTTP(w, r)
@@ -28,7 +28,7 @@ func TestHealthEndpoint_ResponseFormat(t *testing.T) {
 }
 
 func TestHealthResponse_NoServiceField(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
 	s.router.ServeHTTP(w, r)
@@ -46,7 +46,7 @@ func TestHealthResponse_NoServiceField(t *testing.T) {
 }
 
 func TestHealthEndpoint_DBDisconnected(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
 	s.router.ServeHTTP(w, r)
@@ -59,7 +59,7 @@ func TestHealthEndpoint_DBDisconnected(t *testing.T) {
 }
 
 func TestHealthEndpoint_NoAuthRequired(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
 	s.router.ServeHTTP(w, r)

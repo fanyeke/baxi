@@ -27,12 +27,13 @@ var allProtectedRoutes = []struct {
 	{"/api/v1/logs/recent", "/api/v1/logs/recent"},
 	{"/api/v1/logs/errors", "/api/v1/logs/errors"},
 	{"/api/v1/logs/audit", "/api/v1/logs/audit"},
-	{"/api/v1/qoder/capabilities", "/api/v1/qoder/capabilities"},
-	{"/api/v1/qoder/context", "/api/v1/qoder/context"},
+	// qoder/capabilities and qoder/context are public endpoints (no auth)
+	// {"/api/v1/qoder/capabilities", "/api/v1/qoder/capabilities"},
+	// {"/api/v1/qoder/context", "/api/v1/qoder/context"},
 }
 
 func TestAllEndpoints_Registered(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	t.Run("health", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -60,7 +61,7 @@ func TestAllEndpoints_Registered(t *testing.T) {
 
 func TestHealthEndpoint_Public(t *testing.T) {
 	t.Setenv("API_BEARER_TOKEN", testBearerToken)
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
@@ -72,7 +73,7 @@ func TestHealthEndpoint_Public(t *testing.T) {
 
 func TestProtectedEndpoints_RequireAuth(t *testing.T) {
 	t.Setenv("API_BEARER_TOKEN", testBearerToken)
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	for _, ep := range allProtectedRoutes {
 		t.Run(ep.name+" no auth", func(t *testing.T) {
@@ -87,7 +88,7 @@ func TestProtectedEndpoints_RequireAuth(t *testing.T) {
 
 func TestProtectedEndpoints_InvalidToken(t *testing.T) {
 	t.Setenv("API_BEARER_TOKEN", testBearerToken)
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	for _, ep := range allProtectedRoutes {
 		t.Run(ep.name+" invalid token", func(t *testing.T) {
@@ -103,7 +104,7 @@ func TestProtectedEndpoints_InvalidToken(t *testing.T) {
 
 func TestProtectedEndpoints_ValidToken(t *testing.T) {
 	t.Setenv("API_BEARER_TOKEN", testBearerToken)
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	for _, ep := range allProtectedRoutes {
 		t.Run(ep.name+" valid token", func(t *testing.T) {
@@ -125,7 +126,7 @@ func TestProtectedEndpoints_ValidToken(t *testing.T) {
 
 func TestProtectedEndpoints_MissingAuthHeader(t *testing.T) {
 	t.Setenv("API_BEARER_TOKEN", testBearerToken)
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	for _, ep := range allProtectedRoutes {
 		t.Run(ep.name+" missing header", func(t *testing.T) {
@@ -140,7 +141,7 @@ func TestProtectedEndpoints_MissingAuthHeader(t *testing.T) {
 }
 
 func TestCORSPreflight(t *testing.T) {
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	tests := []struct {
 		name   string
@@ -172,7 +173,7 @@ func TestCORSPreflight(t *testing.T) {
 
 func TestAuthMiddleware_ErrorResponseShape(t *testing.T) {
 	t.Setenv("API_BEARER_TOKEN", testBearerToken)
-	s := New(nil, nil)
+	s := newTestServer(t, nil)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/status", nil)

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 
 	"baxi/internal/api/dto"
 )
@@ -68,8 +67,7 @@ func TestHandleListTasks_NoAuth_Success(t *testing.T) {
 	}
 
 	pool := setupTasksTestDB(t)
-	logger := zap.NewNop()
-	srv := New(logger, pool)
+	srv := newTestServer(t, pool)
 
 	// Insert test data
 	_, err := pool.Exec(context.Background(), `
@@ -110,8 +108,7 @@ func TestHandleListTasks_Filters(t *testing.T) {
 	}
 
 	pool := setupTasksTestDB(t)
-	logger := zap.NewNop()
-	srv := New(logger, pool)
+	srv := newTestServer(t, pool)
 
 	// Insert test data
 	_, err := pool.Exec(context.Background(), `
@@ -165,8 +162,7 @@ func TestHandleListTasks_EmptyDB(t *testing.T) {
 	}
 
 	pool := setupTasksTestDB(t)
-	logger := zap.NewNop()
-	srv := New(logger, pool)
+	srv := newTestServer(t, pool)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", nil)
 	rec := httptest.NewRecorder()
@@ -195,8 +191,7 @@ func TestHandleListTasks_InvalidPagination(t *testing.T) {
 	}
 
 	pool := setupTasksTestDB(t)
-	logger := zap.NewNop()
-	srv := New(logger, pool)
+	srv := newTestServer(t, pool)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks?limit=abc", nil)
 	rec := httptest.NewRecorder()
