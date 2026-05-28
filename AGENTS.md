@@ -29,14 +29,16 @@ baxi/
 |------|----------|-------|
 | Pipeline orchestration | `internal/pipeline/` | Go, 13 step files |
 | Governance rules | `internal/governance/` + `config/` | Go engine + YAML configs |
-| Decision engine | `internal/decision/` | Go case engine + context builder |
+| Decision engine | `internal/decision/` | Go case engine + context builder + lineage |
 | API handlers | `internal/api/handler/` | 14 Go handler files |
 | React pages | `frontend/src/pages/` | 11 pages + co-located tests |
 | Channel adapters | `internal/adapter/` | Go strategy pattern (Feishu, GitHub, CLI, Manual) |
 | DB repository layer | `internal/repository/` | Go interfaces + implementations |
 | YAML configs | `config/*.yml` | 28 governance/alert/metric configs |
-| Background workers | `internal/worker/` | Dispatch worker |
+| LLM providers | `internal/llm/` | OpenAI + rule-based fallback |
 | Action execution | `internal/action/` | Registry + proposal + apply |
+| Shared types | `internal/model/` | Domain types (service layer, not API DTOs) |
+| Background workers | `internal/worker/` | Dispatch worker |
 
 ## CONVENTIONS
 
@@ -117,6 +119,26 @@ update the affected AGENTS.md files and README.md to match.
 - **AGENTS.md**: Update per-package knowledge base when package structure changes
 - **README.md**: Update when project structure, counts, or commands change
 - **docs/**: Keep pipeline and config docs in sync with Go implementation
+
+### AGENTS.md Hierarchy (14 files)
+
+```
+./AGENTS.md                     # Root project knowledge
+├── config/AGENTS.md            # YAML governance configs
+├── frontend/AGENTS.md          # React 19 SPA
+└── internal/
+    ├── AGENTS.md               # Go backend core (28+ packages)
+    ├── action/AGENTS.md        # Action registry + execution
+    ├── adapter/AGENTS.md       # Channel adapters (Feishu/GitHub/CLI/Manual)
+    ├── api/AGENTS.md           # chi HTTP API
+    ├── decision/AGENTS.md      # Decision engine + case management
+    ├── governance/AGENTS.md    # Data governance
+    ├── llm/AGENTS.md           # LLM provider abstraction
+    ├── model/AGENTS.md         # Shared domain types
+    ├── pipeline/AGENTS.md      # Data pipeline (7 steps)
+    ├── repository/AGENTS.md    # Repository layer (10 subpackages)
+    └── service/AGENTS.md       # Business orchestration services
+```
 
 ## COMMANDS
 
