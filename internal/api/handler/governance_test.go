@@ -11,46 +11,47 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 type mockGovernanceService struct {
-	resp *dto.GovernanceStatusResponse
+	resp *model.GovernanceStatusResponse
 	err  error
 }
 
-func (m *mockGovernanceService) GetStatus(_ context.Context) (*dto.GovernanceStatusResponse, error) {
+func (m *mockGovernanceService) GetStatus(_ context.Context) (*model.GovernanceStatusResponse, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	return m.resp, nil
 }
 
-func (m *mockGovernanceService) GetCatalog(_ context.Context) (*dto.CatalogResponse, error) {
-	return &dto.CatalogResponse{Objects: []dto.CatalogObject{}, Datasets: []dto.CatalogDataset{}}, nil
+func (m *mockGovernanceService) GetCatalog(_ context.Context) (*model.CatalogResponse, error) {
+	return &model.CatalogResponse{Objects: []model.CatalogObject{}, Datasets: []model.CatalogDataset{}}, nil
 }
 
-func (m *mockGovernanceService) GetClassification(_ context.Context, _ string) (*dto.ClassificationResponse, error) {
-	return &dto.ClassificationResponse{Levels: []string{}, Resources: []dto.ClassificationResource{}}, nil
+func (m *mockGovernanceService) GetClassification(_ context.Context, _ string) (*model.ClassificationResponse, error) {
+	return &model.ClassificationResponse{Levels: []string{}, Resources: []model.ClassificationResource{}}, nil
 }
 
-func (m *mockGovernanceService) GetFieldMarking(_ context.Context, _, _ string) (*dto.FieldMarkingResponse, error) {
-	return &dto.FieldMarkingResponse{Markings: []dto.FieldMarking{}}, nil
+func (m *mockGovernanceService) GetFieldMarking(_ context.Context, _, _ string) (*model.FieldMarkingResponse, error) {
+	return &model.FieldMarkingResponse{Markings: []model.FieldMarking{}}, nil
 }
 
-func (m *mockGovernanceService) GetLineage(_ context.Context, _ string) (*dto.LineageResponse, error) {
-	return &dto.LineageResponse{Resource: "", Upstream: []string{}, Downstream: []string{}}, nil
+func (m *mockGovernanceService) GetLineage(_ context.Context, _ string) (*model.LineageResponse, error) {
+	return &model.LineageResponse{Resource: "", Upstream: []string{}, Downstream: []string{}}, nil
 }
 
-func (m *mockGovernanceService) GetCheckpoints(_ context.Context) (*dto.CheckpointsResponse, error) {
-	return &dto.CheckpointsResponse{Checkpoints: []dto.CheckpointRule{}}, nil
+func (m *mockGovernanceService) GetCheckpoints(_ context.Context) (*model.CheckpointsResponse, error) {
+	return &model.CheckpointsResponse{Checkpoints: []model.CheckpointRule{}}, nil
 }
 
-func (m *mockGovernanceService) GetHealthChecks(_ context.Context) (*dto.HealthChecksResponse, error) {
-	return &dto.HealthChecksResponse{Status: "healthy", Checks: []dto.HealthCheckItem{}}, nil
+func (m *mockGovernanceService) GetHealthChecks(_ context.Context) (*model.HealthChecksResponse, error) {
+	return &model.HealthChecksResponse{Status: "healthy", Checks: []model.HealthCheckItem{}}, nil
 }
 
 func TestHandleGovernanceStatus_Active(t *testing.T) {
-	resp := &dto.GovernanceStatusResponse{
+	resp := &model.GovernanceStatusResponse{
 		GovernanceLayer: "active",
 		Configs: map[string]string{
 			"data_catalog.yml":         "loaded",
@@ -83,7 +84,7 @@ func TestHandleGovernanceStatus_Active(t *testing.T) {
 }
 
 func TestHandleGovernanceStatus_Unknown(t *testing.T) {
-	resp := &dto.GovernanceStatusResponse{
+	resp := &model.GovernanceStatusResponse{
 		GovernanceLayer: "unknown",
 		Configs:         map[string]string{},
 	}
@@ -120,7 +121,7 @@ func TestHandleGovernanceStatus_Error(t *testing.T) {
 }
 
 func TestHandleGovernanceStatus_ResponseFormat(t *testing.T) {
-	resp := &dto.GovernanceStatusResponse{
+	resp := &model.GovernanceStatusResponse{
 		GovernanceLayer: "active",
 		Configs: map[string]string{
 			"data_catalog.yml": "loaded",
@@ -146,7 +147,7 @@ func TestHandleGovernanceStatus_ResponseFormat(t *testing.T) {
 }
 
 func TestHandleGovernanceStatus_PartialConfigs(t *testing.T) {
-	resp := &dto.GovernanceStatusResponse{
+	resp := &model.GovernanceStatusResponse{
 		GovernanceLayer: "active",
 		Configs: map[string]string{
 			"data_catalog.yml": "loaded",

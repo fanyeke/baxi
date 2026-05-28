@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -28,15 +28,15 @@ func NewLogService(repo *repository.LogRepository, pool *pgxpool.Pool) *LogServi
 }
 
 // ListRecent retrieves a combined view of recent logs from multiple tables.
-func (s *LogService) ListRecent(ctx context.Context, limit, offset int) (*dto.LogListResponse, error) {
+func (s *LogService) ListRecent(ctx context.Context, limit, offset int) (*model.LogListResponse, error) {
 	rows, total, err := s.repo.ListRecentLogs(ctx, s.pool, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list recent logs: %w", err)
 	}
 
-	items := make([]dto.LogItem, len(rows))
+	items := make([]model.LogItem, len(rows))
 	for i, row := range rows {
-		items[i] = dto.LogItem{
+		items[i] = model.LogItem{
 			LogType:   row.LogType,
 			Level:     row.Level,
 			Message:   row.Message,
@@ -45,19 +45,19 @@ func (s *LogService) ListRecent(ctx context.Context, limit, offset int) (*dto.Lo
 		}
 	}
 
-	return &dto.LogListResponse{Items: items, Total: total}, nil
+	return &model.LogListResponse{Items: items, Total: total}, nil
 }
 
 // ListErrors retrieves error logs from error_log and failed pipeline step runs.
-func (s *LogService) ListErrors(ctx context.Context, limit, offset int) (*dto.LogListResponse, error) {
+func (s *LogService) ListErrors(ctx context.Context, limit, offset int) (*model.LogListResponse, error) {
 	rows, total, err := s.repo.ListErrorLogs(ctx, s.pool, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list error logs: %w", err)
 	}
 
-	items := make([]dto.LogItem, len(rows))
+	items := make([]model.LogItem, len(rows))
 	for i, row := range rows {
-		items[i] = dto.LogItem{
+		items[i] = model.LogItem{
 			LogType:   row.LogType,
 			Level:     row.Level,
 			Message:   row.Message,
@@ -66,19 +66,19 @@ func (s *LogService) ListErrors(ctx context.Context, limit, offset int) (*dto.Lo
 		}
 	}
 
-	return &dto.LogListResponse{Items: items, Total: total}, nil
+	return &model.LogListResponse{Items: items, Total: total}, nil
 }
 
 // ListAudit retrieves business audit trail entries.
-func (s *LogService) ListAudit(ctx context.Context, limit, offset int) (*dto.LogListResponse, error) {
+func (s *LogService) ListAudit(ctx context.Context, limit, offset int) (*model.LogListResponse, error) {
 	rows, total, err := s.repo.ListAuditLogs(ctx, s.pool, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list audit logs: %w", err)
 	}
 
-	items := make([]dto.LogItem, len(rows))
+	items := make([]model.LogItem, len(rows))
 	for i, row := range rows {
-		items[i] = dto.LogItem{
+		items[i] = model.LogItem{
 			LogType:   row.LogType,
 			Level:     row.Level,
 			Message:   row.Message,
@@ -87,7 +87,7 @@ func (s *LogService) ListAudit(ctx context.Context, limit, offset int) (*dto.Log
 		}
 	}
 
-	return &dto.LogListResponse{Items: items, Total: total}, nil
+	return &model.LogListResponse{Items: items, Total: total}, nil
 }
 
 // tailJSONL reads the last N JSON lines from a JSONL file.

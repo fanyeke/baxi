@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -22,12 +22,12 @@ func NewTaskService(repo *repository.TaskRepository, pool *pgxpool.Pool) *TaskSe
 }
 
 // ListTasks retrieves tasks with optional filters and pagination,
-// mapping repository rows to API DTOs.
+// mapping repository rows to model types.
 func (s *TaskService) ListTasks(
 	ctx context.Context,
-	filters dto.TaskFilters,
+	filters model.TaskFilters,
 	limit, offset int,
-) (*dto.TaskListResponse, error) {
+) (*model.TaskListResponse, error) {
 	repoFilters := repository.TaskFilters{
 		Status:   filters.Status,
 		Priority: filters.Priority,
@@ -39,20 +39,20 @@ func (s *TaskService) ListTasks(
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
 
-	items := make([]dto.TaskItem, 0, len(rows))
+	items := make([]model.Task, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, mapRowToItem(row))
+		items = append(items, mapRowToTask(row))
 	}
 
-	return &dto.TaskListResponse{
+	return &model.TaskListResponse{
 		Items: items,
 		Total: total,
 	}, nil
 }
 
-// mapRowToItem converts a repository row to an API DTO.
-// alert_id in PostgreSQL maps to event_id in the API response.
-func mapRowToItem(row repository.TaskRow) dto.TaskItem {
+// mapRowToTask converts a repository row to a model Task.
+// alert_id in PostgreSQL maps to event_id in the model.
+func mapRowToTask(row repository.TaskRow) model.Task {
 	desc := ""
 	if row.TaskDescription != nil {
 		desc = *row.TaskDescription
@@ -79,7 +79,7 @@ func mapRowToItem(row repository.TaskRow) dto.TaskItem {
 		eventID = &e
 	}
 
-	return dto.TaskItem{
+	return model.Task{
 		TaskID:           row.TaskID,
 		TaskTitle:        row.TaskTitle,
 		TaskDescription:  desc,

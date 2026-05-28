@@ -12,14 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 type mockLogService struct {
-	recentItems  []dto.LogItem
+	recentItems  []model.LogItem
 	recentTotal  int
-	errorItems   []dto.LogItem
+	errorItems   []model.LogItem
 	errorTotal   int
-	auditItems   []dto.LogItem
+	auditItems   []model.LogItem
 	auditTotal   int
 	err          error
 	recentCalled bool
@@ -27,33 +28,33 @@ type mockLogService struct {
 	auditCalled  bool
 }
 
-func (m *mockLogService) ListRecent(_ context.Context, _, _ int) (*dto.LogListResponse, error) {
+func (m *mockLogService) ListRecent(_ context.Context, _, _ int) (*model.LogListResponse, error) {
 	m.recentCalled = true
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &dto.LogListResponse{Items: m.recentItems, Total: m.recentTotal}, nil
+	return &model.LogListResponse{Items: m.recentItems, Total: m.recentTotal}, nil
 }
 
-func (m *mockLogService) ListErrors(_ context.Context, _, _ int) (*dto.LogListResponse, error) {
+func (m *mockLogService) ListErrors(_ context.Context, _, _ int) (*model.LogListResponse, error) {
 	m.errorCalled = true
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &dto.LogListResponse{Items: m.errorItems, Total: m.errorTotal}, nil
+	return &model.LogListResponse{Items: m.errorItems, Total: m.errorTotal}, nil
 }
 
-func (m *mockLogService) ListAudit(_ context.Context, _, _ int) (*dto.LogListResponse, error) {
+func (m *mockLogService) ListAudit(_ context.Context, _, _ int) (*model.LogListResponse, error) {
 	m.auditCalled = true
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &dto.LogListResponse{Items: m.auditItems, Total: m.auditTotal}, nil
+	return &model.LogListResponse{Items: m.auditItems, Total: m.auditTotal}, nil
 }
 
 func TestHandleListRecent_Success(t *testing.T) {
 	now := time.Now().UTC()
-	items := []dto.LogItem{
+	items := []model.LogItem{
 		{
 			LogType:   "pipeline_step",
 			Level:     "info",
@@ -81,7 +82,7 @@ func TestHandleListRecent_Success(t *testing.T) {
 }
 
 func TestHandleListRecent_Empty(t *testing.T) {
-	svc := &mockLogService{recentItems: []dto.LogItem{}, recentTotal: 0}
+	svc := &mockLogService{recentItems: []model.LogItem{}, recentTotal: 0}
 	h := NewLogHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/logs/recent", nil)
@@ -126,7 +127,7 @@ func TestHandleListRecent_Error(t *testing.T) {
 
 func TestHandleListErrors_Success(t *testing.T) {
 	now := time.Now().UTC()
-	items := []dto.LogItem{
+	items := []model.LogItem{
 		{
 			LogType:   "error_log",
 			Level:     "error",
@@ -156,7 +157,7 @@ func TestHandleListErrors_Success(t *testing.T) {
 }
 
 func TestHandleListErrors_Empty(t *testing.T) {
-	svc := &mockLogService{errorItems: []dto.LogItem{}, errorTotal: 0}
+	svc := &mockLogService{errorItems: []model.LogItem{}, errorTotal: 0}
 	h := NewLogHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/logs/errors", nil)
@@ -185,7 +186,7 @@ func TestHandleListErrors_Error(t *testing.T) {
 
 func TestHandleListAudit_Success(t *testing.T) {
 	now := time.Now().UTC()
-	items := []dto.LogItem{
+	items := []model.LogItem{
 		{
 			LogType:   "audit_log",
 			Level:     "info",
@@ -212,7 +213,7 @@ func TestHandleListAudit_Success(t *testing.T) {
 }
 
 func TestHandleListAudit_Empty(t *testing.T) {
-	svc := &mockLogService{auditItems: []dto.LogItem{}, auditTotal: 0}
+	svc := &mockLogService{auditItems: []model.LogItem{}, auditTotal: 0}
 	h := NewLogHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/logs/audit", nil)
@@ -240,7 +241,7 @@ func TestHandleListAudit_Error(t *testing.T) {
 }
 
 func TestHandleListRecent_ResponseFormat(t *testing.T) {
-	svc := &mockLogService{recentItems: []dto.LogItem{}, recentTotal: 0}
+	svc := &mockLogService{recentItems: []model.LogItem{}, recentTotal: 0}
 	h := NewLogHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/logs/recent", nil)
@@ -262,7 +263,7 @@ func TestHandleListRecent_ResponseFormat(t *testing.T) {
 }
 
 func TestHandleListErrors_ResponseFormat(t *testing.T) {
-	svc := &mockLogService{errorItems: []dto.LogItem{}, errorTotal: 0}
+	svc := &mockLogService{errorItems: []model.LogItem{}, errorTotal: 0}
 	h := NewLogHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/logs/errors", nil)
@@ -282,7 +283,7 @@ func TestHandleListErrors_ResponseFormat(t *testing.T) {
 }
 
 func TestHandleListAudit_ResponseFormat(t *testing.T) {
-	svc := &mockLogService{auditItems: []dto.LogItem{}, auditTotal: 0}
+	svc := &mockLogService{auditItems: []model.LogItem{}, auditTotal: 0}
 	h := NewLogHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/logs/audit", nil)

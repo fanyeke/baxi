@@ -10,6 +10,7 @@ import (
 
 	"baxi/internal/api/dto"
 	"baxi/internal/httputil"
+	"baxi/internal/model"
 )
 
 type OutboxDetailItem struct {
@@ -27,7 +28,7 @@ type OutboxDetailItem struct {
 }
 
 type OutboxService interface {
-	List(ctx context.Context, filters dto.OutboxFilters, limit, offset int) (*dto.OutboxListResponse, error)
+	List(ctx context.Context, filters model.OutboxFilters, limit, offset int) (*model.OutboxListResponse, error)
 	GetEvent(ctx context.Context, id string) (*OutboxDetailItem, error)
 	DispatchEvent(ctx context.Context, id string) error
 	CancelEvent(ctx context.Context, id string) error
@@ -68,7 +69,7 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, resp)
+	httputil.JSON(w, http.StatusOK, dtoFromOutboxListResponse(resp))
 }
 
 func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
@@ -163,9 +164,9 @@ func isInvalidState(err error) bool {
 	return ok
 }
 
-func parseOutboxFilters(r *http.Request) dto.OutboxFilters {
+func parseOutboxFilters(r *http.Request) model.OutboxFilters {
 	q := r.URL.Query()
-	var filters dto.OutboxFilters
+	var filters model.OutboxFilters
 
 	if s := q.Get("status"); s != "" {
 		filters.Status = &s
@@ -191,4 +192,31 @@ type BatchDispatchResponse struct {
 // HandleBatchDispatch handles POST /outbox/dispatch.
 func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Request) {
 	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+}
+
+// dtoFromOutboxListResponse converts model.OutboxListResponse to dto.OutboxListResponse.
+func dtoFromOutboxListResponse(m *model.OutboxListResponse) *dto.OutboxListResponse {
+	if m == nil {
+		return nil
+	}
+
+	items := make([]dto.OutboxItem, len(m.Items))
+	for i, item := range m.Items {
+		items[i] = dto.OutboxItem{
+			OutboxID:         item.OutboxID,
+			EventType:        item.EventType,
+			SourceType:       item.SourceType,
+			SourceID:         item.SourceID,
+			TargetChannel:    item.TargetChannel,
+			Status:           item.Status,
+			CreatedAt:        item.CreatedAt,
+			DispatchAttempts: item.DispatchAttempts,
+			LastDispatchAt:   item.LastDispatchAt,
+		}
+	}
+
+	return &dto.OutboxListResponse{
+		Items: items,
+		Total: m.Total,
+	}
 }

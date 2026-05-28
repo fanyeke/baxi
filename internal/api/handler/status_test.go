@@ -11,15 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 type mockStatusService struct {
-	resp  *dto.StatusResponse
+	resp  *model.StatusResponse
 	err   error
 	called bool
 }
 
-func (m *mockStatusService) GetStatus(_ context.Context) (*dto.StatusResponse, error) {
+func (m *mockStatusService) GetStatus(_ context.Context) (*model.StatusResponse, error) {
 	m.called = true
 	if m.err != nil {
 		return nil, m.err
@@ -38,13 +39,13 @@ func TestHandleStatus_Success(t *testing.T) {
 		"metric_dimension_daily": 690326,
 	}
 	finishedAt := "2026-05-24 03:48:59.449642"
-	resp := &dto.StatusResponse{
-		Database: dto.DatabaseInfo{
+	resp := &model.StatusResponse{
+		Database: model.DatabaseInfo{
 			Path:   "postgresql://localhost:5432/baxi",
 			Exists: true,
 			Tables: tables,
 		},
-		LastPipelineRun: &dto.PipelineRun{
+		LastPipelineRun: &model.PipelineRun{
 			RunID:       "ingest-full-2026-05-24T03:48:59",
 			RunType:     "ingestion",
 			Mode:        "full",
@@ -81,8 +82,8 @@ func TestHandleStatus_Success(t *testing.T) {
 }
 
 func TestHandleStatus_NoPipelineRun(t *testing.T) {
-	resp := &dto.StatusResponse{
-		Database: dto.DatabaseInfo{
+	resp := &model.StatusResponse{
+		Database: model.DatabaseInfo{
 			Path:   "postgresql://localhost:5432/baxi",
 			Exists: true,
 			Tables: map[string]int{"alert_events": 36},
@@ -107,8 +108,8 @@ func TestHandleStatus_NoPipelineRun(t *testing.T) {
 }
 
 func TestHandleStatus_ResponseFormat(t *testing.T) {
-	resp := &dto.StatusResponse{
-		Database: dto.DatabaseInfo{
+	resp := &model.StatusResponse{
+		Database: model.DatabaseInfo{
 			Path:   "postgresql://localhost:5432/baxi",
 			Exists: true,
 			Tables: map[string]int{},
@@ -171,8 +172,8 @@ func TestHandleStatus_TableCounts(t *testing.T) {
 		"metric_daily":          634,
 		"metric_dimension_daily": 690326,
 	}
-	resp := &dto.StatusResponse{
-		Database: dto.DatabaseInfo{
+	resp := &model.StatusResponse{
+		Database: model.DatabaseInfo{
 			Path:   "postgresql://localhost:5432/baxi",
 			Exists: true,
 			Tables: tables,

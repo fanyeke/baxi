@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"baxi/internal/api/dto"
-	"baxi/internal/repository"
-
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"baxi/internal/model"
+	"baxi/internal/repository"
 )
 
 var allowedSorts = map[string]bool{
@@ -27,10 +27,10 @@ func NewAlertService(repo *repository.AlertRepository, pool *pgxpool.Pool) *Aler
 
 func (s *AlertService) ListAlerts(
 	ctx context.Context,
-	filters dto.AlertFilters,
+	filters model.AlertFilters,
 	sort string,
 	limit, offset int,
-) (*dto.AlertListResponse, error) {
+) (*model.AlertListResponse, error) {
 	if sort == "" || !allowedSorts[sort] {
 		sort = "created_at_desc"
 	}
@@ -44,9 +44,9 @@ func (s *AlertService) ListAlerts(
 		return nil, fmt.Errorf("list alerts: %w", err)
 	}
 
-	items := make([]dto.AlertItem, len(rows))
+	items := make([]model.Alert, len(rows))
 	for i, row := range rows {
-		items[i] = dto.AlertItem{
+		items[i] = model.Alert{
 			EventID:       row.AlertID,
 			RuleID:        row.RuleID,
 			EventDate:     row.EventDate,
@@ -63,7 +63,7 @@ func (s *AlertService) ListAlerts(
 		}
 	}
 
-	return &dto.AlertListResponse{
+	return &model.AlertListResponse{
 		Items: items,
 		Total: total,
 	}, nil

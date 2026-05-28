@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -23,8 +23,8 @@ func NewOutboxService(repo *repository.OutboxRepository, pool *pgxpool.Pool) *Ou
 }
 
 // List returns paginated outbox events matching the given filters.
-// Maps repository rows to DTOs and returns a backward-compatible response.
-func (s *OutboxService) List(ctx context.Context, filters dto.OutboxFilters, limit, offset int) (*dto.OutboxListResponse, error) {
+// Maps repository rows to model types and returns a backward-compatible response.
+func (s *OutboxService) List(ctx context.Context, filters model.OutboxFilters, limit, offset int) (*model.OutboxListResponse, error) {
 	repoFilters := repository.OutboxFilters{
 		Status:    filters.Status,
 		Channel:   filters.Channel,
@@ -36,9 +36,9 @@ func (s *OutboxService) List(ctx context.Context, filters dto.OutboxFilters, lim
 		return nil, fmt.Errorf("list outbox events: %w", err)
 	}
 
-	items := make([]dto.OutboxItem, len(rows))
+	items := make([]model.OutboxEvent, len(rows))
 	for i, row := range rows {
-		items[i] = dto.OutboxItem{
+		items[i] = model.OutboxEvent{
 			OutboxID:         row.OutboxID,
 			EventType:        row.EventType,
 			SourceType:       row.SourceType,
@@ -51,7 +51,7 @@ func (s *OutboxService) List(ctx context.Context, filters dto.OutboxFilters, lim
 		}
 	}
 
-	return &dto.OutboxListResponse{
+	return &model.OutboxListResponse{
 		Items: items,
 		Total: total,
 	}, nil

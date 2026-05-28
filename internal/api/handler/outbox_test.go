@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/action"
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/outbox"
 	"baxi/internal/repository"
 	"baxi/internal/service"
@@ -108,7 +108,7 @@ type testOutboxAdapter struct {
 	executors map[string]action.ActionExecutor
 }
 
-func (a *testOutboxAdapter) List(ctx context.Context, filters dto.OutboxFilters, limit, offset int) (*dto.OutboxListResponse, error) {
+func (a *testOutboxAdapter) List(ctx context.Context, filters model.OutboxFilters, limit, offset int) (*model.OutboxListResponse, error) {
 	return a.readSvc.List(ctx, filters, limit, offset)
 }
 

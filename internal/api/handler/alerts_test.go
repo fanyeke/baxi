@@ -11,25 +11,26 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 type mockAlertService struct {
-	items  []dto.AlertItem
+	items  []model.Alert
 	total  int
 	err    error
 	called bool
 }
 
-func (m *mockAlertService) ListAlerts(_ context.Context, _ dto.AlertFilters, _ string, _, _ int) (*dto.AlertListResponse, error) {
+func (m *mockAlertService) ListAlerts(_ context.Context, _ model.AlertFilters, _ string, _, _ int) (*model.AlertListResponse, error) {
 	m.called = true
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &dto.AlertListResponse{Items: m.items, Total: m.total}, nil
+	return &model.AlertListResponse{Items: m.items, Total: m.total}, nil
 }
 
 func TestHandleListAlerts_NoFilters(t *testing.T) {
-	items := []dto.AlertItem{
+	items := []model.Alert{
 		{
 			EventID:   "gmv_drop_2018-10-17",
 			RuleID:    "gmv_drop",
@@ -57,7 +58,7 @@ func TestHandleListAlerts_NoFilters(t *testing.T) {
 }
 
 func TestHandleListAlerts_WithFilters(t *testing.T) {
-	svc := &mockAlertService{items: []dto.AlertItem{}, total: 0}
+	svc := &mockAlertService{items: []model.Alert{}, total: 0}
 	h := NewAlertHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/alerts?severity=high&status=new&object_type=global&rule_id=gmv_drop&sort=created_at_desc&limit=10&offset=0", nil)
@@ -69,7 +70,7 @@ func TestHandleListAlerts_WithFilters(t *testing.T) {
 }
 
 func TestHandleListAlerts_EmptyResponse(t *testing.T) {
-	svc := &mockAlertService{items: []dto.AlertItem{}, total: 0}
+	svc := &mockAlertService{items: []model.Alert{}, total: 0}
 	h := NewAlertHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/alerts", nil)
@@ -102,7 +103,7 @@ func TestHandleListAlerts_BadPagination(t *testing.T) {
 }
 
 func TestHandleListAlerts_ResponseFormat(t *testing.T) {
-	svc := &mockAlertService{items: []dto.AlertItem{}, total: 0}
+	svc := &mockAlertService{items: []model.Alert{}, total: 0}
 	h := NewAlertHandler(svc)
 
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/alerts", nil)
@@ -124,7 +125,7 @@ func TestHandleListAlerts_ResponseFormat(t *testing.T) {
 }
 
 func TestHandleListAlerts_NullableFields(t *testing.T) {
-	items := []dto.AlertItem{
+	items := []model.Alert{
 		{
 			EventID:       "dim-test",
 			RuleID:        "category_gmv_drop",

@@ -6,14 +6,15 @@ import (
 
 	"baxi/internal/api/dto"
 	"baxi/internal/httputil"
+	"baxi/internal/model"
 )
 
 // LogLister is the interface for listing logs. Used by LogHandler so
 // tests can substitute a mock without importing the service package.
 type LogLister interface {
-	ListRecent(ctx context.Context, limit, offset int) (*dto.LogListResponse, error)
-	ListErrors(ctx context.Context, limit, offset int) (*dto.LogListResponse, error)
-	ListAudit(ctx context.Context, limit, offset int) (*dto.LogListResponse, error)
+	ListRecent(ctx context.Context, limit, offset int) (*model.LogListResponse, error)
+	ListErrors(ctx context.Context, limit, offset int) (*model.LogListResponse, error)
+	ListAudit(ctx context.Context, limit, offset int) (*model.LogListResponse, error)
 }
 
 // LogHandler handles HTTP requests for log-related endpoints.
@@ -40,7 +41,7 @@ func (h *LogHandler) HandleListRecent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, resp)
+	httputil.JSON(w, http.StatusOK, dtoFromLogListResponse(resp))
 }
 
 // HandleListErrors handles GET /api/v1/logs/errors.
@@ -57,7 +58,7 @@ func (h *LogHandler) HandleListErrors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, resp)
+	httputil.JSON(w, http.StatusOK, dtoFromLogListResponse(resp))
 }
 
 // HandleListAudit handles GET /api/v1/logs/audit.
@@ -74,5 +75,28 @@ func (h *LogHandler) HandleListAudit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, resp)
+	httputil.JSON(w, http.StatusOK, dtoFromLogListResponse(resp))
+}
+
+// dtoFromLogListResponse converts model.LogListResponse to dto.LogListResponse.
+func dtoFromLogListResponse(m *model.LogListResponse) *dto.LogListResponse {
+	if m == nil {
+		return nil
+	}
+
+	items := make([]dto.LogItem, len(m.Items))
+	for i, item := range m.Items {
+		items[i] = dto.LogItem{
+			LogType:   item.LogType,
+			Level:     item.Level,
+			Message:   item.Message,
+			RequestID: item.RequestID,
+			CreatedAt: item.CreatedAt,
+		}
+	}
+
+	return &dto.LogListResponse{
+		Items: items,
+		Total: m.Total,
+	}
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -333,7 +333,7 @@ func TestLogService_ListAll_EmptyResponseFormat(t *testing.T) {
 
 	tests := []struct {
 		name string
-		fn   func(ctx context.Context, limit, offset int) (*dto.LogListResponse, error)
+		fn   func(ctx context.Context, limit, offset int) (*model.LogListResponse, error)
 	}{
 		{"ListRecent", svc.ListRecent},
 		{"ListErrors", svc.ListErrors},

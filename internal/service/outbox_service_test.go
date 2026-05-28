@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -80,7 +80,7 @@ func TestOutboxService_List(t *testing.T) {
 	svc := NewOutboxService(repository.NewOutboxRepository(), pool)
 
 	t.Run("no filters returns all items ordered by created_at DESC", func(t *testing.T) {
-		resp, err := svc.List(ctx, dto.OutboxFilters{}, 10, 0)
+		resp, err := svc.List(ctx, model.OutboxFilters{}, 10, 0)
 		require.NoError(t, err)
 		assert.Equal(t, 3, resp.Total)
 		assert.Len(t, resp.Items, 3)
@@ -89,7 +89,7 @@ func TestOutboxService_List(t *testing.T) {
 	})
 
 	t.Run("filter by status", func(t *testing.T) {
-		resp, err := svc.List(ctx, dto.OutboxFilters{Status: strPtr("pending")}, 10, 0)
+		resp, err := svc.List(ctx, model.OutboxFilters{Status: strPtr("pending")}, 10, 0)
 		require.NoError(t, err)
 		assert.Equal(t, 1, resp.Total)
 		assert.Len(t, resp.Items, 1)
@@ -97,21 +97,21 @@ func TestOutboxService_List(t *testing.T) {
 	})
 
 	t.Run("filter by channel", func(t *testing.T) {
-		resp, err := svc.List(ctx, dto.OutboxFilters{Channel: strPtr("feishu")}, 10, 0)
+		resp, err := svc.List(ctx, model.OutboxFilters{Channel: strPtr("feishu")}, 10, 0)
 		require.NoError(t, err)
 		assert.Equal(t, 1, resp.Total)
 		assert.Equal(t, "feishu", resp.Items[0].TargetChannel)
 	})
 
 	t.Run("pagination limits results but preserves total", func(t *testing.T) {
-		resp, err := svc.List(ctx, dto.OutboxFilters{}, 2, 0)
+		resp, err := svc.List(ctx, model.OutboxFilters{}, 2, 0)
 		require.NoError(t, err)
 		assert.Equal(t, 3, resp.Total)
 		assert.Len(t, resp.Items, 2)
 	})
 
 	t.Run("DTO fields are populated correctly", func(t *testing.T) {
-		resp, err := svc.List(ctx, dto.OutboxFilters{Channel: strPtr("email")}, 10, 0)
+		resp, err := svc.List(ctx, model.OutboxFilters{Channel: strPtr("email")}, 10, 0)
 		require.NoError(t, err)
 		require.Len(t, resp.Items, 1)
 
@@ -136,7 +136,7 @@ func TestOutboxService_List_Empty(t *testing.T) {
 	ctx := context.Background()
 
 	svc := NewOutboxService(repository.NewOutboxRepository(), pool)
-	resp, err := svc.List(ctx, dto.OutboxFilters{}, 10, 0)
+	resp, err := svc.List(ctx, model.OutboxFilters{}, 10, 0)
 	require.NoError(t, err)
 	assert.Equal(t, 0, resp.Total)
 	assert.Empty(t, resp.Items)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -25,7 +25,7 @@ func NewStatusService(repo *repository.StatusRepository, pool *pgxpool.Pool, dbU
 }
 
 // GetStatus assembles the full StatusResponse from repository data.
-func (s *StatusService) GetStatus(ctx context.Context) (*dto.StatusResponse, error) {
+func (s *StatusService) GetStatus(ctx context.Context) (*model.StatusResponse, error) {
 	tableCounts, err := s.repo.GetTableCounts(ctx, s.pool)
 	if err != nil {
 		return nil, fmt.Errorf("get table counts: %w", err)
@@ -36,7 +36,7 @@ func (s *StatusService) GetStatus(ctx context.Context) (*dto.StatusResponse, err
 		tables[tc.TableName] = tc.RowCount
 	}
 
-	database := dto.DatabaseInfo{
+	database := model.DatabaseInfo{
 		Path:   s.dbURL,
 		Exists: true,
 		Tables: tables,
@@ -48,9 +48,9 @@ func (s *StatusService) GetStatus(ctx context.Context) (*dto.StatusResponse, err
 		lastRun = nil
 	}
 
-	var pipelineRun *dto.PipelineRun
+	var pipelineRun *model.PipelineRun
 	if lastRun != nil {
-		pipelineRun = &dto.PipelineRun{
+		pipelineRun = &model.PipelineRun{
 			RunID:        lastRun.RunID,
 			RunType:      lastRun.RunType,
 			Mode:         lastRun.Mode,
@@ -63,7 +63,7 @@ func (s *StatusService) GetStatus(ctx context.Context) (*dto.StatusResponse, err
 		}
 	}
 
-	return &dto.StatusResponse{
+	return &model.StatusResponse{
 		Database:        database,
 		LastPipelineRun: pipelineRun,
 		Version:         apiVersion,

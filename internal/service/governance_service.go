@@ -6,30 +6,30 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
 	"baxi/internal/governance"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
 // GovernanceService handles business logic for governance operations.
 type GovernanceService struct {
-	repo          *repository.GovernanceRepository
-	pool          *pgxpool.Pool
+	repo           *repository.GovernanceRepository
+	pool           *pgxpool.Pool
 	classification *governance.ClassificationService
-	lineage       *governance.LineageService
-	accessPolicy  *governance.AccessPolicyService
-	checkpoint    *governance.CheckpointService
+	lineage        *governance.LineageService
+	accessPolicy   *governance.AccessPolicyService
+	checkpoint     *governance.CheckpointService
 }
 
 // NewGovernanceService creates a new GovernanceService with all governance domain services.
 func NewGovernanceService(repo *repository.GovernanceRepository, pool *pgxpool.Pool) *GovernanceService {
 	return &GovernanceService{
-		repo:          repo,
-		pool:          pool,
+		repo:           repo,
+		pool:           pool,
 		classification: governance.NewClassificationService(pool, repo),
-		lineage:       governance.NewLineageService(pool, repo),
-		accessPolicy:  governance.NewAccessPolicyService(pool, repo),
-		checkpoint:    governance.NewCheckpointService(pool, repo),
+		lineage:        governance.NewLineageService(pool, repo),
+		accessPolicy:   governance.NewAccessPolicyService(pool, repo),
+		checkpoint:     governance.NewCheckpointService(pool, repo),
 	}
 }
 
@@ -37,7 +37,7 @@ func NewGovernanceService(repo *repository.GovernanceRepository, pool *pgxpool.P
 // If config_snapshot contains data, returns the rich format with governance_layer set
 // to "active" and configs populated. If no data exists, returns "unknown" with empty configs.
 // Enhanced to include object_schema_count.
-func (s *GovernanceService) GetStatus(ctx context.Context) (*dto.GovernanceStatusResponse, error) {
+func (s *GovernanceService) GetStatus(ctx context.Context) (*model.GovernanceStatusResponse, error) {
 	configs, err := s.repo.GetConfigSnapshots(ctx, s.pool)
 	if err != nil {
 		return nil, fmt.Errorf("get governance status: %w", err)
@@ -55,7 +55,7 @@ func (s *GovernanceService) GetStatus(ctx context.Context) (*dto.GovernanceStatu
 
 	schemaCount := s.repo.CountObjectSchemas(ctx, s.pool)
 
-	return &dto.GovernanceStatusResponse{
+	return &model.GovernanceStatusResponse{
 		GovernanceLayer:   layer,
 		Configs:           configMap,
 		ObjectSchemaCount: schemaCount,
@@ -64,21 +64,21 @@ func (s *GovernanceService) GetStatus(ctx context.Context) (*dto.GovernanceStatu
 
 // GetClassification returns the classification level for a given field path.
 // Classification levels: pii→L3, sensitive→L3, internal→L2, public_internal→L1, derived_sensitive→L2.
-func (s *GovernanceService) GetClassification(ctx context.Context, fieldPath string) (*dto.ClassificationResponse, error) {
+func (s *GovernanceService) GetClassification(ctx context.Context, fieldPath string) (*model.ClassificationResponse, error) {
 	classifications, err := s.classification.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get classifications: %w", err)
 	}
 
 	levelSet := make(map[string]bool)
-	var resources []dto.ClassificationResource
+	var resources []model.ClassificationResource
 
 	for _, c := range classifications {
 		level := governance.ResolveLevel(c.ClassificationLevel)
 		levelSet[level] = true
 
 		if fieldPath == "" || c.FieldPath == fieldPath {
-			resources = append(resources, dto.ClassificationResource{
+			resources = append(resources, model.ClassificationResource{
 				Resource:       c.FieldPath,
 				Classification: level,
 			})
@@ -87,7 +87,7 @@ func (s *GovernanceService) GetClassification(ctx context.Context, fieldPath str
 
 	// If fieldPath specified and no match found, return default
 	if fieldPath != "" && len(resources) == 0 {
-		resources = append(resources, dto.ClassificationResource{
+		resources = append(resources, model.ClassificationResource{
 			Resource:       fieldPath,
 			Classification: governance.ResolveLevel("internal"),
 		})
@@ -101,20 +101,20 @@ func (s *GovernanceService) GetClassification(ctx context.Context, fieldPath str
 		levels = []string{}
 	}
 
-	return &dto.ClassificationResponse{
+	return &model.ClassificationResponse{
 		Levels:    levels,
 		Resources: resources,
 	}, nil
 }
 
 // GetFieldMarking returns classification details for a specific object type and property.
-func (s *GovernanceService) GetFieldMarking(ctx context.Context, objectType, property string) (*dto.FieldMarkingResponse, error) {
+func (s *GovernanceService) GetFieldMarking(ctx context.Context, objectType, property string) (*model.FieldMarkingResponse, error) {
 	classifications, err := s.classification.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get field markings: %w", err)
 	}
 
-	var markings []dto.FieldMarking
+	var markings []model.FieldMarking
 	prefix := objectType + "." + property
 
 	for _, c := range classifications {
@@ -131,7 +131,7 @@ func (s *GovernanceService) GetFieldMarking(ctx context.Context, objectType, pro
 		// Parse object_type and field from field_path (format: "object_type.field")
 		objType, field := parseFieldPath(c.FieldPath)
 
-		markings = append(markings, dto.FieldMarking{
+		markings = append(markings, model.FieldMarking{
 			ObjectType:     objType,
 			Field:          field,
 			Classification: level,
@@ -141,27 +141,27 @@ func (s *GovernanceService) GetFieldMarking(ctx context.Context, objectType, pro
 	}
 
 	if markings == nil {
-		markings = []dto.FieldMarking{}
+		markings = []model.FieldMarking{}
 	}
 
-	return &dto.FieldMarkingResponse{
+	return &model.FieldMarkingResponse{
 		Markings: markings,
 	}, nil
 }
 
 // CheckAccess evaluates whether a user role can perform an action on an object type.
-func (s *GovernanceService) CheckAccess(ctx context.Context, userRole, objectType, action string) dto.AccessDecision {
+func (s *GovernanceService) CheckAccess(ctx context.Context, userRole, objectType, action string) model.AccessDecision {
 	return s.accessPolicy.CheckAccess(ctx, userRole, objectType, action)
 }
 
 // GetLineage returns the upstream and downstream lineage for a given resource.
-func (s *GovernanceService) GetLineage(ctx context.Context, resource string) (*dto.LineageResponse, error) {
+func (s *GovernanceService) GetLineage(ctx context.Context, resource string) (*model.LineageResponse, error) {
 	result, err := s.lineage.GetLineage(ctx, resource)
 	if err != nil {
 		return nil, fmt.Errorf("get lineage: %w", err)
 	}
 
-	return &dto.LineageResponse{
+	return &model.LineageResponse{
 		Resource:   result.Resource,
 		Upstream:   result.Upstream,
 		Downstream: result.Downstream,
@@ -174,27 +174,27 @@ func (s *GovernanceService) RequiresCheckpoint(ctx context.Context, action strin
 }
 
 // GetCheckpoints returns all checkpoint rules.
-func (s *GovernanceService) GetCheckpoints(ctx context.Context) (*dto.CheckpointsResponse, error) {
+func (s *GovernanceService) GetCheckpoints(ctx context.Context) (*model.CheckpointsResponse, error) {
 	rules := s.checkpoint.GetRules(ctx)
 
-	checkpointRules := make([]dto.CheckpointRule, len(rules))
+	checkpointRules := make([]model.CheckpointRule, len(rules))
 	for i, r := range rules {
-		checkpointRules[i] = dto.CheckpointRule{
+		checkpointRules[i] = model.CheckpointRule{
 			Action:              r.Action,
 			RequiresReason:      r.RequiresReason,
 			RequiresHumanReview: r.RequiresHumanReview,
 		}
 	}
 
-	return &dto.CheckpointsResponse{
+	return &model.CheckpointsResponse{
 		Checkpoints: checkpointRules,
 	}, nil
 }
 
 // GetHealthChecks returns the status of all governance health checks.
-func (s *GovernanceService) GetHealthChecks(ctx context.Context) (*dto.HealthChecksResponse, error) {
+func (s *GovernanceService) GetHealthChecks(ctx context.Context) (*model.HealthChecksResponse, error) {
 	// Run health checks against governance tables
-	checks := []dto.HealthCheckItem{
+	checks := []model.HealthCheckItem{
 		{
 			Name:   "config_snapshot",
 			Status: healthStatus(ctx, s.pool, "gov", "config_snapshot"),
@@ -225,24 +225,24 @@ func (s *GovernanceService) GetHealthChecks(ctx context.Context) (*dto.HealthChe
 		}
 	}
 
-	return &dto.HealthChecksResponse{
+	return &model.HealthChecksResponse{
 		Status: overall,
 		Checks: checks,
 	}, nil
 }
 
 // GetCatalog returns the governance catalog of object schemas and datasets.
-func (s *GovernanceService) GetCatalog(ctx context.Context) (*dto.CatalogResponse, error) {
+func (s *GovernanceService) GetCatalog(ctx context.Context) (*model.CatalogResponse, error) {
 	schemas, err := s.repo.GetObjectSchemas(ctx, s.pool)
 	if err != nil {
 		return nil, fmt.Errorf("get catalog: %w", err)
 	}
 
-	var objects []dto.CatalogObject
+	var objects []model.CatalogObject
 	datasetMap := make(map[string]bool)
 
 	for _, sch := range schemas {
-		obj := dto.CatalogObject{
+		obj := model.CatalogObject{
 			ObjectType:      sch.ObjectType,
 			SourceDataset:   inferSourceDataset(sch.ObjectType),
 			PrimaryKey:      inferPrimaryKey(sch.ObjectType),
@@ -254,24 +254,24 @@ func (s *GovernanceService) GetCatalog(ctx context.Context) (*dto.CatalogRespons
 	}
 
 	if objects == nil {
-		objects = []dto.CatalogObject{}
+		objects = []model.CatalogObject{}
 	}
 
 	// Build dataset list
-	var datasets []dto.CatalogDataset
+	var datasets []model.CatalogDataset
 	for ds := range datasetMap {
 		schema, table := splitDataset(ds)
-		datasets = append(datasets, dto.CatalogDataset{
+		datasets = append(datasets, model.CatalogDataset{
 			Dataset: ds,
 			Schema:  schema,
 			Table:   table,
 		})
 	}
 	if datasets == nil {
-		datasets = []dto.CatalogDataset{}
+		datasets = []model.CatalogDataset{}
 	}
 
-	return &dto.CatalogResponse{
+	return &model.CatalogResponse{
 		Objects:  objects,
 		Datasets: datasets,
 	}, nil
