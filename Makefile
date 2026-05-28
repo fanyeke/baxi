@@ -1,4 +1,4 @@
-.PHONY: up down migrate api worker test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare api-compare test-pipeline governance-load governance-check test-governance test-governance-integration decision-create decision-context decision-decide decision-list decision-compare decision-replay decision-evals llm-status llm-metrics backup restore rollback verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-all coverage
+.PHONY: up down migrate api worker mcp test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare api-compare test-pipeline governance-load governance-check test-governance test-governance-integration decision-create decision-context decision-decide decision-list decision-compare decision-replay decision-evals llm-status llm-metrics backup restore rollback verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-all coverage
 
 DATABASE_URL ?= postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable
 DATA_DIR ?= ./data/raw
@@ -42,9 +42,13 @@ api:
 worker:
 	go run ./cmd/baxi-worker
 
+mcp:  ## Start MCP server (stdio)
+	go run ./cmd/baxi-mcp
+
 build:
 	go build -o baxi-api ./cmd/baxi-api
 	go build -o baxi-worker ./cmd/baxi-worker
+	go build -o baxi-mcp ./cmd/baxi-mcp
 
 # Pipeline
 pipeline:  ## Run full data pipeline
