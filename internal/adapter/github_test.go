@@ -56,10 +56,10 @@ func TestGitHubAdapter_BuildLabels_Deduplicates(t *testing.T) {
 		"owner_role": "alert",
 	}
 	labels := a.BuildLabels(payload)
-	if len(labels) != 2 {
-		t.Fatalf("expected 2 unique labels, got %d: %v", len(labels), labels)
+	if len(labels) != 1 {
+		t.Fatalf("expected 1 unique label, got %d: %v", len(labels), labels)
 	}
-	if labels[0] != "alert" || labels[1] != "alert" {
+	if labels[0] != "alert" {
 		t.Errorf("unexpected labels: %v", labels)
 	}
 }

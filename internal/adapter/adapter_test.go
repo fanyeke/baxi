@@ -38,6 +38,16 @@ func TestFeishuAdapter_DryRunTrue(t *testing.T) {
 	}
 }
 
+type mockFeishuClient struct{}
+
+func (m *mockFeishuClient) getTenantAccessToken() (string, error) {
+	return "mock_token", nil
+}
+
+func (m *mockFeishuClient) sendMessage(chatID, content, msgType string) (string, error) {
+	return "mock_msg_id", nil
+}
+
 func TestFeishuAdapter_EmptyWebhook(t *testing.T) {
 	ctx := context.Background()
 	adapter := NewFeishuAdapter(FeishuConfig{
@@ -51,23 +61,24 @@ func TestFeishuAdapter_EmptyWebhook(t *testing.T) {
 	}
 
 	result, err := adapter.Execute(ctx, proposal, false)
-	if err == nil {
-		t.Fatal("expected error for empty webhook")
-	}
-	if err.Error() != "feishu webhook not configured" {
-		t.Errorf("unexpected error message: %q", err.Error())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if result.Success {
-		t.Error("expected Success=false on error")
+		t.Fatal("expected Success=false for unconfigured adapter")
+	}
+	if result.Error != "no chat_id configured (set FEISHU_CHAT_ID in env or feishu_app.yml)" {
+		t.Errorf("unexpected error message: %q", result.Error)
 	}
 }
 
 func TestFeishuAdapter_ExecuteSuccess(t *testing.T) {
 	ctx := context.Background()
-	adapter := NewFeishuAdapter(FeishuConfig{
+	adapter := NewFeishuAdapterWithClient(FeishuConfig{
 		WebhookURL: "https://hooks.feishu.cn/webhook/valid",
 		Enabled:    true,
-	})
+		ChatID:     "oc_test_chat_id",
+	}, &mockFeishuClient{})
 
 	proposal := action.ActionProposal{
 		ProposalID: "prop-003",
