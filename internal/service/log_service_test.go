@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -348,4 +350,294 @@ func TestLogService_ListAll_EmptyResponseFormat(t *testing.T) {
 			assert.Equal(t, 0, resp.Total)
 		})
 	}
+}
+
+// === File-based log reading tests (migrated from Python log_reader.py) ===
+
+func TestTailJSONL_Success(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.jsonl")
+
+	lines := []string{
+		`{"ts":"2024-01-01T00:00:00Z","msg":"first"}`,
+		`{"ts":"2024-01-01T00:01:00Z","msg":"second"}`,
+		`{"ts":"2024-01-01T00:02:00Z","msg":"third"}`,
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	entries, err := tailJSONL(path, 2)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "third", entries[0]["msg"])
+	assert.Equal(t, "second", entries[1]["msg"])
+}
+
+func TestTailJSONL_MissingFile(t *testing.T) {
+	entries, err := tailJSONL("/nonexistent/path/file.jsonl", 10)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestTailJSONL_EmptyFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.jsonl")
+	require.NoError(t, os.WriteFile(path, []byte{}, 0644))
+
+	entries, err := tailJSONL(path, 10)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestTailJSONL_MalformedLines(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "malformed.jsonl")
+
+	lines := []string{
+		`{"ts":"2024-01-01T00:00:00Z","msg":"valid"}`,
+		`this is not json`,
+		`{"ts":"2024-01-01T00:02:00Z","msg":"also valid"}`,
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	entries, err := tailJSONL(path, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "also valid", entries[0]["msg"])
+	assert.Equal(t, "valid", entries[1]["msg"])
+}
+
+func TestTailJSONL_ExactLimit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.jsonl")
+
+	lines := []string{
+		`{"msg":"1"}`,
+		`{"msg":"2"}`,
+		`{"msg":"3"}`,
+		`{"msg":"4"}`,
+		`{"msg":"5"}`,
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	entries, err := tailJSONL(path, 3)
+	require.NoError(t, err)
+	assert.Len(t, entries, 3)
+	assert.Equal(t, "5", entries[0]["msg"])
+	assert.Equal(t, "4", entries[1]["msg"])
+	assert.Equal(t, "3", entries[2]["msg"])
+}
+
+func TestTailJSONL_ZeroLimit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.jsonl")
+	require.NoError(t, os.WriteFile(path, []byte(`{"msg":"x"}`+"\n"), 0644))
+
+	entries, err := tailJSONL(path, 0)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestTailJSONL_NoTrailingNewline(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.jsonl")
+
+	lines := []string{
+		`{"msg":"first"}`,
+		`{"msg":"second"}`,
+	}
+	content := strings.Join(lines, "\n") // no trailing newline
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	entries, err := tailJSONL(path, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "second", entries[0]["msg"])
+	assert.Equal(t, "first", entries[1]["msg"])
+}
+
+func TestLogService_ReadLogErrors(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "error.log")
+
+	lines := []string{
+		`{"ts":"2024-01-01T00:00:00Z","request_id":"req-1","msg":"error1"}`,
+		`{"ts":"2024-01-01T00:01:00Z","request_id":"req-2","msg":"error2"}`,
+		`{"ts":"2024-01-01T00:02:00Z","request_id":"req-1","msg":"error3"}`,
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	svc := NewLogService(nil, nil)
+
+	// No filter
+	entries, err := svc.ReadLogErrors(path, nil, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 3)
+
+	// Filter by request_id
+	reqID := "req-1"
+	entries, err = svc.ReadLogErrors(path, &reqID, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "error3", entries[0]["msg"])
+	assert.Equal(t, "error1", entries[1]["msg"])
+}
+
+func TestLogService_ReadLogErrors_MissingFile(t *testing.T) {
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadLogErrors("/nonexistent/error.log", nil, 10)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestLogService_ReadLogErrors_LimitCap(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "error.log")
+
+	var lines []string
+	for i := 0; i < 10; i++ {
+		lines = append(lines, `{"msg":"error"}`)
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadLogErrors(path, nil, 1000)
+	require.NoError(t, err)
+	assert.Len(t, entries, 10) // capped at 500 but we only have 10
+}
+
+func TestLogService_ReadLogRecent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "api.log")
+
+	lines := []string{
+		`{"ts":"2024-01-01T00:00:00Z","msg":"api1"}`,
+		`{"ts":"2024-01-01T00:01:00Z","msg":"api2"}`,
+		`{"ts":"2024-01-01T00:02:00Z","msg":"api3"}`,
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadLogRecent(path, 2)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "api3", entries[0]["msg"])
+	assert.Equal(t, "api2", entries[1]["msg"])
+}
+
+func TestLogService_ReadLogRecent_ZeroLimit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "api.log")
+	require.NoError(t, os.WriteFile(path, []byte(`{"msg":"x"}`+"\n"), 0644))
+
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadLogRecent(path, 0)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestLogService_ReadAuditLogs(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "audit.csv")
+
+	content := "timestamp,outbox_id,status,action\n" +
+		"2024-01-01T00:02:00Z,ob-1,sent,send\n" +
+		"2024-01-01T00:01:00Z,ob-2,failed,retry\n" +
+		"2024-01-01T00:03:00Z,ob-1,sent,send\n" +
+		"2024-01-01T00:00:00Z,ob-3,pending,queue\n"
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	svc := NewLogService(nil, nil)
+
+	// No filter
+	entries, err := svc.ReadAuditLogs(path, nil, nil, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 4)
+	// Should be sorted by timestamp desc (newest first)
+	assert.Equal(t, "2024-01-01T00:03:00Z", entries[0]["timestamp"])
+	assert.Equal(t, "2024-01-01T00:02:00Z", entries[1]["timestamp"])
+	assert.Equal(t, "2024-01-01T00:01:00Z", entries[2]["timestamp"])
+	assert.Equal(t, "2024-01-01T00:00:00Z", entries[3]["timestamp"])
+
+	// Filter by outbox_id
+	obID := "ob-1"
+	entries, err = svc.ReadAuditLogs(path, &obID, nil, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	for _, e := range entries {
+		assert.Equal(t, "ob-1", e["outbox_id"])
+	}
+
+	// Filter by status
+	st := "sent"
+	entries, err = svc.ReadAuditLogs(path, nil, &st, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	for _, e := range entries {
+		assert.Equal(t, "sent", e["status"])
+	}
+
+	// Filter by both
+	entries, err = svc.ReadAuditLogs(path, &obID, &st, 10)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	for _, e := range entries {
+		assert.Equal(t, "ob-1", e["outbox_id"])
+		assert.Equal(t, "sent", e["status"])
+	}
+}
+
+func TestLogService_ReadAuditLogs_MissingFile(t *testing.T) {
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadAuditLogs("/nonexistent/audit.csv", nil, nil, 10)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestLogService_ReadAuditLogs_EmptyCSV(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.csv")
+	require.NoError(t, os.WriteFile(path, []byte(""), 0644))
+
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadAuditLogs(path, nil, nil, 10)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestLogService_ReadAuditLogs_Limit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "audit.csv")
+
+	content := "timestamp,outbox_id,status\n"
+	for i := 0; i < 10; i++ {
+		content += "2024-01-01T00:00:00Z,ob-x,sent\n"
+	}
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadAuditLogs(path, nil, nil, 5)
+	require.NoError(t, err)
+	assert.Len(t, entries, 5)
+}
+
+func TestLogService_ReadAuditLogs_LimitCap(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "audit.csv")
+
+	content := "timestamp,outbox_id,status\n"
+	for i := 0; i < 10; i++ {
+		content += "2024-01-01T00:00:00Z,ob-x,sent\n"
+	}
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	svc := NewLogService(nil, nil)
+	entries, err := svc.ReadAuditLogs(path, nil, nil, 1000)
+	require.NoError(t, err)
+	assert.Len(t, entries, 10) // capped at 500 but we only have 10
 }

@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -187,6 +190,25 @@ func newTestWorker(
 // Tests
 // ---------------------------------------------------------------------------
 
+func TestDefaultDispatchConfig(t *testing.T) {
+	cfg := DefaultDispatchConfig()
+	if cfg.PollInterval != 30*time.Second {
+		t.Errorf("PollInterval = %v, want %v", cfg.PollInterval, 30*time.Second)
+	}
+	if cfg.BatchSize != 10 {
+		t.Errorf("BatchSize = %d, want 10", cfg.BatchSize)
+	}
+	if cfg.MaxRetries != 3 {
+		t.Errorf("MaxRetries = %d, want 3 (matches Python MAX_ATTEMPTS)", cfg.MaxRetries)
+	}
+	if cfg.DryRun != false {
+		t.Errorf("DryRun = %v, want false", cfg.DryRun)
+	}
+	if !strings.HasSuffix(cfg.AuditLogPath, "dispatch_archive.csv") {
+		t.Errorf("AuditLogPath = %q, want path ending in dispatch_archive.csv", cfg.AuditLogPath)
+	}
+}
+
 func TestBackoffDuration(t *testing.T) {
 	tests := []struct {
 		attempts int64
@@ -218,7 +240,7 @@ func TestDispatchWorker_ContextCancel(t *testing.T) {
 	w := newTestWorker(mockRepo, mockTxB, nil, DispatchConfig{
 		PollInterval: 10 * time.Millisecond,
 		BatchSize:    10,
-		MaxRetries:   10,
+		MaxRetries:   3,
 		DryRun:       true,
 	})
 
@@ -291,7 +313,7 @@ func TestDispatchWorker_SuccessfulDispatch(t *testing.T) {
 	w := newTestWorker(mockRepo, mockTxB, executors, DispatchConfig{
 		PollInterval: 10 * time.Millisecond,
 		BatchSize:    10,
-		MaxRetries:   10,
+		MaxRetries:   3,
 		DryRun:       false,
 	})
 	w.processBatch(ctx)
@@ -330,7 +352,7 @@ func TestDispatchWorker_MaxRetries(t *testing.T) {
 	w := newTestWorker(mockRepo, mockTxB, nil, DispatchConfig{
 		PollInterval: 10 * time.Millisecond,
 		BatchSize:    10,
-		MaxRetries:   10,
+		MaxRetries:   3,
 		DryRun:       true,
 	})
 	w.processBatch(ctx)
@@ -548,18 +570,18 @@ func TestDispatchWorker_DryRunDispatches(t *testing.T) {
 		},
 	}
 
-	// DryRun: true
+	// DryRun: true — status should stay pending (Python behaviour)
 	w := newTestWorker(mockRepo, mockTxB, executors, DispatchConfig{
 		PollInterval: 10 * time.Millisecond,
 		BatchSize:    10,
-		MaxRetries:   10,
+		MaxRetries:   3,
 		DryRun:       true,
 	})
 	w.processBatch(ctx)
 
 	mu.Lock()
-	if !markedDispatched {
-		t.Error("expected MarkDispatched to be called in dry-run mode")
+	if markedDispatched {
+		t.Error("expected MarkDispatched to NOT be called in dry-run mode (status stays pending)")
 	}
 	mu.Unlock()
 }
@@ -572,7 +594,7 @@ func TestDispatchWorker_Stop(t *testing.T) {
 	w := newTestWorker(mockRepo, mockTxB, nil, DispatchConfig{
 		PollInterval: 10 * time.Millisecond,
 		BatchSize:    10,
-		MaxRetries:   10,
+		MaxRetries:   3,
 		DryRun:       true,
 	})
 
@@ -593,4 +615,527 @@ func TestDispatchWorker_Stop(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("worker did not stop within 1s after Stop()")
 	}
+}
+
+// ---------------------------------------------------------------------------
+// New tests for added functionality
+// ---------------------------------------------------------------------------
+
+func TestDispatchOne_Success(t *testing.T) {
+	var mu sync.Mutex
+	markedDispatched := false
+
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkDispatchedFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			markedDispatched = true
+			return nil
+		},
+	}
+
+	executors := map[string]action.ActionExecutor{
+		"feishu": &mockActionExecutor{
+			executeFunc: func(_ context.Context, _ action.ActionProposal, dryRun bool) (action.ExecutionResult, error) {
+				return action.ExecutionResult{Success: true}, nil
+			},
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, executors, DefaultDispatchConfig())
+	evt := testEvent(nil)
+	result := w.DispatchOne(ctx, &evt)
+
+	if result.Status != "dispatched" {
+		t.Errorf("DispatchOne status = %q, want dispatched", result.Status)
+	}
+	if result.AdapterName == "" {
+		t.Error("DispatchOne AdapterName should not be empty")
+	}
+	if result.DryRun {
+		t.Error("DispatchOne DryRun should be false")
+	}
+
+	mu.Lock()
+	if !markedDispatched {
+		t.Error("expected MarkDispatched to be called")
+	}
+	mu.Unlock()
+}
+
+func TestDispatchOne_DryRun(t *testing.T) {
+	var mu sync.Mutex
+	markedDispatched := false
+
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkDispatchedFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			markedDispatched = true
+			return nil
+		},
+	}
+
+	executors := map[string]action.ActionExecutor{
+		"feishu": &mockActionExecutor{
+			executeFunc: func(_ context.Context, _ action.ActionProposal, dryRun bool) (action.ExecutionResult, error) {
+				return action.ExecutionResult{Success: true}, nil
+			},
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, executors, DispatchConfig{
+		MaxRetries: 3,
+		DryRun:     true,
+	})
+	evt := testEvent(nil)
+	result := w.DispatchOne(ctx, &evt)
+
+	if result.Status != "dispatched" {
+		t.Errorf("DispatchOne status = %q, want dispatched", result.Status)
+	}
+	if !result.DryRun {
+		t.Error("DispatchOne DryRun should be true")
+	}
+
+	mu.Lock()
+	if markedDispatched {
+		t.Error("expected MarkDispatched to NOT be called in dry-run mode")
+	}
+	mu.Unlock()
+}
+
+func TestDispatchOne_MaxRetries(t *testing.T) {
+	var mu sync.Mutex
+	updatedMaxAttempts := false
+
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		UpdateMaxAttemptsFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			updatedMaxAttempts = true
+			return nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	evt := testEvent(&outbox.OutboxEvent{DispatchAttempts: 10})
+	result := w.DispatchOne(ctx, &evt)
+
+	if result.Status != "failed" {
+		t.Errorf("DispatchOne status = %q, want failed", result.Status)
+	}
+	if !strings.Contains(result.Error, "max retry attempts reached") {
+		t.Errorf("DispatchOne error = %q, want max retry attempts error", result.Error)
+	}
+
+	mu.Lock()
+	if !updatedMaxAttempts {
+		t.Error("expected UpdateMaxAttempts to be called")
+	}
+	mu.Unlock()
+}
+
+func TestDispatchOne_NoExecutor(t *testing.T) {
+	var mu sync.Mutex
+	markedFailed := false
+
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkFailedFunc: func(_ context.Context, _ pgx.Tx, eventID, errMsg string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			markedFailed = true
+			return nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	evt := testEvent(&outbox.OutboxEvent{TargetChannel: "unknown"})
+	result := w.DispatchOne(ctx, &evt)
+
+	if result.Status != "failed" {
+		t.Errorf("DispatchOne status = %q, want failed", result.Status)
+	}
+	if !strings.Contains(result.Error, "no executor for channel") {
+		t.Errorf("DispatchOne error = %q, want no executor error", result.Error)
+	}
+
+	mu.Lock()
+	if !markedFailed {
+		t.Error("expected MarkFailed to be called")
+	}
+	mu.Unlock()
+}
+
+func TestFetchPending(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	expectedEvents := []outbox.OutboxEvent{testEvent(nil)}
+	mockRepo := &mockOutboxRepository{
+		GetPendingEventsFunc: func(_ context.Context, _ *pgxpool.Pool, limit int) ([]outbox.OutboxEvent, error) {
+			if limit != 5 {
+				t.Errorf("FetchPending limit = %d, want 5", limit)
+			}
+			return expectedEvents, nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DispatchConfig{BatchSize: 5})
+	events, err := w.FetchPending(ctx, 5)
+	if err != nil {
+		t.Fatalf("FetchPending error: %v", err)
+	}
+	if len(events) != 1 {
+		t.Errorf("FetchPending returned %d events, want 1", len(events))
+	}
+}
+
+func TestFetchPending_DefaultLimit(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		GetPendingEventsFunc: func(_ context.Context, _ *pgxpool.Pool, limit int) ([]outbox.OutboxEvent, error) {
+			if limit != 7 {
+				t.Errorf("FetchPending limit = %d, want 7", limit)
+			}
+			return nil, nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DispatchConfig{BatchSize: 7})
+	_, _ = w.FetchPending(ctx, 0) // 0 should fall back to BatchSize
+}
+
+func TestWriteAuditLog(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "audit.csv")
+
+	w := newTestWorker(&mockOutboxRepository{}, &mockTxBeginner{}, nil,
+		DispatchConfig{AuditLogPath: logPath})
+
+	entries := []auditLogEntry{
+		{
+			Timestamp:     time.Now().Format(time.RFC3339),
+			EventID:       "evt-1",
+			TargetChannel: "feishu",
+			AdapterName:   "MockAdapter",
+			Mode:          "live",
+			Status:        "dispatched",
+			ExternalRef:   "ref-1",
+			Error:         "",
+		},
+	}
+	w.writeAuditLog(entries)
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("reading audit log: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "timestamp") {
+		t.Error("audit log missing header")
+	}
+	if !strings.Contains(content, "evt-1") {
+		t.Error("audit log missing event ID")
+	}
+	if !strings.Contains(content, "MockAdapter") {
+		t.Error("audit log missing adapter name")
+	}
+}
+
+func TestWriteAuditLog_Append(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "audit.csv")
+
+	w := newTestWorker(&mockOutboxRepository{}, &mockTxBeginner{}, nil,
+		DispatchConfig{AuditLogPath: logPath})
+
+	w.writeAuditLog([]auditLogEntry{{EventID: "evt-1"}})
+	w.writeAuditLog([]auditLogEntry{{EventID: "evt-2"}})
+
+	data, _ := os.ReadFile(logPath)
+	content := string(data)
+	// Header should appear only once
+	if strings.Count(content, "timestamp") != 1 {
+		t.Error("audit log header should appear exactly once")
+	}
+	if !strings.Contains(content, "evt-1") || !strings.Contains(content, "evt-2") {
+		t.Error("audit log missing appended entries")
+	}
+}
+
+func TestWriteAuditLog_NoPath(t *testing.T) {
+	w := newTestWorker(&mockOutboxRepository{}, &mockTxBeginner{}, nil,
+		DispatchConfig{AuditLogPath: ""})
+
+	// Should not panic
+	w.writeAuditLog([]auditLogEntry{{EventID: "evt-1"}})
+}
+
+func TestWriteAuditLog_EmptyEntries(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "audit.csv")
+
+	w := newTestWorker(&mockOutboxRepository{}, &mockTxBeginner{}, nil,
+		DispatchConfig{AuditLogPath: logPath})
+
+	// Should not create file when entries are empty
+	w.writeAuditLog([]auditLogEntry{})
+	if _, err := os.Stat(logPath); !os.IsNotExist(err) {
+		t.Error("audit log file should not be created for empty entries")
+	}
+}
+
+func TestExecutorName(t *testing.T) {
+	if got := executorName(nil); got != "" {
+		t.Errorf("executorName(nil) = %q, want empty", got)
+	}
+	if got := executorName(action.NewNoOpExecutor()); got != "NoOpExecutor" {
+		t.Errorf("executorName(NoOpExecutor) = %q, want NoOpExecutor", got)
+	}
+	if got := executorName(&mockActionExecutor{}); got != "*worker.mockActionExecutor" {
+		t.Errorf("executorName(mockActionExecutor) = %q, want *worker.mockActionExecutor", got)
+	}
+}
+
+func TestModeString(t *testing.T) {
+	wDry := newTestWorker(nil, nil, nil, DispatchConfig{DryRun: true})
+	if got := wDry.modeString(); got != "dry_run" {
+		t.Errorf("modeString() = %q, want dry_run", got)
+	}
+
+	wLive := newTestWorker(nil, nil, nil, DispatchConfig{DryRun: false})
+	if got := wLive.modeString(); got != "live" {
+		t.Errorf("modeString() = %q, want live", got)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Error-path tests for transaction handling
+// ---------------------------------------------------------------------------
+
+func TestMarkDispatchedInTx_BeginError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return nil, fmt.Errorf("tx begin failed")
+		},
+	}
+
+	w := newTestWorker(&mockOutboxRepository{}, mockTxB, nil, DefaultDispatchConfig())
+	// Should not panic
+	w.markDispatchedInTx(ctx, &outbox.OutboxEvent{EventID: "evt-test"})
+}
+
+func TestMarkDispatchedInTx_MarkError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkDispatchedFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			return fmt.Errorf("mark failed")
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	// Should not panic
+	w.markDispatchedInTx(ctx, &outbox.OutboxEvent{EventID: "evt-test"})
+}
+
+func TestMarkDispatchedInTx_CommitError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return &mockTxCommitError{}, nil
+		},
+	}
+
+	mockRepo := &mockOutboxRepository{
+		MarkDispatchedFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			return nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	// Should not panic
+	w.markDispatchedInTx(ctx, &outbox.OutboxEvent{EventID: "evt-test"})
+}
+
+func TestHandleMaxAttempts_BeginError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return nil, fmt.Errorf("tx begin failed")
+		},
+	}
+
+	w := newTestWorker(&mockOutboxRepository{}, mockTxB, nil, DefaultDispatchConfig())
+	w.handleMaxAttempts(ctx, &outbox.OutboxEvent{EventID: "evt-test"})
+}
+
+func TestHandleMaxAttempts_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		UpdateMaxAttemptsFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			return fmt.Errorf("update failed")
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleMaxAttempts(ctx, &outbox.OutboxEvent{EventID: "evt-test"})
+}
+
+func TestHandleMaxAttempts_CommitError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return &mockTxCommitError{}, nil
+		},
+	}
+
+	mockRepo := &mockOutboxRepository{
+		UpdateMaxAttemptsFunc: func(_ context.Context, _ pgx.Tx, eventID string) error {
+			return nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleMaxAttempts(ctx, &outbox.OutboxEvent{EventID: "evt-test"})
+}
+
+func TestHandleNoExecutor_BeginError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return nil, fmt.Errorf("tx begin failed")
+		},
+	}
+
+	w := newTestWorker(&mockOutboxRepository{}, mockTxB, nil, DefaultDispatchConfig())
+	w.handleNoExecutor(ctx, &outbox.OutboxEvent{EventID: "evt-test", TargetChannel: "unknown"})
+}
+
+func TestHandleNoExecutor_MarkError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkFailedFunc: func(_ context.Context, _ pgx.Tx, eventID, errMsg string) error {
+			return fmt.Errorf("mark failed")
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleNoExecutor(ctx, &outbox.OutboxEvent{EventID: "evt-test", TargetChannel: "unknown"})
+}
+
+func TestHandleNoExecutor_CommitError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return &mockTxCommitError{}, nil
+		},
+	}
+
+	mockRepo := &mockOutboxRepository{
+		MarkFailedFunc: func(_ context.Context, _ pgx.Tx, eventID, errMsg string) error {
+			return nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleNoExecutor(ctx, &outbox.OutboxEvent{EventID: "evt-test", TargetChannel: "unknown"})
+}
+
+func TestHandleFailed_BeginError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return nil, fmt.Errorf("tx begin failed")
+		},
+	}
+
+	w := newTestWorker(&mockOutboxRepository{}, mockTxB, nil, DefaultDispatchConfig())
+	w.handleFailed(ctx, &outbox.OutboxEvent{EventID: "evt-test"}, "some error")
+}
+
+func TestHandleFailed_MarkError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkFailedFunc: func(_ context.Context, _ pgx.Tx, eventID, errMsg string) error {
+			return fmt.Errorf("mark failed")
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleFailed(ctx, &outbox.OutboxEvent{EventID: "evt-test"}, "some error")
+}
+
+func TestHandleFailed_SetNextRetryError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{}
+
+	mockRepo := &mockOutboxRepository{
+		MarkFailedFunc: func(_ context.Context, _ pgx.Tx, eventID, errMsg string) error {
+			return nil
+		},
+		SetNextRetryAtFunc: func(_ context.Context, _ pgx.Tx, eventID string, _ time.Time) error {
+			return fmt.Errorf("set retry failed")
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleFailed(ctx, &outbox.OutboxEvent{EventID: "evt-test"}, "some error")
+}
+
+func TestHandleFailed_CommitError(t *testing.T) {
+	ctx := context.Background()
+	mockTxB := &mockTxBeginner{
+		beginFunc: func(_ context.Context) (pgx.Tx, error) {
+			return &mockTxCommitError{}, nil
+		},
+	}
+
+	mockRepo := &mockOutboxRepository{
+		MarkFailedFunc: func(_ context.Context, _ pgx.Tx, eventID, errMsg string) error {
+			return nil
+		},
+		SetNextRetryAtFunc: func(_ context.Context, _ pgx.Tx, eventID string, _ time.Time) error {
+			return nil
+		},
+	}
+
+	w := newTestWorker(mockRepo, mockTxB, nil, DefaultDispatchConfig())
+	w.handleFailed(ctx, &outbox.OutboxEvent{EventID: "evt-test"}, "some error")
+}
+
+// mockTxCommitError is a mockTx that fails on Commit.
+type mockTxCommitError struct {
+	mockTx
+}
+
+func (tx *mockTxCommitError) Commit(ctx context.Context) error {
+	return fmt.Errorf("commit failed")
+}
+
+func (tx *mockTxCommitError) Rollback(ctx context.Context) error {
+	return nil
 }

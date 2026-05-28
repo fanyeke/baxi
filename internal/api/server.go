@@ -48,6 +48,7 @@ type Server struct {
 	actionHandlerVal    *handler.ActionHandler
 	llmHandlerVal       *handler.LLMHandler
 	feishuHandlerVal    *handler.FeishuHandler
+	diagnosisHandlerVal *handler.DiagnosisHandler
 }
 
 // New creates a new API server instance.
@@ -149,6 +150,19 @@ func (s *Server) feishuHandler() *handler.FeishuHandler {
 		s.feishuHandlerVal = handler.NewFeishuHandler(svc)
 	}
 	return s.feishuHandlerVal
+}
+
+// diagnosisHandler lazily initializes the diagnosis handler.
+func (s *Server) diagnosisHandler() *handler.DiagnosisHandler {
+	if s.diagnosisHandlerVal == nil {
+		svc := service.NewDiagnosisService(
+			"logs/api/error.log",
+			"data/system/api_audit_dispatch.csv",
+			"data/system/api_audit_feishu.csv",
+		)
+		s.diagnosisHandlerVal = handler.NewDiagnosisHandler(svc)
+	}
+	return s.diagnosisHandlerVal
 }
 
 // decisionHandler lazily initializes the decision handler.
@@ -620,6 +634,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/logs/recent", s.logHandler().HandleListRecent)
 			r.Get("/logs/errors", s.logHandler().HandleListErrors)
 			r.Get("/logs/audit", s.logHandler().HandleListAudit)
+			r.Get("/logs/diagnosis", s.diagnosisHandler().HandleDiagnosis)
 
 			// LLM endpoints
 			r.Get("/llm/status", s.llmHandler().Status)
