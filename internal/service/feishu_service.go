@@ -3,11 +3,9 @@ package service
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,15 +13,12 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"baxi/internal/feishu"
 )
 
-// ─── Constants ──────────────────────────────────────────────────────────
-
 const (
-	feishuBaseURL       = "https://open.feishu.cn/open-apis"
-	batchLimit          = 500
-	maxRetries          = 3
-	defaultWaitBase     = 1 * time.Second
+	batchLimit = 500
 )
 
 var defaultTableNames = []string{
@@ -34,8 +29,7 @@ var defaultTableNames = []string{
 	"review_retro",
 }
 
-// ─── Config types ───────────────────────────────────────────────────────
-
+// Config types
 type feishuAppConfig struct {
 	AppID     string `yaml:"app_id"`
 	AppSecret string `yaml:"app_secret"`
@@ -49,16 +43,12 @@ type feishuTableIDsConfig struct {
 	} `yaml:"tables"`
 }
 
-// ─── Client interface ───────────────────────────────────────────────────
-
 // FeishuBitableClient defines operations on Feishu bitable tables.
 type FeishuBitableClient interface {
 	ListRecords(tableID string, pageSize int, filterConfig map[string]any) ([]map[string]any, error)
 	UpsertByKey(tableID string, records []map[string]any, keyField string) (created []map[string]any, updated []map[string]any, err error)
 	SendMessage(chatID, content string, dryRun bool) (string, error)
 }
-
-// ─── Service ────────────────────────────────────────────────────────────
 
 // FeishuService provides Feishu bitable CRUD, data sync, export, and status import.
 type FeishuService struct {
@@ -126,7 +116,6 @@ func (s *FeishuService) loadConfig() *feishuConfig {
 		tableIDs:  make(map[string]string),
 	}
 
-	// Load from feishu_app.yml as fallback
 	appConfigPath := filepath.Join(s.projectRoot, "config", "feishu_app.yml")
 	if data, err := os.ReadFile(appConfigPath); err == nil {
 		var appCfg feishuAppConfig
@@ -143,7 +132,6 @@ func (s *FeishuService) loadConfig() *feishuConfig {
 		}
 	}
 
-	// Load table IDs from feishu_table_ids.yml
 	tableIDsPath := filepath.Join(s.projectRoot, "config", "feishu_table_ids.yml")
 	if data, err := os.ReadFile(tableIDsPath); err == nil {
 		var tids feishuTableIDsConfig
@@ -170,7 +158,7 @@ func (s *FeishuService) getClient() FeishuBitableClient {
 		return s.client
 	}
 	cfg := s.loadConfig()
-	s.client = newFeishuHTTPClient(cfg.appID, cfg.appSecret, cfg.appToken, s.dryRun)
+	s.client = feishu.NewClient(cfg.appID, cfg.appSecret, cfg.appToken, s.dryRun)
 	return s.client
 }
 
@@ -210,11 +198,11 @@ func (s *FeishuService) getTableNames(tableNames []string) ([]string, error) {
 // getPrimaryKey returns the primary key field for a table.
 func getPrimaryKey(tableName string) string {
 	mapping := map[string]string{
-		"daily_metrics":             "simulated_date",
-		"alert_events":              "event_id",
-		"strategy_recommendations":  "recommendation_id",
-		"action_tasks":              "task_id",
-		"review_retro":              "review_id",
+		"daily_metrics":            "simulated_date",
+		"alert_events":             "event_id",
+		"strategy_recommendations": "recommendation_id",
+		"action_tasks":             "task_id",
+		"review_retro":             "review_id",
 	}
 	if pk, ok := mapping[tableName]; ok {
 		return pk
@@ -222,9 +210,8 @@ func getPrimaryKey(tableName string) string {
 	return "record_id"
 }
 
-// ─── Export ─────────────────────────────────────────────────────────────
+// Export
 
-// FeishuExportTableResult represents per-table export result.
 type FeishuExportTableResult struct {
 	Name   string `json:"name"`
 	Rows   int    `json:"rows"`
@@ -232,7 +219,6 @@ type FeishuExportTableResult struct {
 	Status string `json:"status"`
 }
 
-// FeishuExportResult is the response from ExportTables.
 type FeishuExportResult struct {
 	Status  string                    `json:"status"`
 	Message string                    `json:"message"`
@@ -271,7 +257,7 @@ func (s *FeishuService) ExportTables(ctx context.Context, tableNames []string) (
 		csvPath := filepath.Join(s.feishuDir, fmt.Sprintf("%s_for_feishu.csv", name))
 		rows := 0
 		if data, err := os.ReadFile(csvPath); err == nil {
-			rows = countCSVLines(string(data)) - 1 // subtract header
+			rows = countCSVLines(string(data)) - 1
 			if rows < 0 {
 				rows = 0
 			}
@@ -291,7 +277,6 @@ func (s *FeishuService) ExportTables(ctx context.Context, tableNames []string) (
 	}, nil
 }
 
-// countCSVLines counts non-empty lines in CSV content.
 func countCSVLines(data string) int {
 	lines := strings.Split(data, "\n")
 	count := 0
@@ -303,9 +288,8 @@ func countCSVLines(data string) int {
 	return count
 }
 
-// ─── Sync ───────────────────────────────────────────────────────────────
+// Sync
 
-// FeishuSyncTableResult represents per-table sync result.
 type FeishuSyncTableResult struct {
 	Name    string `json:"name"`
 	Created int    `json:"created"`
@@ -313,7 +297,6 @@ type FeishuSyncTableResult struct {
 	Status  string `json:"status"`
 }
 
-// FeishuSyncResult is the response from SyncToFeishu.
 type FeishuSyncResult struct {
 	Status  string                  `json:"status"`
 	Message string                  `json:"message"`
@@ -411,7 +394,6 @@ func (s *FeishuService) SyncToFeishu(ctx context.Context, tableNames []string) (
 	}, nil
 }
 
-// loadCSVRecords reads a Feishu CSV file and returns records as []map[string]any.
 func (s *FeishuService) loadCSVRecords(tableName string) ([]map[string]any, error) {
 	csvPath := filepath.Join(s.feishuDir, fmt.Sprintf("%s_for_feishu.csv", tableName))
 	f, err := os.Open(csvPath)
@@ -446,9 +428,8 @@ func (s *FeishuService) loadCSVRecords(tableName string) ([]map[string]any, erro
 	return records, nil
 }
 
-// ─── Import ─────────────────────────────────────────────────────────────
+// Import
 
-// FeishuImportTableResult represents per-table import result.
 type FeishuImportTableResult struct {
 	Name     string `json:"name"`
 	Pulled   int    `json:"pulled"`
@@ -457,7 +438,6 @@ type FeishuImportTableResult struct {
 	Status   string `json:"status"`
 }
 
-// FeishuImportResult is the response from ImportStatusFromFeishu.
 type FeishuImportResult struct {
 	Status  string                     `json:"status"`
 	Message string                     `json:"message"`
@@ -500,7 +480,6 @@ func (s *FeishuService) ImportStatusFromFeishu(ctx context.Context, tableNames [
 		pullSet[t] = true
 	}
 
-	// Pull records from Feishu for eligible tables
 	allRecords := make(map[string][]map[string]any)
 	for _, name := range resolved {
 		if !pullSet[name] {
@@ -518,7 +497,6 @@ func (s *FeishuService) ImportStatusFromFeishu(ctx context.Context, tableNames [
 		allRecords[name] = records
 	}
 
-	// Write pulled records to snapshot CSV
 	if len(allRecords) > 0 {
 		_ = s.writeImportSnapshot(allRecords)
 	}
@@ -542,7 +520,6 @@ func (s *FeishuService) ImportStatusFromFeishu(ctx context.Context, tableNames [
 	}, nil
 }
 
-// writeImportSnapshot writes pulled records to a snapshot CSV file.
 func (s *FeishuService) writeImportSnapshot(allRecords map[string][]map[string]any) error {
 	opDir := filepath.Join(s.projectRoot, "data", "ops")
 	if err := os.MkdirAll(opDir, 0755); err != nil {
@@ -550,7 +527,6 @@ func (s *FeishuService) writeImportSnapshot(allRecords map[string][]map[string]a
 	}
 	outputPath := filepath.Join(opDir, "action_task_status_snapshot.csv")
 
-	// Collect all keys
 	allKeys := make(map[string]bool)
 	allKeys["_table"] = true
 	allKeys["_record_id"] = true
@@ -588,7 +564,6 @@ func (s *FeishuService) writeImportSnapshot(allRecords map[string][]map[string]a
 				case "_pulled_at":
 					row[i] = now
 				case "_record_id":
-					// Try to get task_id or review_id, fallback to record_id from fields
 					if v, ok := rec["task_id"]; ok {
 						row[i] = fmt.Sprint(v)
 					} else if v, ok := rec["review_id"]; ok {
@@ -613,328 +588,7 @@ func (s *FeishuService) writeImportSnapshot(allRecords map[string][]map[string]a
 	return writer.Error()
 }
 
-// ─── HTTP Client ────────────────────────────────────────────────────────
-
-// feishuHTTPClient is a real Feishu API client.
-type feishuHTTPClient struct {
-	appID       string
-	appSecret   string
-	appToken    string
-	dryRun      bool
-	baseURL     string
-	httpClient  *http.Client
-	accessToken string
-	tokenExpiry time.Time
-}
-
-func newFeishuHTTPClient(appID, appSecret, appToken string, dryRun bool) *feishuHTTPClient {
-	return &feishuHTTPClient{
-		appID:      appID,
-		appSecret:  appSecret,
-		appToken:   appToken,
-		dryRun:     dryRun,
-		baseURL:    feishuBaseURL,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
-	}
-}
-
-func (c *feishuHTTPClient) getTenantAccessToken() (string, error) {
-	if c.accessToken != "" && time.Now().Before(c.tokenExpiry) {
-		return c.accessToken, nil
-	}
-	if c.dryRun {
-		c.accessToken = "dry_run_token"
-		c.tokenExpiry = time.Now().Add(2 * time.Hour)
-		return c.accessToken, nil
-	}
-
-	payload := map[string]string{
-		"app_id":     c.appID,
-		"app_secret": c.appSecret,
-	}
-	resp, err := c.doRequest("POST", "/auth/v3/tenant_access_token/internal", payload, true)
-	if err != nil {
-		return "", err
-	}
-
-	token, _ := resp["tenant_access_token"].(string)
-	expire := 7200
-	if e, ok := resp["expire"].(float64); ok {
-		expire = int(e)
-	}
-	c.accessToken = token
-	c.tokenExpiry = time.Now().Add(time.Duration(expire-60) * time.Second)
-	return token, nil
-}
-
-func (c *feishuHTTPClient) ListRecords(tableID string, pageSize int, filterConfig map[string]any) ([]map[string]any, error) {
-	if c.dryRun {
-		return []map[string]any{}, nil
-	}
-
-	if pageSize <= 0 || pageSize > 500 {
-		pageSize = 500
-	}
-
-	var allRecords []map[string]any
-	pageToken := ""
-	for {
-		params := map[string]any{
-			"page_size": pageSize,
-		}
-		if pageToken != "" {
-			params["page_token"] = pageToken
-		}
-		if filterConfig != nil {
-			params["filter"] = filterConfig
-		}
-
-		resp, err := c.doRequest("GET",
-			fmt.Sprintf("/bitable/v1/apps/%s/tables/%s/records", c.appToken, tableID),
-			params, false)
-		if err != nil {
-			return nil, err
-		}
-
-		data, _ := resp["data"].(map[string]any)
-		if data == nil {
-			break
-		}
-		items, _ := data["items"].([]any)
-		for _, item := range items {
-			if m, ok := item.(map[string]any); ok {
-				allRecords = append(allRecords, m)
-			}
-		}
-		hasMore, _ := data["has_more"].(bool)
-		if !hasMore {
-			break
-		}
-		pageToken, _ = data["page_token"].(string)
-	}
-	return allRecords, nil
-}
-
-func (c *feishuHTTPClient) UpsertByKey(tableID string, records []map[string]any, keyField string) (created []map[string]any, updated []map[string]any, err error) {
-	if c.dryRun {
-		for _, r := range records {
-			created = append(created, r)
-		}
-		return created, nil, nil
-	}
-
-	existing, err := c.ListRecords(tableID, 500, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	existingMap := make(map[string]map[string]any)
-	for _, rec := range existing {
-		fields, _ := rec["fields"].(map[string]any)
-		if fields == nil {
-			continue
-		}
-		keyVal, _ := fields[keyField]
-		if keyVal != nil {
-			k := fmt.Sprint(keyVal)
-			existingMap[k] = rec
-		}
-	}
-
-	var toCreate []map[string]any
-	for _, record := range records {
-		keyVal, _ := record[keyField]
-		if keyVal == nil {
-			toCreate = append(toCreate, record)
-			continue
-		}
-		k := fmt.Sprint(keyVal)
-		if existingRec, ok := existingMap[k]; ok {
-			recordID, _ := existingRec["record_id"].(string)
-			if recordID != "" {
-				updatedRec, err := c.updateRecord(tableID, recordID, record)
-				if err == nil && updatedRec != nil {
-					updated = append(updated, updatedRec)
-				}
-			}
-		} else {
-			toCreate = append(toCreate, record)
-		}
-	}
-
-	if len(toCreate) > 0 {
-		created = c.batchCreate(tableID, toCreate)
-	}
-
-	return created, updated, nil
-}
-
-func (c *feishuHTTPClient) updateRecord(tableID, recordID string, recordData map[string]any) (map[string]any, error) {
-	payload := map[string]any{"fields": recordData}
-	resp, err := c.doRequest("PUT",
-		fmt.Sprintf("/bitable/v1/apps/%s/tables/%s/records/%s", c.appToken, tableID, recordID),
-		payload, false)
-	if err != nil {
-		return nil, err
-	}
-	data, _ := resp["data"].(map[string]any)
-	return data, nil
-}
-
-func (c *feishuHTTPClient) batchCreate(tableID string, records []map[string]any) []map[string]any {
-	var allCreated []map[string]any
-	for i := 0; i < len(records); i += batchLimit {
-		end := i + batchLimit
-		if end > len(records) {
-			end = len(records)
-		}
-		chunk := records[i:end]
-		payload := map[string]any{
-			"records": batchToFields(chunk),
-		}
-		resp, err := c.doRequest("POST",
-			fmt.Sprintf("/bitable/v1/apps/%s/tables/%s/records/batch_create", c.appToken, tableID),
-			payload, false)
-		if err != nil {
-			continue
-		}
-		data, _ := resp["data"].(map[string]any)
-		if data != nil {
-			items, _ := data["records"].([]any)
-			for _, item := range items {
-				if m, ok := item.(map[string]any); ok {
-					allCreated = append(allCreated, m)
-				}
-			}
-		}
-		time.Sleep(1 * time.Second)
-	}
-	return allCreated
-}
-
-func batchToFields(records []map[string]any) []map[string]any {
-	result := make([]map[string]any, len(records))
-	for i, r := range records {
-		result[i] = map[string]any{"fields": r}
-	}
-	return result
-}
-
-func (c *feishuHTTPClient) SendMessage(chatID, content string, dryRun bool) (string, error) {
-	isDry := dryRun || c.dryRun
-	if isDry {
-		return fmt.Sprintf("dry_run_message_%d", time.Now().Unix()), nil
-	}
-
-	payload := map[string]any{
-		"receive_id": chatID,
-		"msg_type":   "text",
-		"content":    map[string]string{"text": content},
-	}
-	resp, err := c.doRequest("POST", "/im/v1/messages", payload, false)
-	if err != nil {
-		return "", err
-	}
-	data, _ := resp["data"].(map[string]any)
-	if data != nil {
-		msgID, _ := data["message_id"].(string)
-		return msgID, nil
-	}
-	return "", nil
-}
-
-func (c *feishuHTTPClient) doRequest(method, path string, body any, skipAuth bool) (map[string]any, error) {
-	url := c.baseURL + path
-
-	var token string
-	var tokenErr error
-	if !skipAuth {
-		token, tokenErr = c.getTenantAccessToken()
-		if tokenErr != nil {
-			return nil, tokenErr
-		}
-	}
-
-	var bodyJSON []byte
-	if body != nil {
-		var err error
-		bodyJSON, err = json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	waitTimes := []time.Duration{defaultWaitBase, 2 * defaultWaitBase, 4 * defaultWaitBase}
-	for attempt, wait := range waitTimes {
-		var req *http.Request
-		var err error
-
-		switch method {
-		case "GET":
-			req, err = http.NewRequest(method, url, nil)
-			if err != nil {
-				return nil, err
-			}
-			if params, ok := body.(map[string]any); ok {
-				q := req.URL.Query()
-				for k, v := range params {
-					q.Set(k, fmt.Sprint(v))
-				}
-				req.URL.RawQuery = q.Encode()
-			}
-		default:
-			req, err = http.NewRequest(method, url, strings.NewReader(string(bodyJSON)))
-			if err != nil {
-				return nil, err
-			}
-			req.Header.Set("Content-Type", "application/json")
-		}
-
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			if attempt < len(waitTimes)-1 {
-				time.Sleep(wait)
-				continue
-			}
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		respBody, _ := io.ReadAll(resp.Body)
-		var data map[string]any
-		_ = json.Unmarshal(respBody, &data)
-		if data == nil {
-			data = make(map[string]any)
-		}
-
-		code := 0
-		if c, ok := data["code"].(float64); ok {
-			code = int(c)
-		}
-
-		if resp.StatusCode == 429 || code == 170002 {
-			if attempt < len(waitTimes)-1 {
-				time.Sleep(wait)
-				continue
-			}
-		}
-
-		if code != 0 {
-			msg, _ := data["msg"].(string)
-			return nil, fmt.Errorf("feishu API error: code=%d, msg=%s", code, msg)
-		}
-
-		return data, nil
-	}
-
-	return nil, fmt.Errorf("failed %s %s after %d retries", method, path, maxRetries)
-}
-
-// ─── Helper to parse numeric values ─────────────────────────────────────
+// Helper functions
 
 func parseInt(v any) int {
 	switch n := v.(type) {

@@ -8,6 +8,7 @@ import (
 	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
+	"baxi/internal/model"
 )
 
 // PipelineRunner defines the interface for running pipelines.
@@ -50,4 +51,19 @@ func (h *PipelineHandler) HandleRun(w http.ResponseWriter, r *http.Request) {
 		Status: "started",
 	}
 	httputil.JSON(w, http.StatusOK, resp)
+}
+
+// dtoFromPipelinePreview converts a model.PipelinePreview to a dto.PipelinePreview.
+func dtoFromPipelinePreview(m *model.PipelinePreview) *dto.PipelinePreview {
+	if m == nil {
+		return nil
+	}
+	return &dto.PipelinePreview{
+		Command:           m.Command,
+		PipelineType:      m.PipelineType,
+		EstimatedDuration: m.EstimatedDuration,
+		RequiredEnvVars:   m.RequiredEnvVars,
+		Warnings:          m.Warnings,
+		Description:       m.Description,
+	}
 }

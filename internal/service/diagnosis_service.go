@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 // Diagnoser is the interface for cross-source request tracing.
 type Diagnoser interface {
-	DiagnoseByRequestID(requestID string) (*dto.DiagnosisResponse, error)
+	DiagnoseByRequestID(requestID string) (*	model.DiagnosisResponse, error)
 }
 
 // DiagnosisService performs cross-source request tracing by reading
@@ -34,15 +34,15 @@ func NewDiagnosisService(errorLogPath, auditCSVPath, auditFeishuPath string) *Di
 
 // DiagnoseByRequestID searches error.log, audit_dispatch.csv, and audit_feishu.csv
 // for entries matching the given request_id and returns a structured diagnosis.
-func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*dto.DiagnosisResponse, error) {
+func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*	model.DiagnosisResponse, error) {
 	errorEntries := s.searchJSONL(s.errorLogPath, requestID)
 	auditEntries := s.searchCSV(s.auditCSVPath, requestID)
 	feishuEntries := s.searchCSV(s.auditFeishuPath, requestID)
 
-	var relatedLogs []dto.DiagnosisLogEntry
+	var relatedLogs []	model.LogEntry
 
 	for _, e := range errorEntries {
-		relatedLogs = append(relatedLogs, dto.DiagnosisLogEntry{
+		relatedLogs = append(relatedLogs, 	model.LogEntry{
 			Source:    "error.log",
 			Ts:        getString(e, "timestamp", "ts"),
 			ErrorCode: getString(e, "error_code"),
@@ -52,7 +52,7 @@ func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*dto.Diagnosis
 	}
 
 	for _, a := range auditEntries {
-		relatedLogs = append(relatedLogs, dto.DiagnosisLogEntry{
+		relatedLogs = append(relatedLogs, 	model.LogEntry{
 			Source:    "audit_dispatch.csv",
 			Timestamp: a["timestamp"],
 			OutboxID:  a["outbox_id"],
@@ -62,7 +62,7 @@ func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*dto.Diagnosis
 	}
 
 	for _, a := range feishuEntries {
-		relatedLogs = append(relatedLogs, dto.DiagnosisLogEntry{
+		relatedLogs = append(relatedLogs, 	model.LogEntry{
 			Source:    "audit_feishu.csv",
 			Timestamp: a["timestamp"],
 			Action:    a["action"],
@@ -84,7 +84,7 @@ func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*dto.Diagnosis
 		summary = "No error message recorded"
 	}
 
-	return &dto.DiagnosisResponse{
+	return &	model.DiagnosisResponse{
 		RequestID:       requestID,
 		Summary:         summary,
 		ErrorCode:       getString(primaryError, "error_code"),

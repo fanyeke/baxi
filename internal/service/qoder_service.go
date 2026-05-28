@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -39,19 +39,19 @@ func NewQoderService(contextRepo repository.ContextRepository, pool *pgxpool.Poo
 }
 
 // GetContext aggregates system context from multiple sources.
-func (s *QoderService) GetContext(ctx context.Context, requestID string, params dto.ContextQueryParams) (*dto.ContextResponse, error) {
+func (s *QoderService) GetContext(ctx context.Context, requestID string, params model.ContextQueryParams) (*model.ContextResponse, error) {
 	pipelineRun := s.queryLastPipelineRun(ctx)
 	totalAlerts, topAlerts := s.queryAlerts(ctx, params.Severity, params.LimitAlerts)
 	totalTasks, openTasks := s.queryOpenTasks(ctx, params.LimitTasks)
 	totalOutbox, pendingOutbox := s.queryPendingOutbox(ctx, params.LimitOutbox)
-	caps := dto.StaticCapabilities()
+	caps := model.StaticCapabilities()
 
-	resp := &dto.ContextResponse{
+	resp := &model.ContextResponse{
 		RequestID: requestID,
-		System: dto.SystemInfo{
+		System: model.SystemInfo{
 			LastPipelineRun: pipelineRun,
 		},
-		Summary: dto.ContextSummary{
+		Summary: model.ContextSummary{
 			TotalAlerts:        totalAlerts,
 			TotalOpenTasks:     totalTasks,
 			TotalPendingOutbox: totalOutbox,
@@ -59,25 +59,25 @@ func (s *QoderService) GetContext(ctx context.Context, requestID string, params 
 		TopAlerts:       topAlerts,
 		OpenTasks:       openTasks,
 		PendingOutbox:   pendingOutbox,
-		RecentDiagnosis: []interface{}{},
+		RecentDiagnosis: []string{},
 		AllowedActions:  caps.AllowedActions(),
 		ForbiddenActions: caps.ForbiddenActions(),
 		// Enrichment: ontology, governance, agent_policy
 		// These are static until configloader services are wired.
-		Ontology: dto.OntologyInfo{
+		Ontology: model.OntologyInfo{
 			ObjectTypes: []string{
 				"customer", "order", "seller", "product",
 				"category", "region", "marketing_lead", "metric_alert",
 			},
 			ObjectsAvailable: true,
 		},
-		Governance: dto.GovernanceInfo{
+		Governance: model.GovernanceInfo{
 			ClassificationLoaded: true,
 			LineageLoaded:        true,
 			AccessPolicyLoaded:   true,
 			RedactionEnabled:     true,
 		},
-		AgentPolicy: dto.AgentPolicyInfo{
+		AgentPolicy: model.AgentPolicyInfo{
 			Role:              "analyst",
 			CanReadObjects:    true,
 			CanExecuteActions: false,
@@ -88,7 +88,7 @@ func (s *QoderService) GetContext(ctx context.Context, requestID string, params 
 	return resp, nil
 }
 
-func (s *QoderService) queryLastPipelineRun(ctx context.Context) *dto.PipelineRunInfo {
+func (s *QoderService) queryLastPipelineRun(ctx context.Context) *model.PipelineRunInfo {
 	if s.pool == nil {
 		return nil
 	}
@@ -123,7 +123,7 @@ func (s *QoderService) queryLastPipelineRun(ctx context.Context) *dto.PipelineRu
 	}
 	startedAt := row.StartedAt.Format(time.RFC3339Nano)
 
-	return &dto.PipelineRunInfo{
+	return &model.PipelineRunInfo{
 		RunID:        row.RunID,
 		RunType:      row.RunType,
 		Mode:         row.Mode,
@@ -136,9 +136,9 @@ func (s *QoderService) queryLastPipelineRun(ctx context.Context) *dto.PipelineRu
 	}
 }
 
-func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit int) (int, []dto.AlertItem) {
+func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit int) (int, []model.AlertItem) {
 	if s.pool == nil {
-		return 0, []dto.AlertItem{}
+		return 0, []model.AlertItem{}
 	}
 	countQuery := `SELECT COUNT(*) FROM ops.metric_alert`
 	countArgs := []interface{}{}
@@ -151,7 +151,7 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 	var total int
 	err := s.pool.QueryRow(ctx, countQuery, countArgs...).Scan(&total)
 	if err != nil {
-		return 0, []dto.AlertItem{}
+		return 0, []model.AlertItem{}
 	}
 
 	itemsQuery := `
@@ -174,11 +174,11 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 
 	rows, err := s.pool.Query(ctx, itemsQuery, args...)
 	if err != nil {
-		return total, []dto.AlertItem{}
+		return total, []model.AlertItem{}
 	}
 	defer rows.Close()
 
-	var items []dto.AlertItem
+	var items []model.AlertItem
 	for rows.Next() {
 		var repoRow repository.AlertRow
 		if err := rows.Scan(
@@ -191,7 +191,7 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 		); err != nil {
 			continue
 		}
-		items = append(items, dto.AlertItem{
+		items = append(items, model.AlertItem{
 			EventID:       repoRow.AlertID,
 			RuleID:        repoRow.RuleID,
 			EventDate:     repoRow.EventDate,
@@ -209,15 +209,15 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 	}
 
 	if items == nil {
-		items = []dto.AlertItem{}
+		items = []model.AlertItem{}
 	}
 
 	return total, items
 }
 
-func (s *QoderService) queryOpenTasks(ctx context.Context, limit int) (int, []dto.TaskItem) {
+func (s *QoderService) queryOpenTasks(ctx context.Context, limit int) (int, []model.TaskItem) {
 	if s.pool == nil {
-		return 0, []dto.TaskItem{}
+		return 0, []model.TaskItem{}
 	}
 	openStatuses := []string{"todo", "in_progress"}
 
@@ -225,7 +225,7 @@ func (s *QoderService) queryOpenTasks(ctx context.Context, limit int) (int, []dt
 	var total int
 	err := s.pool.QueryRow(ctx, countQuery, openStatuses).Scan(&total)
 	if err != nil {
-		return 0, []dto.TaskItem{}
+		return 0, []model.TaskItem{}
 	}
 
 	itemsQuery := `
@@ -242,11 +242,11 @@ func (s *QoderService) queryOpenTasks(ctx context.Context, limit int) (int, []dt
 
 	rows, err := s.pool.Query(ctx, itemsQuery, openStatuses, limit)
 	if err != nil {
-		return total, []dto.TaskItem{}
+		return total, []model.TaskItem{}
 	}
 	defer rows.Close()
 
-	var items []dto.TaskItem
+	var items []model.TaskItem
 	for rows.Next() {
 		var row repository.TaskRow
 		if err := rows.Scan(
@@ -272,15 +272,15 @@ func (s *QoderService) queryOpenTasks(ctx context.Context, limit int) (int, []dt
 	}
 
 	if items == nil {
-		items = []dto.TaskItem{}
+		items = []model.TaskItem{}
 	}
 
 	return total, items
 }
 
-func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, []dto.OutboxItem) {
+func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, []model.OutboxItem) {
 	if s.pool == nil {
-		return 0, []dto.OutboxItem{}
+		return 0, []model.OutboxItem{}
 	}
 	pendingStatus := "pending"
 
@@ -288,7 +288,7 @@ func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, 
 	var total int
 	err := s.pool.QueryRow(ctx, countQuery, pendingStatus).Scan(&total)
 	if err != nil {
-		return 0, []dto.OutboxItem{}
+		return 0, []model.OutboxItem{}
 	}
 
 	itemsQuery := `
@@ -303,11 +303,11 @@ func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, 
 
 	rows, err := s.pool.Query(ctx, itemsQuery, pendingStatus, limit)
 	if err != nil {
-		return total, []dto.OutboxItem{}
+		return total, []model.OutboxItem{}
 	}
 	defer rows.Close()
 
-	var items []dto.OutboxItem
+	var items []model.OutboxItem
 	for rows.Next() {
 		var row repository.OutboxRow
 		if err := rows.Scan(
@@ -323,7 +323,7 @@ func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, 
 		); err != nil {
 			continue
 		}
-		items = append(items, dto.OutboxItem{
+		items = append(items, model.OutboxItem{
 			OutboxID:         row.OutboxID,
 			EventType:        row.EventType,
 			SourceType:       row.SourceType,
@@ -337,13 +337,13 @@ func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, 
 	}
 
 	if items == nil {
-		items = []dto.OutboxItem{}
+		items = []model.OutboxItem{}
 	}
 
 	return total, items
 }
 
-func mapRowToTaskItem(row repository.TaskRow) dto.TaskItem {
+func mapRowToTaskItem(row repository.TaskRow) model.TaskItem {
 	desc := ""
 	if row.TaskDescription != nil {
 		desc = *row.TaskDescription
@@ -365,7 +365,7 @@ func mapRowToTaskItem(row repository.TaskRow) dto.TaskItem {
 		e := *row.AlertID
 		eventID = &e
 	}
-	return dto.TaskItem{
+	return model.TaskItem{
 		TaskID:           row.TaskID,
 		TaskTitle:        row.TaskTitle,
 		TaskDescription:  desc,

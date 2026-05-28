@@ -6,11 +6,43 @@ import (
 	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
+	"baxi/internal/model"
 )
 
 // Diagnoser is the interface for cross-source request tracing.
 type Diagnoser interface {
-	DiagnoseByRequestID(requestID string) (*dto.DiagnosisResponse, error)
+	DiagnoseByRequestID(requestID string) (*model.DiagnosisResponse, error)
+}
+
+// diagnosisResponseFromModel converts a model.DiagnosisResponse to a dto.DiagnosisResponse
+// for JSON serialization with proper JSON tags.
+func diagnosisResponseFromModel(m *model.DiagnosisResponse) *dto.DiagnosisResponse {
+	if m == nil {
+		return nil
+	}
+	logs := make([]dto.DiagnosisLogEntry, len(m.RelatedLogs))
+	for i, l := range m.RelatedLogs {
+		logs[i] = dto.DiagnosisLogEntry{
+			Source:    l.Source,
+			Ts:        l.Ts,
+			Timestamp: l.Timestamp,
+			ErrorCode: l.ErrorCode,
+			Message:   l.Message,
+			Diagnosis: l.Diagnosis,
+			OutboxID:  l.OutboxID,
+			Status:    l.Status,
+			Error:     l.Error,
+			Action:    l.Action,
+		}
+	}
+	return &dto.DiagnosisResponse{
+		RequestID:       m.RequestID,
+		Summary:         m.Summary,
+		ErrorCode:       m.ErrorCode,
+		Diagnosis:       m.Diagnosis,
+		SuggestedAction: m.SuggestedAction,
+		RelatedLogs:     logs,
+	}
 }
 
 // DiagnosisHandler handles HTTP requests for the diagnosis endpoint.
@@ -46,5 +78,5 @@ func (h *DiagnosisHandler) HandleDiagnosis(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	httputil.JSON(w, http.StatusOK, result)
+	httputil.JSON(w, http.StatusOK, diagnosisResponseFromModel(result))
 }

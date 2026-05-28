@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 func TestPipelineService_PreviewPipelineRun_Daily(t *testing.T) {
@@ -202,7 +202,7 @@ func TestPipelineService_PreviewPipelineRun_ResultStructure(t *testing.T) {
 	svc := NewPipelineService(tmpDir)
 	result := svc.PreviewPipelineRun("daily")
 
-	assert.IsType(t, &dto.PipelinePreview{}, result)
+	assert.IsType(t, &model.PipelinePreview{}, result)
 	assert.Equal(t, "python3 scripts/run_daily_pipeline.py", result.Command)
 	assert.Equal(t, "daily", result.PipelineType)
 	assert.Equal(t, "~30 seconds (daily mode, single-day simulation)", result.EstimatedDuration)

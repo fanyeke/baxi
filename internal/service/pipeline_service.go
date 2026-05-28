@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 // pipelineDefinition holds metadata for a pipeline type.
@@ -62,11 +62,11 @@ func NewPipelineService(configDir string) *PipelineService {
 }
 
 // PreviewPipelineRun returns a preview of a pipeline run without executing.
-func (s *PipelineService) PreviewPipelineRun(pipelineType string) *dto.PipelinePreview {
+func (s *PipelineService) PreviewPipelineRun(pipelineType string) *model.PipelinePreview {
 	pipe, ok := pipelineRegistry[pipelineType]
 	if !ok {
 		validTypes := s.validPipelineTypes()
-		return &dto.PipelinePreview{
+		return &model.PipelinePreview{
 			Command:      "",
 			PipelineType: pipelineType,
 			Warnings:     []string{fmt.Sprintf("Unknown pipeline type: '%s'. Valid: %s", pipelineType, validTypes)},
@@ -79,7 +79,7 @@ func (s *PipelineService) PreviewPipelineRun(pipelineType string) *dto.PipelineP
 		command = fmt.Sprintf("%s %s", command, pipe.Args)
 	}
 
-	return &dto.PipelinePreview{
+	return &model.PipelinePreview{
 		Command:           command,
 		PipelineType:      pipelineType,
 		EstimatedDuration: pipe.Duration,
@@ -90,16 +90,16 @@ func (s *PipelineService) PreviewPipelineRun(pipelineType string) *dto.PipelineP
 }
 
 // GetAvailablePipelines returns a list of available pipeline types with descriptions.
-func (s *PipelineService) GetAvailablePipelines() []dto.PipelineInfo {
+func (s *PipelineService) GetAvailablePipelines() []model.PipelineInfo {
 	types := make([]string, 0, len(pipelineRegistry))
 	for t := range pipelineRegistry {
 		types = append(types, t)
 	}
 	sort.Strings(types)
 
-	result := make([]dto.PipelineInfo, 0, len(types))
+	result := make([]model.PipelineInfo, 0, len(types))
 	for _, t := range types {
-		result = append(result, dto.PipelineInfo{
+		result = append(result, model.PipelineInfo{
 			Type:        t,
 			Description: pipelineRegistry[t].Description,
 		})

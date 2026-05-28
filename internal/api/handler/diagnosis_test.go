@@ -11,15 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 type mockDiagnoser struct {
-	result *dto.DiagnosisResponse
+	result *model.DiagnosisResponse
 	err    error
 	called bool
 }
 
-func (m *mockDiagnoser) DiagnoseByRequestID(requestID string) (*dto.DiagnosisResponse, error) {
+func (m *mockDiagnoser) DiagnoseByRequestID(requestID string) (*model.DiagnosisResponse, error) {
 	m.called = true
 	if m.err != nil {
 		return nil, m.err
@@ -28,13 +29,13 @@ func (m *mockDiagnoser) DiagnoseByRequestID(requestID string) (*dto.DiagnosisRes
 }
 
 func TestHandleDiagnosis_Success(t *testing.T) {
-	result := &dto.DiagnosisResponse{
+	result := &model.DiagnosisResponse{
 		RequestID:       "req-123",
 		Summary:         "connection refused",
 		ErrorCode:       "E001",
 		Diagnosis:       "db down",
 		SuggestedAction: "restart db",
-		RelatedLogs: []dto.DiagnosisLogEntry{
+		RelatedLogs: []model.LogEntry{
 			{Source: "error.log", Ts: "2024-01-01T00:00:00Z", Message: "connection refused"},
 			{Source: "audit_dispatch.csv", Timestamp: "2024-01-01T00:00:00Z", OutboxID: "out-1", Status: "failed"},
 		},
@@ -112,13 +113,13 @@ func TestHandleDiagnosis_ServiceError(t *testing.T) {
 }
 
 func TestHandleDiagnosis_ResponseFormat(t *testing.T) {
-	result := &dto.DiagnosisResponse{
+	result := &model.DiagnosisResponse{
 		RequestID:       "req-123",
 		Summary:         "test summary",
 		ErrorCode:       "E001",
 		Diagnosis:       "test diagnosis",
 		SuggestedAction: "test action",
-		RelatedLogs:     []dto.DiagnosisLogEntry{},
+		RelatedLogs:     []model.LogEntry{},
 	}
 	svc := &mockDiagnoser{result: result}
 	h := NewDiagnosisHandler(svc)
@@ -149,10 +150,10 @@ func TestHandleDiagnosis_ResponseFormat(t *testing.T) {
 }
 
 func TestHandleDiagnosis_EmptyRelatedLogs(t *testing.T) {
-	result := &dto.DiagnosisResponse{
+	result := &model.DiagnosisResponse{
 		RequestID:       "req-123",
 		Summary:         "test",
-		RelatedLogs:     []dto.DiagnosisLogEntry{},
+		RelatedLogs:     []model.LogEntry{},
 	}
 	svc := &mockDiagnoser{result: result}
 	h := NewDiagnosisHandler(svc)
