@@ -1,118 +1,63 @@
-# Olist Brazil E-Commerce Data Pipeline — 运维手册
+# Baxi 运维手册
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+## 技术栈
+- **后端**: Go 1.22+ (chi, pgx)
+- **数据库**: PostgreSQL 15
+- **前端**: React 19 + Vite
+- **数据管道**: Go Step 接口编排（7 步）
 
-**Goal:** End-to-end runbook for deploying and operating the data pipeline, from environment setup to Feishu sync.
+## 前提条件
+- Go 1.22+
+- Docker & Docker Compose
+- Node.js 18+（前端开发用）
 
-**Architecture:** Single-repo Python pipeline with 4 entry points (daily simulation, full evaluation, Feishu sync, status pullback), FastAPI API gateway (port 8765), SQLite (WAL) backend, React console frontend, built on pandas/numpy data model with heuristic/AI decision engine and Feishu Bitable sync.
-
-**Tech Stack:** Python 3.10+, FastAPI, Uvicorn, Pydantic v2, SQLite (WAL), pandas, numpy, pyyaml, requests, openai, python-dotenv, matplotlib, seaborn, React, TanStack Query
-
----
-
-## 前置条件
-
-- Python ≥ 3.10
-- Git installed
-- Kaggle account (for data download)
-
-## 环境安装
-
+## 快速启动
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -e .
+make up              # 启动 PostgreSQL
+make migrate         # 运行数据库迁移
+make api             # 启动 API 服务（端口 8080）
+make worker          # 启动 Worker
+make pipeline        # 运行数据管道
 ```
 
-## 数据下载
+## 常用命令
 
-Two Kaggle datasets needed:
+| 命令 | 说明 |
+|------|------|
+| `make build` | 编译所有二进制 |
+| `make test` | 运行 Go 测试（`go test ./...`） |
+| `make pipeline-ingest` | 仅数据摄入步骤 |
+| `make pipeline-dwd` | 仅 DWD 层构建 |
+| `cd frontend && npm run dev` | React 开发服务器（端口 5173） |
 
-```bash
-# Main dataset (9 CSVs, ~100K orders)
-kaggle datasets download -d olistbr/brazilian-ecommerce -p data/raw/
-unzip data/raw/brazilian-ecommerce.zip -d data/raw/
-# Marketing funnel (2 CSVs, ~8K leads)
-kaggle datasets download -d olistbr/marketing-funnel -p data/raw/
-unzip data/raw/marketing-funnel.zip -d data/raw/
+## 环境变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `DATABASE_URL` | PostgreSQL 连接串 | **必填** |
+| `API_BEARER_TOKEN` | API 访问令牌 | **必填** |
+| `API_PORT` | API 服务端口 | `8080` |
+| `LOG_LEVEL` | 日志级别 | `info` |
+| `CORS_ALLOWED_ORIGINS` | CORS 允许的源 | `http://localhost:5173` |
+
+## 架构概要
+
+```
+Client → Go chi API (端口 8080) → Service Layer → Repository → PostgreSQL
+                                          ↕
+                                    Pipeline (7 步)
+                                       ↓
+                                Worker (事件分发)
 ```
 
-Confirm: `ls data/raw/olist_orders_dataset.csv`
+API 采用分层架构：Handler → Service → Repository。Handler 定义本地接口用于测试 mock。
+Repository 使用 PoolProvider 注入，无需手动传递连接池。
 
-## 构建基础表
+## 错误排查
 
-> ⚠️ `scripts/phase02_build_data_model.py` is FROZEN and won't run directly. Use the pipeline instead:
-
-```bash
-python3 scripts/run_db_pipeline.py --mode full
-```
-
-Produces: `data/interim/order_level_base.csv` (99,441 rows), `data/interim/item_level_base.csv` (112,650 rows)
-
-## 入口 1：Pipeline Runner（推荐）
-
-```bash
-# Full pipeline (init → ingest → metrics → rules → export → trigger)
-python3 scripts/run_db_pipeline.py --mode full
-
-# Dry-run (no side effects)
-python3 scripts/run_db_pipeline.py --mode full --dry-run
-
-# Dimensional pipeline (includes dimension metrics + dimensional rules)
-python3 scripts/run_db_pipeline.py --mode full --dimensional
-```
-
-See `docs/pipeline.md` for full pipeline documentation.
-
-## 入口 2：每日模拟模式
-
-```bash
-python3 scripts/run_daily_pipeline.py
-```
-
-8-step sequential pipeline: simulate ingestion → data quality → daily metrics → alert detection → AIP objects → context bundle → wake agent → feishu sandbox. Increments `data/system/ingestion_state.json` by 1 day per run.
-
-## 入口 3：全量评估模式
-
-```bash
-python3 scripts/run_full_pipeline.py
-```
-
-5-step --mode full pipeline: daily_metrics_full → metric_alerts_full → aip_context_bundle_full → AI decision engine → feishu sandbox full. Produces `_full` suffixed outputs in data/ads/, data/aip/, outputs/ai/, data/feishu/.
-
-## 入口 4：飞书同步
-
-```bash
-# Dry-run (preview only, no API calls)
-python3 scripts/sync_feishu_bitable.py --all --dry-run
-# Apply (real sync, requires FEISHU_* env vars)
-python3 scripts/sync_feishu_bitable.py --all --apply
-```
-
-Syncs 5 tables: daily_metrics, alert_events, strategy_recommendations, action_tasks, execution_reviews. Requires `.env` with real Feishu credentials. See `config/feishu_table_ids.yml` for table ID configuration.
-
-## 入口 5：状态回流
-
-```bash
-python3 scripts/pull_feishu_status.py --dry-run
-python3 scripts/pull_feishu_status.py --apply
-```
-
-Pulls task status and review retro from Feishu back to local CSV.
-
-## 常见错误
-
-- **"No such file: olist_orders_dataset.csv"**: Run data download step first
-- **"ModuleNotFoundError: No module named 'pandas'"**: Run `pip install -e .`
-- **"LLM API key not found"**: Copy `.env.example` to `.env` and set LLM_API_KEY (or skip: AI engine will fall back to heuristic rules)
-- **"Feishu auth failed"**: Set real FEISHU_APP_ID/FEISHU_APP_SECRET in `.env` (or use --dry-run for local-only)
-- **"ingestion_state.json not found"**: Script auto-initializes on first run (start date: 2016-09-04)
-- **"data_quality_checks returned WARN"**: Non-critical; some quality checks may fail on small daily data. This is a known issue tracked for Phase II.
-
-## 当前限制
-
-- **不是大模型决策**：策略生成基于启发式规则（decision_source=heuristic），LLM API 调用仅作可选增强
-- **飞书同步需手动建表**：脚本只读写数据，不自动创建飞书多维表格
-- **FROZEN 脚本不能直接运行**：Phase 1-7 的 EDA 脚本（phase03-07）路径已失效，其分析结果已固化在 outputs/ 和 reports/ 中
-- **无定时任务**：所有命令需手动触发，未配置 cron 或调度器
-- **无自动触发**：异常检测不会自动通知，需通过飞书同步后人工查看
+| 现象 | 排查 |
+|------|------|
+| API 返回 401 | 检查 `API_BEARER_TOKEN` 环境变量 |
+| API 返回 503 | 检查 PostgreSQL 连接（`DATABASE_URL`） |
+| Pipeline 失败 | 检查数据文件在 `data/` 目录下是否存在 |
+| Worker 无响应 | 检查数据库连接和 Outbox 表中是否有待处理事件 |

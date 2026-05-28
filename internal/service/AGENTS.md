@@ -6,7 +6,7 @@
 
 ## OVERVIEW
 
-Business orchestration layer between HTTP handlers and repositories. 17 files, 8 orchestrator services, flat package.
+Business orchestration layer between HTTP handlers and repositories. 17 files, 11 orchestrator services, flat package.
 
 ## WHERE TO LOOK
 
@@ -31,8 +31,8 @@ Each service typically has a `*_test.go` counterpart using the local interface p
 
 ## ANTI-PATTERNS
 
-- **Feishu service is 967 lines**: The largest file in `internal/`. Mixes HTTP client logic, CSV parsing, data sync, and YAML config reading. Should be split into client + sync + export sub-packages.
-- **No `_test.go` for alert, governance, qoder, status, task services**: 5 of 13 production files lack test coverage.
+- **Feishu service is 621 lines**: The largest file in `internal/`. Mixes HTTP client logic, CSV parsing, data sync, and YAML config reading. Should be split into client + sync + export sub-packages.
+- **No `_test.go` for alert, governance, qoder, status, task services**: 5 of 11 production files lack test coverage.
 
 ### ✅ Resolved Anti-Patterns
 

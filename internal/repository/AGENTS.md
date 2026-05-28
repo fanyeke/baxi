@@ -5,28 +5,40 @@
 
 ## OVERVIEW
 
-Flat Go package (19 files) with pgx/PostgreSQL data access: interface definitions, row types, and implementations sharing one namespace with no sub-packages.
+Domain-organized repository layer with PoolProvider injection. 10 subpackages within `internal/repository/`:
+- `common/` — PoolProvider base infrastructure
+- `governance/` — Governance config snapshots, object schemas
+- `decision/` — Decision cases, LLM decisions, proposals
+- `task/` — Task queries
+- `alert/` — Alert event queries
+- `outbox/` — Outbox event queries
+- `log/` — Log querying
+- `context/` — Qoder context data
+- `status/` — System status (table counts, pipeline runs)
+- `ontology/` — Object queries across dwd/mart/ops tables
+
+Flat compatibility files (`*_repository.go`) still exist in the parent package and delegate to the new subpackages.
 
 ## WHERE TO LOOK
 
-| File | Contents |
-|------|----------|
-| `interfaces.go` | All repository interfaces + shared row/param/filter types |
-| `*_repository.go` | Implementation structs (empty, no pool field) + domain row types |
-| `*_repository_test.go` | Integration tests with inline DDL + `testutil.StartPostgres()` |
+| Task | Location | Notes |
+|------|----------|-------|
+| Add a governance query | `repository/governance/` | Implement interface from `interfaces.go` |
+| Add a decision query | `repository/decision/` | PoolProvider injected via constructor |
+| Add a task query | `repository/task/` | Same pattern |
+| Define shared interfaces | `repository/interfaces.go` | May still use old pool-as-param pattern |
 
 ## KEY PATTERNS
 
-- **Stateless structs**: Every repository struct is empty (`struct{}`). Pool is not stored.
-- **Pool as parameter**: Every method signature starts `(ctx, pool *pgxpool.Pool, ...)`. No DI, no context propagation.
-- **Dual access style**: Governance repos (ConfigSnapshot, ObjectSchema, etc.) use explicit interfaces in `interfaces.go`. Read-only repos (Task, Outbox, Log, Status) are concrete structs consumed directly.
-- **Inline DDL in tests**: Tests inline `CREATE TABLE IF NOT EXISTS` statements rather than running migrations. Helpful for isolation but diverges from production schema.
-- **Pattern**: `GetAll(ctx, pool)`, `GetByX(ctx, pool, key)`, `Upsert(ctx, pool, params)`. No `Insert`/`Update` split.
+- **PoolProvider injection**: Each subpackage repository embeds `*common.PoolProvider` via constructor
+- **Domain isolation**: Subpackages prevent cross-imports between governance, decision, task repos
+- **Backward compat**: Flat `*_repository.go` files delegate to subpackages via `ensureInitialized(pool)` lazy init
+- **Inline DDL in tests**: Tests use `CREATE TABLE IF NOT EXISTS` rather than migrations
+- **Raw SQL**: No query builder — handwritten SQL with parameterized queries
 
 ## ANTI-PATTERNS
 
-- **No sub-package boundaries**: Governance, decision, task, outbox repos share one package with no import-wall separation. Any repo can import any other.
-- **Two roles in one package**: Interface-governed repos (callers mock via interface) sit alongside concrete repos (callers couple to implementation). Inconsistent testability story.
-- **Row/param types coupled to package**: Shared types in `interfaces.go` coexist with domain-specific rows in each `*_repository.go`. Adding a table means touching multiple files in the same flat namespace.
-- **Tests bypass migrations**: Inline DDL in tests means CI catches drift between test schema and production migrations only at runtime.
-- **No query builder**: Raw SQL strings everywhere. Schema changes require grep across all 19 files.
+- **interfaces.go still uses pool-as-param**: Interface methods still pass `pool *pgxpool.Pool` even though implementations use PoolProvider
+- **Tests bypass migrations**: Inline DDL diverges from production schema
+- **No query builder**: Schema changes require grep across all repo files
+- **Dual identity**: Some callers use the old flat interface, others use the new subpackages

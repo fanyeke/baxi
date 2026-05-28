@@ -5,12 +5,12 @@
 **Branch:** main
 
 ## OVERVIEW
-chi HTTP server on :8080, 9 handlers, 4 middlewares, 8 DTO types, serves all business endpoints.
+chi HTTP server on :8080, 13 handlers, 6 middlewares, 10 DTO types, serves all business endpoints.
 
 ## HANDLERS
-- `action`, `alerts`, `decision`, `governance`, `logs`, `outbox`, `qoder`, `review`, `status`
+- `action`, `alerts`, `decision`, `diagnosis`, `feishu`, `governance`, `llm`, `logs`, `outbox`, `pipeline`, `qoder`, `review`, `status`
 - Each exposes interface (e.g. `AlertLister`) for mock-injectable testing
-- Lazy initialization in `server.go`: `initXxxHandler()` called per route group
+- Lazy initialization in `handler_factories.go` (`server.go` is lifecycle-only after refactoring): `initXxxHandler()` called per route group
 
 ## MIDDLEWARE
 - **auth**: bearer token via `ConstantTimeCompare`, min 32 chars, known-weak-token rejection set
@@ -20,8 +20,8 @@ chi HTTP server on :8080, 9 handlers, 4 middlewares, 8 DTO types, serves all bus
 
 ## RESPONSE FORMAT
 - `PaginatedResponse[T]` with `httputil.PaginationMeta` (limit, offset, total)
-- Error responses follow legacy FastAPI format for frontend compatibility
+- Error responses follow pre-existing error format for frontend compatibility
 
 ## ANTI-PATTERNS
-- `httputil.ParsePagination` returns hardcoded default (limit=20) — callers can't distinguish "not provided" from "default"
-- CORS middleware uses string split on comma — no trimming, fragile on whitespace
+- `httputil.ParsePagination` returns hardcoded default (limit=100) — callers can't distinguish "not provided" from "default"
+- ~~CORS middleware uses string split on comma — no trimming, fragile on whitespace~~ ✅ Fixed in `parseOrigins()` with `strings.TrimSpace`

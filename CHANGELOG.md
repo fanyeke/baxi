@@ -1,5 +1,31 @@
 # 变更日志
 
+## v1.0 — Go/PostgreSQL 全面迁移
+
+> **日期**: 2026-05
+> **状态**: 当前版本
+
+### 架构变更
+- 完成从 Python/SQLite 到 Go/PostgreSQL 的全面迁移
+- Python FastAPI 网关 → Go chi API（端口 8080）
+- SQLite → PostgreSQL 15
+- 数据管道从 Python subprocess 迁移到 Go Step 接口编排
+- 治理层从 Python 规则引擎迁移到 Go 实现
+
+### 新增功能
+- Repository 子包结构（PoolProvider 注入）
+- 内部 model 包（消除 DTO 反向依赖）
+- server.go 拆分（691→69 行）
+- 飞书 HTTP 客户端独立为 `internal/feishu/` 包
+- golangci-lint 配置 + 领域常量提取
+
+### 测试
+- 26/26 internal 包全部通过
+
+---
+
+_以下为历史版本（Python/SQLite 时代，代码已归档）_
+
 ## v0.5.3 (2026-05-24)
 
 ### 安全加固

@@ -1,105 +1,51 @@
-# core/config.py — 核心配置模块
+# 核心配置 — internal/config
 
-> 集中管理项目路径常量、环境变量读取和 Feishu 凭据加载。
+## 配置加载
 
-## 设计原则
+Go 配置通过 `internal/config/config.go` 的 `Load()` 函数加载，从环境变量读取。
 
-- **单点配置**：所有路径、环境变量、凭据都从这里导入
-- **向后兼容**：`scripts/config.py` 是已弃用的 shim，新代码应直接 `from core.config import ...`
-- **占位符检测**：`get_env_or_raise()` 会拒绝 `YOUR_*` 和 `REPLACE_ME` 占位符值
-
----
-
-## 路径常量
-
-```python
-from core.config import PROJECT_ROOT, RAW_DATA_DIR, DB_PATH, OUTPUT_DIR
+```go
+cfg, err := config.Load()
 ```
 
-| 常量 | 值 | 说明 |
-|------|-----|------|
-| `PROJECT_ROOT` | `Path(__file__).parent.parent` | 项目根目录 |
-| `RAW_DATA_DIR` | `PROJECT_ROOT / "data" / "raw"` | 原始 CSV |
-| `DB_PATH` | `PROJECT_ROOT / "data" / "olist_ops.db"` | SQLite 数据库 |
-| `OUTPUT_DIR` | `PROJECT_ROOT / "outputs"` | 分析产物输出 |
-| `SQL_DIR` | `PROJECT_ROOT / "sql"` | Schema + 迁移 |
-| `FEISHU_DIR` | `PROJECT_ROOT / "data" / "feishu"` | 飞书 CSV 导出 |
-| `SYSTEM_DIR` | `PROJECT_ROOT / "data" / "system"` | 运行时状态 |
+## 配置项
 
----
+| 字段 | 环境变量 | 类型 | 默认值 | 说明 |
+|------|---------|------|--------|------|
+| `DatabaseURL` | `DATABASE_URL` | string | — | PostgreSQL 连接串（**必填**） |
+| `APIPort` | `API_PORT` | string | `8080` | API 监听端口 |
+| `LogLevel` | `LOG_LEVEL` | string | `info` | 日志级别 |
+| `APIBearerToken` | `API_BEARER_TOKEN` | string | — | API 认证令牌（**必填**） |
+| `CORSAllowedOrigins` | `CORS_ALLOWED_ORIGINS` | string | `http://localhost:5173` | CORS 允许来源 |
 
-## 环境变量读取
+### LLM 配置
 
-### `get_env_or_raise(key: str, default=None) -> str`
+| 字段 | 环境变量 | 默认值 |
+|------|---------|--------|
+| `LLMAPIKey` | `LLM_API_KEY` | — |
+| `LLMAPIBase` | `LLM_API_BASE` | — |
+| `LLMModel` | `LLM_MODEL` | `gpt-4o-mini` |
+| `LLMTemperature` | `LLM_TEMPERATURE` | `0.7` |
+| `LLMMaxTokens` | `LLM_MAX_TOKENS` | `1024` |
+| `LLMTimeoutSeconds` | `LLM_TIMEOUT_SECONDS` | `60` |
+| `LLMEnabled` | `LLM_ENABLED` | `false` |
+| `LLMProvider` | `LLM_PROVIDER` | `disabled` |
+| `LLMStoreRawOutput` | `LLM_STORE_RAW_OUTPUT` | `false` |
+| `LLMMaxRetries` | `LLM_MAX_RETRIES` | `3` |
 
-```python
-from core.config import get_env_or_raise
+### Worker 配置
 
-# 必须设置的变量（缺失会抛 RuntimeError）
-api_token = get_env_or_raise("API_BEARER_TOKEN")
+| 字段 | 环境变量 | 默认值 |
+|------|---------|--------|
+| `ActionApplyDryRun` | `ACTION_APPLY_DRY_RUN` | `true` |
+| `WorkerTickInterval` | `WORKER_TICK_INTERVAL` | `30s` |
+| `WorkerBatchSize` | `WORKER_BATCH_SIZE` | `10` |
 
-# 有默认值的变量（缺失返回默认值，不报错）
-user = get_env_or_raise("DEFAULT_USER", default="qoder")
-```
+### 飞书集成
 
-**占位符检测**：如果值为空、以 `YOUR_` 开头、或等于 `REPLACE_ME`，则抛出 `RuntimeError`。
+| 字段 | 环境变量 | 说明 |
+|------|---------|------|
+| `FeishuWebhookURL` | `FEISHU_WEBHOOK_URL` | 飞书 Webhook 地址 |
+| `GitHubToken` | `GITHUB_TOKEN` | GitHub API Token |
 
-### 完整环境变量列表
-
-| 变量 | 必需 | 默认值 | 说明 |
-|------|------|--------|------|
-| `API_BEARER_TOKEN` | ✅ | — | API 认证令牌 |
-| `FEISHU_APP_ID` | ❌ | — | 飞书 App ID |
-| `FEISHU_APP_SECRET` | ❌ | — | 飞书 App Secret |
-| `FEISHU_BASE_APP_TOKEN` | ❌ | — | 飞书多维表格 App Token |
-| `FEISHU_CHAT_ID` | ❌ | — | 飞书群聊 ID |
-| `LLM_API_KEY` | ❌ | — | LLM API Key（OpenAI-compatible） |
-| `DEFAULT_USER` | ❌ | `qoder` | 默认用户身份 |
-| `CORS_ORIGINS` | ❌ | `http://localhost:5173` | CORS 来源（逗号分隔） |
-| `TRUSTED_PROXY_IPS` | ❌ | `127.0.0.1,::1` | 可信代理 IP |
-| `ENABLE_DOCS` | ❌ | `0` | 启用 Swagger/OpenAPI（`1`=启用） |
-| `DEBUG` | ❌ | `0` | 调试模式（`1`=显示完整堆栈） |
-
----
-
-## Feishu 凭据加载
-
-### `load_feishu_credentials() -> dict`
-
-```python
-from core.config import load_feishu_credentials
-
-creds = load_feishu_credentials()
-# {'app_id': 'xxx', 'app_secret': 'yyy', 'base_app_token': 'zzz', 'chat_id': 'aaa'}
-```
-
-**优先级**：环境变量 > `config/feishu_table_ids.yml`
-
----
-
-## SQL 安全校验
-
-### `validate_sql_identifier(name: str) -> str`
-
-```python
-from core.config import validate_sql_identifier
-
-safe = validate_sql_identifier("my_table")  # "my_table"
-safe = validate_sql_identifier("drop table")  # RuntimeError
-```
-
-用于防止 SQL 注入，确保表名/列名只包含字母、数字和下划线。
-
----
-
-## 向后兼容
-
-```python
-# ❌ 已弃用（会发出 DeprecationWarning）
-from scripts import config
-
-# ✅ 推荐
-from core.config import PROJECT_ROOT, get_env_or_raise, DB_PATH
-```
-
-`scripts/config.py` 保留为 shim，通过动态 `sys.path` 调整重新导出 `core.config` 的所有符号，但会在导入时发出 `DeprecationWarning`。
+配置在服务启动时自动加载，缺少 `DATABASE_URL` 或 `API_BEARER_TOKEN` 时会报错。

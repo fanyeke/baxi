@@ -6,17 +6,19 @@
 
 ## OVERVIEW
 
-Core Go backend: 23 packages, chi router, pgx/PostgreSQL, zap logger.
+Core Go backend: 28 packages, chi router, pgx/PostgreSQL, zap logger.
 
 ## STRUCTURE
 
-**API/HTTP**: `api/server.go` (chi routes, lifecycle), `api/handler/` (9 handlers), `api/middleware/` (auth/CORS/request-id/error), `api/dto/` (request/response types), `httputil/` (JSON response, pagination).
+**API/HTTP**: `api/server.go` (chi routes, lifecycle), `api/handler/` (13 handlers), `api/middleware/` (auth/CORS/request-id/error), `api/dto/` (request/response types), `httputil/` (JSON response, pagination).
 
 **Pipeline**: `pipeline/` (Step interface + Runner), `pipeline/steps/` (7 impls: ingest_raw → build_dwd → build_metrics → detect_alerts → generate_recommendations → generate_tasks → create_outbox), `ingest/` (CSV loader).
 
 **Business services**: `service/` (8 orchestrators), `decision/` (case engine + context builder), `action/` (registry + proposal + apply + executor), `review/` (domain + approval flow), `recommendation/` (generator), `alert/` (dimensional engine + rules), `governance/` (policy/classification/lineage/redaction), `worker/` (dispatch).
 
 **Data access**: `repository/` (interfaces + pgx impls, 8 repos), `outbox/` (write repo), `db/` (pool creation).
+
+**Shared types**: `model/` (domain types shared across service, handler, and repository layers).
 
 **Infrastructure**: `config/` (env struct), `configloader/` (YAML parse/validate), `adapter/` (Feishu/GitHub domain types), `llm/` (provider abstraction + rule provider), `ontology/` (object registry + query), `audit/`, `logger/` (zap init), `testutil/` (testcontainer + fixtures).
 
@@ -47,6 +49,6 @@ Core Go backend: 23 packages, chi router, pgx/PostgreSQL, zap logger.
 - `test/` outside internal/ — E2E tests in root break `go test ./...` isolation
 - `cmd/` constructs pipelines directly — should delegate to `internal/pipeline/`
 - No golangci-lint config — varying style, no lint CI step
-- Flat `repository/` package (17 files) mixes interface definitions with pgx implementations
-- `pool` passed as parameter everywhere — no DI container or context propagation
+- Repository organized into 10 domain subpackages with PoolProvider injection
+- pool passed as parameter in interfaces.go and flat compatibility files (subpackages use PoolProvider)
 - Package naming: `config` (struct) vs `configloader` (parser) — adjacent but not cohesive

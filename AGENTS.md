@@ -13,9 +13,9 @@ Multi-language governance + analytics platform (Go pipeline backend, Go chi API,
 ```
 baxi/
 ├── cmd/            # Go entry points (baxi-api, baxi-cli, baxi-worker)
-├── internal/       # Go core: 23 packages (pipeline, decision, governance, etc.)
+├── internal/       # Go core: 28 packages (pipeline, decision, governance, etc.)
 ├── frontend/       # React 19 SPA (Vite, TanStack Query, Radix UI)
-├── config/         # YAML governance configs (29 files)
+├── config/         # YAML governance configs (28 files)
 ├── migrations/     # Goose SQL migrations (Go → PostgreSQL)
 ├── test/           # Go integration + security E2E tests
 ├── scripts/        # Utility scripts (frozen analysis scripts)
@@ -30,17 +30,17 @@ baxi/
 | Pipeline orchestration | `internal/pipeline/` | Go, 13 step files |
 | Governance rules | `internal/governance/` + `config/` | Go engine + YAML configs |
 | Decision engine | `internal/decision/` | Go case engine + context builder |
-| API handlers | `internal/api/handler/` | 9 Go handler files |
-| React pages | `frontend/src/pages/` | 8 pages + co-located tests |
+| API handlers | `internal/api/handler/` | 14 Go handler files |
+| React pages | `frontend/src/pages/` | 11 pages + co-located tests |
 | Channel adapters | `internal/adapter/` | Go strategy pattern (Feishu, GitHub, CLI, Manual) |
 | DB repository layer | `internal/repository/` | Go interfaces + implementations |
-| YAML configs | `config/*.yml` | 29 governance/alert/metric configs |
+| YAML configs | `config/*.yml` | 28 governance/alert/metric configs |
 | Background workers | `internal/worker/` | Dispatch worker |
 | Action execution | `internal/action/` | Registry + proposal + apply |
 
 ## CONVENTIONS
 
-- **Go**: chi router, pgx/PostgreSQL, goose migrations, testify for tests. No golangci-lint config.
+- **Go**: chi router, pgx/PostgreSQL, goose migrations, testify for tests. golangci-lint configured.
 - **TypeScript**: `verbatimModuleSyntax` (requires `import type`), `@/` path alias, permissive unused vars.
 - **Env vars**: ALL_CAPS_SNAKE_CASE, grouped by domain. `API_BEARER_TOKEN` shared between Go services.
 - **Docker**: Multi-stage golang:1.23-alpine→alpine, CGO_ENABLED=0, static binaries.
@@ -48,21 +48,21 @@ baxi/
 ## ANTI-PATTERNS (THIS PROJECT)
 
 - **Two test roots**: `test/` at root inside module vs `internal/` tests — Go E2E tests in `test/` break `go test ./...` isolation.
-- **Committed Go binaries**: `baxi-api`, `baxi-cli`, `baxi-worker` in git — should be in `.gitignore`.
 - **`test/` outside `internal/`**: E2E tests in root `test/` directory use internal packages by name, fragile to refactoring.
 - **No golangci-lint config**: varying style, no lint CI step.
 - **Package naming**: `internal/config` (struct) vs `internal/configloader` (parser) — adjacent but not cohesive.
 
 ### ✅ Resolved Anti-Patterns
 
-- **`internal/repository/` flat package**: Now organized into 9 domain subpackages with clean separation between interface and implementation.
+- **`internal/repository/` flat package**: Now organized into 10 domain subpackages with clean separation between interface and implementation.
 - **`pool` passed as parameter everywhere**: `PoolProvider` interface now injected across all subpackages — standardized, mockable, and no more raw `pgxpool.Pool` passing.
+- **Committed Go binaries**: `baxi-api`, `baxi-cli`, `baxi-worker` in git — now excluded via `.gitignore`.
 
 <!-- cmd/ deep-dive -->
 
 ## cmd/
 
-Three Go entry points. baxi-api and baxi-worker are thin main.go wrappers. baxi-cli is the outlier — 6 files all declaring `package main` with ~820 lines of subcommand logic that belongs in `internal/cli/`.
+Three Go entry points. baxi-api and baxi-worker are thin main.go wrappers. baxi-cli is the outlier — 6 files all declaring `package main` with ~919 lines of subcommand logic that belongs in `internal/cli/`.
 
 ### WHERE TO LOOK
 
@@ -77,7 +77,7 @@ Three Go entry points. baxi-api and baxi-worker are thin main.go wrappers. baxi-
 
 ### ANTI-PATTERNS
 
-- **CLI logic in package main**: baxi-cli's 6 files (~820 lines) keep subcommand logic in `package main` instead of delegating to `internal/cli/`. Only baxi-api and baxi-worker follow the thin-main.go pattern.
+- **CLI logic in package main**: baxi-cli's 6 files (~919 lines) keep subcommand logic in `package main` instead of delegating to `internal/cli/`. Only baxi-api and baxi-worker follow the thin-main.go pattern.
 - **HTTP client in cmd/**: `cmd/baxi-cli/client.go` defines shared API call helpers (apiGet, apiPost, auth) inside the entry point instead of a reusable internal package.
 - **Decision subcommands hit live API**: `compare`, `replay`, and `evals` in decision.go make HTTP calls to the baxi-api server rather than importing internal packages directly.
 - **Dead subcommand**: `cmd/baxi-cli/llm.go` registers `llm status/metrics` handlers, but main.go only dispatches pipeline/governance/decision — llm is unreachable.
@@ -107,6 +107,16 @@ Root-level E2E test suite (3 subdirs). Runs separately in CI, not under `go test
 
 - **Fragile import path**: Imports `baxi/internal/*` by name from outside the module tree — any internal package rename or relocation breaks E2E tests silently
 - **Duplicated helper**: All 3 files reimplement the same `migrationsDir()` directory-walking function instead of sharing a common helper
+
+## DOCUMENTATION
+
+All documentation must be updated to reflect the current Go/PostgreSQL architecture.
+Python/SQLite references are no longer valid. When adding features or refactoring,
+update the affected AGENTS.md files and README.md to match.
+
+- **AGENTS.md**: Update per-package knowledge base when package structure changes
+- **README.md**: Update when project structure, counts, or commands change
+- **docs/**: Keep pipeline and config docs in sync with Go implementation
 
 ## COMMANDS
 
