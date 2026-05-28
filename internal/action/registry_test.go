@@ -45,6 +45,16 @@ actions:
     risk_level: high
     requires_approval: true
     allowed_by: [business_ops]
+  export_report:
+    description: "导出报告"
+    risk_level: medium
+    requires_approval: true
+    allowed_by: [analyst]
+  create_outbox_message:
+    description: "创建出站消息"
+    risk_level: medium
+    requires_approval: true
+    allowed_by: [manager]
 `
 }
 
@@ -58,9 +68,11 @@ func TestNewActionRegistry_LoadsYAML(t *testing.T) {
 }
 
 func TestNewActionRegistry_DefaultPath(t *testing.T) {
-	// Must fail since the default path won't exist in test temp dir
-	_, err := NewActionRegistry("")
-	assert.Error(t, err)
+	// Must NOT fail since missing file falls back to defaults
+	reg, err := NewActionRegistry("")
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
+	assert.Len(t, reg.AllowedActions(), 4)
 }
 
 func TestIsAllowed_CanonicalActions(t *testing.T) {
@@ -110,21 +122,21 @@ func TestGetActionConfig_MissingActionGetsDefaults(t *testing.T) {
 	reg, err := NewActionRegistry(path)
 	require.NoError(t, err)
 
-	// export_report is whitelisted but not in the test YAML → should get defaults
+	// export_report is in the test YAML → should get YAML values
 	cfg, ok := reg.GetActionConfig("export_report")
 	assert.True(t, ok)
-	assert.Equal(t, "", cfg.Description)
+	assert.Equal(t, "导出报告", cfg.Description)
 	assert.Equal(t, "medium", cfg.RiskLevel)
 	assert.True(t, cfg.RequiresApproval)
-	assert.Empty(t, cfg.AllowedBy)
+	assert.Equal(t, []string{"analyst"}, cfg.AllowedBy)
 
-	// create_outbox_message is also missing from YAML
+	// create_outbox_message is also in the YAML
 	cfg, ok = reg.GetActionConfig("create_outbox_message")
 	assert.True(t, ok)
-	assert.Equal(t, "", cfg.Description)
+	assert.Equal(t, "创建出站消息", cfg.Description)
 	assert.Equal(t, "medium", cfg.RiskLevel)
 	assert.True(t, cfg.RequiresApproval)
-	assert.Empty(t, cfg.AllowedBy)
+	assert.Equal(t, []string{"manager"}, cfg.AllowedBy)
 }
 
 func TestGetActionConfig_UnknownAction(t *testing.T) {
@@ -200,6 +212,8 @@ func TestNewActionRegistry_FailsOnBadYAML(t *testing.T) {
 }
 
 func TestNewActionRegistry_FailsOnMissingFile(t *testing.T) {
-	_, err := NewActionRegistry("/nonexistent/path/action_registry.yml")
-	assert.Error(t, err)
+	// Code handles missing file gracefully (all canonical with defaults)
+	reg, err := NewActionRegistry("/nonexistent/path/action_registry.yml")
+	assert.NoError(t, err)
+	assert.NotNil(t, reg)
 }
