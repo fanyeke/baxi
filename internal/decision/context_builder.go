@@ -30,19 +30,44 @@ type DecisionCaseDataProvider interface {
 	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
 }
 
+// ActionTypeProvider provides action type information for decision contexts.
+type ActionTypeProvider interface {
+	ListActionTypes() []string
+	IsActionAllowed(actionType string) bool
+	GetActionPolicy(actionType string) (ActionPolicy, bool)
+}
+
+// ActionPolicy holds the policy configuration for an action type.
+type ActionPolicy struct {
+	RiskLevel        string
+	RequiresApproval bool
+	AllowedBy        []string
+}
+
+// PolicyResult holds the evaluated policy result for a decision context.
+type PolicyResult struct {
+	AllowedActions          []string          `json:"allowed_actions"`
+	BlockedActions          map[string]string `json:"blocked_actions"`
+	RiskLevels              map[string]string `json:"risk_levels"`
+	HumanApprovalRequired   bool              `json:"human_approval_required"`
+	RequiresApprovalActions []string          `json:"requires_approval_actions"`
+	EvidenceSources         []string          `json:"evidence_sources"`
+}
+
 // Compile-time interface checks.
 var _ DecisionCaseDataProvider = (*repository.DecisionRepository)(nil)
 
 // DecisionContext is the full domain context for a decision case.
 type DecisionContext struct {
 	DecisionCaseID   string            `json:"decision_case_id"`
-	SourceType       string            `json:"source_type"`
-	SourceID         string            `json:"source_id"`
+	SourceType       *string           `json:"source_type"`
+	SourceID         *string           `json:"source_id"`
 	Trigger          TriggerInfo       `json:"trigger"`
 	ObjectContext    ObjectContextData `json:"object_context"`
 	Governance       GovernanceData    `json:"governance"`
 	AllowedActions   []string          `json:"allowed_actions"`
 	ForbiddenActions []string          `json:"forbidden_actions"`
+	Policy           *PolicyResult     `json:"policy,omitempty"`
 }
 
 // TriggerInfo holds the alert/metric data that triggered the decision case.
@@ -95,6 +120,7 @@ type ContextBuilder struct {
 	objectProvider ObjectDataProvider
 	classProvider  ClassificationProvider
 	pool           *pgxpool.Pool
+	actionTypes    ActionTypeProvider
 }
 
 // NewContextBuilder creates a ContextBuilder backed by the given providers.
@@ -103,12 +129,14 @@ func NewContextBuilder(
 	objectProvider ObjectDataProvider,
 	classProvider ClassificationProvider,
 	pool *pgxpool.Pool,
+	actionTypes ActionTypeProvider,
 ) *ContextBuilder {
 	return &ContextBuilder{
 		caseSvc:        caseSvc,
 		objectProvider: objectProvider,
 		classProvider:  classProvider,
 		pool:           pool,
+		actionTypes:    actionTypes,
 	}
 }
 

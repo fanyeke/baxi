@@ -194,7 +194,7 @@ func (r *DecisionRepository) GetCaseByID(ctx context.Context, pool *pgxpool.Pool
 
 // GetCaseBySource retrieves a single decision case by source_type and source_id.
 // If sourceType or sourceID is nil, matches NULL in the database.
-func (r *DecisionRepository) GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID *string) (*DecisionCaseRow, error) {
+func (r *DecisionRepository) GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*DecisionCaseRow, error) {
 	query := `
 		SELECT case_id, alert_id, case_type, status, context_json,
 		       created_at, resolved_at,
@@ -209,8 +209,19 @@ func (r *DecisionRepository) GetCaseBySource(ctx context.Context, pool *pgxpool.
 		  AND (source_id = $2 OR (source_id IS NULL AND $2 IS NULL))
 	`
 
+	var (
+		sType   *string
+		sID     *string
+	)
+	if sourceType != "" {
+		sType = &sourceType
+	}
+	if sourceID != "" {
+		sID = &sourceID
+	}
+
 	var row DecisionCaseRow
-	err := pool.QueryRow(ctx, query, sourceType, sourceID).Scan(
+	err := pool.QueryRow(ctx, query, sType, sID).Scan(
 		&row.CaseID,
 		&row.AlertID,
 		&row.CaseType,

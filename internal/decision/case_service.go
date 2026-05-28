@@ -59,7 +59,7 @@ type CaseList struct {
 type CaseRepository interface {
 	CreateCase(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error
 	GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
-	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID *string) (*repository.DecisionCaseRow, error)
+	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
 	UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
 	ListCases(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error)
 }
@@ -95,7 +95,7 @@ func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdB
 	}
 
 	sourceType := "alert"
-	existing, err := s.caseRepo.GetCaseBySource(ctx, s.pool, &sourceType, &alertID)
+	existing, err := s.caseRepo.GetCaseBySource(ctx, s.pool, sourceType, alertID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("check existing case for alert %s: %w", alertID, err)

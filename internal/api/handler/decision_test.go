@@ -80,8 +80,8 @@ func TestDecisionHandler_CreateCase_201(t *testing.T) {
 			assert.Equal(t, "api_user", createdBy)
 			return &decision.DecisionCase{
 				CaseID:     "dc_123",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("alert-1"),
 				Status:     "created",
 				CreatedAt:  now,
 			}, nil
@@ -160,8 +160,8 @@ func TestDecisionHandler_GetCase_200(t *testing.T) {
 			assert.Equal(t, "dc_123", caseID)
 			return &decision.DecisionCase{
 				CaseID:     "dc_123",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("alert-1"),
 				ObjectType: "seller",
 				ObjectID:   "seller-42",
 				Severity:   "high",
@@ -225,15 +225,15 @@ func TestDecisionHandler_ListCases_200(t *testing.T) {
 				Cases: []decision.DecisionCase{
 					{
 						CaseID:     "dc_1",
-						SourceType: "alert",
-						SourceID:   "a1",
-						Status:     "created",
-						CreatedAt:  now,
-					},
-					{
-						CaseID:     "dc_2",
-						SourceType: "alert",
-						SourceID:   "a2",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("a1"),
+				Status:     "created",
+				CreatedAt:  now,
+			},
+			{
+				CaseID:     "dc_2",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("a2"),
 						Status:     "open",
 						CreatedAt:  now.Add(-1 * time.Hour),
 					},
@@ -326,16 +326,16 @@ func TestDecisionHandler_BuildContext_200(t *testing.T) {
 			return &decision.DecisionCase{
 				CaseID:     "dc_123",
 				Status:     "context_built",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("alert-1"),
 				CreatedAt:  now,
 			}, nil
 		},
 		buildContextFn: func(ctx context.Context, caseID string) (*decision.DecisionContext, error) {
 			return &decision.DecisionContext{
 				DecisionCaseID: "dc_123",
-				SourceType:     "alert",
-				SourceID:       "alert-1",
+				SourceType:     strPtr("alert"),
+				SourceID:       strPtr("alert-1"),
 				Trigger: decision.TriggerInfo{
 					AlertID:    "alert-1",
 					RuleID:     "gmv_drop",
@@ -406,8 +406,8 @@ func TestDecisionHandler_Decide_200(t *testing.T) {
 		decideFn: func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error) {
 			return &decision.DecisionContext{
 					DecisionCaseID: "dc_123",
-					SourceType:     "alert",
-					SourceID:       "alert-1",
+					SourceType:     strPtr("alert"),
+					SourceID:       strPtr("alert-1"),
 					Trigger: decision.TriggerInfo{
 						AlertID:  "alert-1",
 						RuleID:   "gmv_drop",

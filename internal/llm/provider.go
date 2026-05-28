@@ -66,6 +66,7 @@ const (
 	ActionTypeNotifyOwner        = "notify_owner"
 	ActionTypeExportReport       = "export_report"
 	ActionTypeCreateOutboxMessage = "create_outbox_message"
+	ActionTypeEscalateToHuman    = "escalate_to_human"
 )
 
 // DecisionOutput is the structured result from a DecisionProvider.

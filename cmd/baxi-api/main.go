@@ -46,7 +46,7 @@ func main() {
 	defer pool.Close()
 
 	// Create and start API server
-	server := api.New(zapLog, pool.Pool)
+	server := api.New(zapLog, pool.Pool, cfg)
 	go func() {
 		if err := server.Start(":" + cfg.APIPort); err != nil {
 			zapLog.Fatal("server error", zap.Error(err))

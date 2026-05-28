@@ -65,6 +65,20 @@ func (m *mockDecisionLineageService) RecordDecisionLineage(ctx context.Context, 
 	return errors.New("not implemented")
 }
 
+type mockActionTypeProvider struct{}
+
+func (m *mockActionTypeProvider) ListActionTypes() []string {
+	return []string{"create_followup_task", "notify_owner", "export_report", "escalate_to_human"}
+}
+func (m *mockActionTypeProvider) IsActionAllowed(actionType string) bool {
+	return true
+}
+func (m *mockActionTypeProvider) GetActionPolicy(actionType string) (ActionPolicy, bool) {
+	return ActionPolicy{RiskLevel: "medium", RequiresApproval: false, AllowedBy: []string{"system"}}, true
+}
+
+var testActionTypes = &mockActionTypeProvider{}
+
 func (m *mockDecisionLineageService) RecordDataSnapshot(ctx context.Context, record DataSnapshotRecord) error {
 	return errors.New("not implemented")
 }

@@ -39,10 +39,12 @@ func (m *mockDecisionEngineRepository) GetCaseByID(ctx context.Context, pool *pg
 }
 
 func validDecisionContext() *DecisionContext {
+	alertStr := "alert"
+	alert1Str := "alert-1"
 	return &DecisionContext{
 		DecisionCaseID: "dc-1",
-		SourceType:     "alert",
-		SourceID:       "alert-1",
+		SourceType:     &alertStr,
+		SourceID:       &alert1Str,
 		Trigger: TriggerInfo{
 			AlertID:       "alert-1",
 			RuleID:        "rule-1",
@@ -126,7 +128,7 @@ func TestEngine_ValidPath(t *testing.T) {
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil)
+	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
 	output, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)
@@ -168,7 +170,7 @@ func TestEngine_FallbackOnInvalid(t *testing.T) {
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil)
+	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
 	output, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)
@@ -212,7 +214,7 @@ func TestEngine_BothFail(t *testing.T) {
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil)
+	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
 	engine.fallback = &mockDecisionProvider{
 		generateDecisionFn: func(ctx context.Context, input llm.LLMSafeContext) (*llm.DecisionOutput, error) {
 			return nil, errors.New("fallback also failed")
@@ -259,7 +261,7 @@ func TestEngine_ProviderError(t *testing.T) {
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil)
+	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
 	output, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)
@@ -295,7 +297,7 @@ func TestEngine_ContextBuilding(t *testing.T) {
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil)
+	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
 	_, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)

@@ -67,8 +67,8 @@ func TestCreateCaseFromAlert_CreatesNewCase(t *testing.T) {
 			return nil, pgx.ErrNoRows
 		},
 		createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
-			assert.Equal(t, "alert", row.SourceType)
-			assert.Equal(t, alertID, row.SourceID)
+			assert.Equal(t, "alert", *row.SourceType)
+			assert.Equal(t, alertID, *row.SourceID)
 			assert.Equal(t, "high", *row.Severity)
 			assert.Equal(t, "seller", *row.ObjectType)
 			assert.Equal(t, "seller-42", *row.ObjectID)
@@ -95,8 +95,8 @@ func TestCreateCaseFromAlert_CreatesNewCase(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, "alert", result.SourceType)
-	assert.Equal(t, alertID, result.SourceID)
+	assert.Equal(t, "alert", *result.SourceType)
+	assert.Equal(t, alertID, *result.SourceID)
 	assert.Equal(t, "high", result.Severity)
 	assert.Equal(t, "seller", result.ObjectType)
 	assert.Equal(t, "seller-42", result.ObjectID)
@@ -113,8 +113,8 @@ func TestCreateCaseFromAlert_ReturnsExistingActiveCase(t *testing.T) {
 			return &repository.DecisionCaseRow{
 				CaseID:     existingCaseID,
 				Status:     "open",
-				SourceType: "alert",
-				SourceID:   alertID,
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr(alertID),
 			}, nil
 		},
 		createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
@@ -156,8 +156,8 @@ func TestCreateCaseFromAlert_ReturnsExistingForActiveStatuses(t *testing.T) {
 					return &repository.DecisionCaseRow{
 						CaseID:     existingCaseID,
 						Status:     status,
-						SourceType: "alert",
-						SourceID:   alertID,
+						SourceType: strPtr("alert"),
+						SourceID:   strPtr(alertID),
 					}, nil
 				},
 				createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
@@ -198,8 +198,8 @@ func TestCreateCaseFromAlert_CreatesNewWhenExistingClosedOrFailed(t *testing.T) 
 					return &repository.DecisionCaseRow{
 						CaseID:     "dc_closed",
 						Status:     status,
-						SourceType: "alert",
-						SourceID:   alertID,
+						SourceType: strPtr("alert"),
+						SourceID:   strPtr(alertID),
 					}, nil
 				},
 				createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
@@ -296,8 +296,8 @@ func TestGetCase(t *testing.T) {
 			return &repository.DecisionCaseRow{
 				CaseID:     caseID,
 				Status:     "created",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("alert-1"),
 				CreatedAt:  now,
 			}, nil
 		},
@@ -331,8 +331,8 @@ func TestGetCase_NotFound(t *testing.T) {
 func TestListCases(t *testing.T) {
 	now := time.Now()
 	rows := []repository.DecisionCaseRow{
-		{CaseID: "dc-1", Status: "created", SourceType: "alert", SourceID: "a1", CreatedAt: now, Severity: strPtr("high")},
-		{CaseID: "dc-2", Status: "open", SourceType: "alert", SourceID: "a2", CreatedAt: now.Add(-1 * time.Hour), Severity: strPtr("medium")},
+		{CaseID: "dc-1", Status: "created", SourceType: strPtr("alert"), SourceID: strPtr("a1"), CreatedAt: now, Severity: strPtr("high")},
+		{CaseID: "dc-2", Status: "open", SourceType: strPtr("alert"), SourceID: strPtr("a2"), CreatedAt: now.Add(-1 * time.Hour), Severity: strPtr("medium")},
 	}
 
 	caseRepo := &mockCaseRepo{

@@ -67,7 +67,7 @@ func main() {
 		case "governance":
 			handleGovernance(ctx, os.Args[2:], zapLog, pool.Pool)
 		case "decision":
-			handleDecision(ctx, os.Args[2:], zapLog, pool.Pool)
+			handleDecision(ctx, os.Args[2:], zapLog, pool.Pool, cfg)
 		}
 		cancel()
 	}()

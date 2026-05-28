@@ -57,12 +57,21 @@ func (h *DecisionHandler) CreateCase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sourceType := ""
+	sourceID := ""
+	if c.SourceType != nil {
+		sourceType = *c.SourceType
+	}
+	if c.SourceID != nil {
+		sourceID = *c.SourceID
+	}
 	resp := dto.CreateCaseResponse{
 		DecisionCaseID: c.CaseID,
-		SourceType:     c.SourceType,
-		SourceID:       c.SourceID,
+		SourceType:     sourceType,
+		SourceID:       sourceID,
 		Status:         c.Status,
 	}
+
 	httputil.JSON(w, http.StatusCreated, resp)
 }
 
@@ -198,10 +207,18 @@ func (h *DecisionHandler) ListProposals(w http.ResponseWriter, r *http.Request) 
 // --- DTO mapping helpers ---
 
 func caseToResponse(c *decision.DecisionCase) dto.DecisionCaseResponse {
+	sourceType := ""
+	sourceID := ""
+	if c.SourceType != nil {
+		sourceType = *c.SourceType
+	}
+	if c.SourceID != nil {
+		sourceID = *c.SourceID
+	}
 	resp := dto.DecisionCaseResponse{
 		DecisionCaseID: c.CaseID,
-		SourceType:     c.SourceType,
-		SourceID:       c.SourceID,
+		SourceType:     sourceType,
+		SourceID:       sourceID,
 		ObjectType:     c.ObjectType,
 		ObjectID:       c.ObjectID,
 		Severity:       c.Severity,
@@ -242,4 +259,29 @@ func structToMap(v interface{}) map[string]interface{} {
 		return nil
 	}
 	return m
+}
+
+// DecideLLM handles POST /decisions/cases/{case_id}/decide/llm.
+func (h *DecisionHandler) DecideLLM(w http.ResponseWriter, r *http.Request) {
+	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+}
+
+// Compare handles POST /decisions/cases/{case_id}/compare.
+func (h *DecisionHandler) Compare(w http.ResponseWriter, r *http.Request) {
+	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+}
+
+// Replay handles POST /decisions/cases/{case_id}/replay.
+func (h *DecisionHandler) Replay(w http.ResponseWriter, r *http.Request) {
+	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+}
+
+// ListLLMDecisions handles GET /decisions/cases/{case_id}/llm-decisions.
+func (h *DecisionHandler) ListLLMDecisions(w http.ResponseWriter, r *http.Request) {
+	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+}
+
+// ListEvals handles GET /decisions/cases/{case_id}/evals.
+func (h *DecisionHandler) ListEvals(w http.ResponseWriter, r *http.Request) {
+	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
 }

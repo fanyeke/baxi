@@ -179,3 +179,16 @@ func parseOutboxFilters(r *http.Request) dto.OutboxFilters {
 
 	return filters
 }
+
+// BatchDispatchResponse holds the result of a batch dispatch operation.
+type BatchDispatchResponse struct {
+	DryRun     bool     `json:"dry_run"`
+	Dispatched int      `json:"dispatched"`
+	Failed     int      `json:"failed"`
+	EventIDs   []string `json:"event_ids"`
+}
+
+// HandleBatchDispatch handles POST /outbox/dispatch.
+func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Request) {
+	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+}

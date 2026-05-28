@@ -59,8 +59,8 @@ func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 			objectID := "seller-42"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+				SourceID:   strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -80,7 +80,6 @@ func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 					"current_value":  100.0,
 					"baseline_value": 150.0,
 					"delta_pct":      -33.3,
-					"severity":       "high",
 				},
 			}, nil
 		},
@@ -102,14 +101,14 @@ func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, decisionCtx)
 	assert.Equal(t, "dc-1", decisionCtx.DecisionCaseID)
-	assert.Equal(t, "alert", decisionCtx.SourceType)
-	assert.Equal(t, "alert-1", decisionCtx.SourceID)
+	assert.Equal(t, "alert", *decisionCtx.SourceType)
+	assert.Equal(t, "alert-1", *decisionCtx.SourceID)
 	assert.Equal(t, "alert-1", decisionCtx.Trigger.AlertID)
 	assert.Equal(t, "rule-1", decisionCtx.Trigger.RuleID)
 	assert.Equal(t, "high", decisionCtx.Trigger.Severity)
@@ -128,8 +127,8 @@ func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 			objectID := "seller-42"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+SourceID: strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -177,7 +176,7 @@ func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -203,8 +202,8 @@ func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 			objectID := "seller-1"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+SourceID: strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -242,7 +241,7 @@ func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -260,8 +259,8 @@ func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 func TestContextBuilder_BuildLLMSafeContext_GeneratesHash(t *testing.T) {
 	decisionCtx := &DecisionContext{
 		DecisionCaseID: "dc-1",
-		SourceType:     "alert",
-		SourceID:       "alert-1",
+		SourceType:     strPtr("alert"),
+		SourceID:       strPtr("alert-1"),
 		Trigger: TriggerInfo{
 			AlertID:  "alert-1",
 			Severity: "high",
@@ -282,7 +281,7 @@ func TestContextBuilder_BuildLLMSafeContext_GeneratesHash(t *testing.T) {
 		ForbiddenActions: []string{"execute_dispatch", "modify_raw_data", "write_dwd", "write_mart"},
 	}
 
-	builder := NewContextBuilder(nil, nil, nil, nil)
+	builder := NewContextBuilder(nil, nil, nil, nil, nil)
 	llmCtx, err := builder.BuildLLMSafeContext(context.Background(), decisionCtx)
 
 	assert.NoError(t, err)
@@ -301,8 +300,8 @@ func TestContextBuilder_BuildDecisionContext_RedactedFieldsInGovernance(t *testi
 			objectID := "seller-1"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+SourceID: strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -349,7 +348,7 @@ func TestContextBuilder_BuildDecisionContext_RedactedFieldsInGovernance(t *testi
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -386,7 +385,7 @@ func TestContextBuilder_BuildDecisionContext_CaseNotFound(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, nil, nil, nil)
+	builder := NewContextBuilder(caseSvc, nil, nil, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-missing")
 
 	assert.Error(t, err)
@@ -402,8 +401,8 @@ func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 			objectID := "seller-1"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-				SourceType: "manual",
-				SourceID:   "manual-1",
+SourceType: strPtr("manual"),
+SourceID:   strPtr("manual-1"),
 				Severity:   &severity,
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -429,7 +428,7 @@ func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -447,8 +446,8 @@ func TestContextBuilder_BuildDecisionContext_AlertError(t *testing.T) {
 			objectID := "seller-1"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-				SourceType: "alert",
-				SourceID:   "alert-1",
+				SourceType: strPtr("alert"),
+SourceID: strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -463,7 +462,7 @@ func TestContextBuilder_BuildDecisionContext_AlertError(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, nil, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.Error(t, err)
