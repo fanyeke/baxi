@@ -1,0 +1,9 @@
+{
+    "name": "baxi-logger",
+    "version": "1.0.0",
+    "description": "Baxi execution logger extension for Pi Agent",
+    "main": "index.ts",
+    "dependencies": {
+        "@earendil-works/pi-coding-agent": "^0.76.0"
+    }
+}
