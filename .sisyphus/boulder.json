@@ -1,51 +1,80 @@
 {
-  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/phase-5-governance.md",
-  "started_at": "2026-05-26T01:22:49.400Z",
+  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/go-pg-migration.md",
+  "started_at": "2026-05-28T15:45:00.000Z",
   "session_ids": [
-    "ses_19e322b9effeV75F7iviGcx7gi",
-    "ses_19e1e59aaffe1QsZ0jr5NaOrKZ",
-    "ses_19e1eacf2ffevyGloJTYnlRFqS",
-    "ses_19e1e82c8ffeP0eVaDOtP3yDPM",
-    "ses_19e1e68ccffeH6RvFCoq3PhlAn",
-    "ses_19e1e3e1fffeYQ3f0dEk6CLZUD",
-    "ses_19e1a6ce0ffeSmpaOet2FXtQne",
-    "ses_19e1a1a08ffe2hqCkjcAMSWeYY",
-    "ses_19e1a4470ffe1uuQsG0Uggyu1J",
-    "ses_19e1a95bbffeOOI66E2MHtTBvp",
-    "ses_19e14ab99ffegJTYqA1c7L65yw",
-    "ses_19e14d284ffe7Qr4p4P7N3RPtp",
-    "ses_19e148bd1ffekylzjWittA3Dhu",
-    "ses_19e1498ffffeWaKwirP67KFGy6",
-    "ses_19e0da75dffeyyIBo1wZCasdLO",
-    "ses_19e0db140ffeIyajxFnVSLXPCX",
-    "ses_19e0d8694ffeAq977sUnH8p0lC",
-    "ses_19e0d949dffebl615oygDXfXpJ",
-    "ses_19e0dd063ffeumA672mHrgdHsr",
-    "ses_19e09290dffeiIGM9FJEqt7x35",
-    "ses_19e091a1effecu6YXERbKQe15W",
-    "ses_19e09317fffeNZh6h6dZMf0NqW",
-    "ses_19e093ca1ffeiv2oh43kza0wI1"
+    "ses_1927816dbffeDCUKQnF5Qv24jv",
+    "ses_19253e122ffeOqA8i9T4gu50Bl",
+    "ses_1927816dbffeDCUKQnF5Qv24jv",
+    "ses_1923927c6ffet2DYgK0wl22aK0",
+    "ses_1923295fcffe4Zov6GTEeG7b49",
+    "ses_19232a4f1ffeNmXsRU0ZqBOuF9",
+    "ses_19232838cffeE61Ok56PXXHOTo",
+    "ses_1923274c3ffe9ghBmye18u7EQX",
+    "ses_19232bc3dffevv0zawcf0jewQs",
+    "ses_1921d23a3ffeRAN6muBiNcQ3M9",
+    "ses_1921d0ac4ffeIJtq4wjTwT8IGM",
+    "ses_1921cff36ffeIHDyRViBginTdE",
+    "ses_1921d16baffe94BOqTa0ZEJXlq",
+    "ses_19214ccd5ffeAk7G1Lrcn18v7V",
+    "ses_19214dc2effeRoqwlkDNb2J8Gh",
+    "ses_192126c11ffevZHYLmOoZabBJl"
   ],
-  "plan_name": "phase-5-governance",
+  "plan_name": "go-pg-migration",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Modernize testcontainers and add repository interfaces",
-      "session_id": "ses_19e1e3e1fffeYQ3f0dEk6CLZUD",
+      "task_title": "Fix Go Compilation Errors",
+      "session_id": "ses_19253e122ffeOqA8i9T4gu50Bl",
       "agent": "Sisyphus-Junior",
-      "category": "writing",
-      "updated_at": "2026-05-26T01:27:03.346Z"
+      "category": "quick",
+      "updated_at": "2026-05-28T08:41:57.574Z"
     },
-    "todo:6": {
-      "task_key": "todo:6",
-      "task_label": "6",
-      "task_title": "Implement ConfigLoader",
-      "session_id": "ses_19e1a4470ffe1uuQsG0Uggyu1J",
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Verify Go Pipeline Reproduces SQLite State",
+      "session_id": "ses_1923927c6ffet2DYgK0wl22aK0",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-05-26T01:33:39.199Z"
+      "category": "deep",
+      "updated_at": "2026-05-28T08:56:30.831Z"
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Migrate feishu_service.py → Go",
+      "session_id": "ses_19232bc3dffevv0zawcf0jewQs",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-28T09:19:42.763Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "Verify/Complete Feishu Adapter",
+      "session_id": "ses_1921d23a3ffeRAN6muBiNcQ3M9",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-28T09:24:42.570Z"
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "Switch Frontend to Go API",
+      "session_id": "ses_19214dc2effeRoqwlkDNb2J8Gh",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-28T09:31:29.839Z"
+    },
+    "todo:14": {
+      "task_key": "todo:14",
+      "task_label": "14",
+      "task_title": "Delete Python Code",
+      "session_id": "ses_192126c11ffevZHYLmOoZabBJl",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-28T09:35:11.950Z"
     }
   }
 }

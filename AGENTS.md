@@ -1,8 +1,8 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-05-26 19:24
-**Commit:** cef9bea
-**Branch:** migration/go-postgres
+**Generated:** 2026-05-28 15:45
+**Commit:** d908f6d
+**Branch:** main
 
 ## OVERVIEW
 

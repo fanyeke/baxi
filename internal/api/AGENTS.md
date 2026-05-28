@@ -1,5 +1,9 @@
 # Go HTTP API
 
+**Generated:** 2026-05-28 15:45
+**Commit:** d908f6d
+**Branch:** main
+
 ## OVERVIEW
 chi HTTP server on :8080, 9 handlers, 4 middlewares, 8 DTO types, serves all business endpoints.
 

@@ -1,5 +1,9 @@
 # FRONTEND KNOWLEDGE BASE
 
+**Generated:** 2026-05-28 15:45
+**Commit:** d908f6d
+**Branch:** main
+
 ## OVERVIEW
 React 19 SPA, Vite 6, TanStack Query 5, Tailwind CSS v4, Radix UI.
 

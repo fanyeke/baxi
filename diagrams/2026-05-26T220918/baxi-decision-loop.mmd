@@ -1,0 +1,32 @@
+sequenceDiagram
+  autonumber
+  participant User as Operator / Console
+  participant API as Go API
+  participant Context as Decision context builder
+  participant Gov as Governance engine
+  participant LLM as LLM provider
+  participant Review as Review service
+  participant Outbox as Outbox
+  participant Worker as Dispatch worker
+  participant Channel as Feishu / GitHub
+  participant Audit as Audit log
+
+  User->>API: Create or evaluate decision case
+  API->>Context: Load ontology objects, metrics, history, policies
+  Context->>Gov: Check thresholds, roles, and action policy
+  Gov-->>Context: Constraints and allowed actions
+  Context->>LLM: Prompt with grounded operational context
+  alt LLM unavailable or disabled
+    LLM-->>Context: Rule-based decision
+  else LLM available
+    LLM-->>Context: Recommendation, confidence, evidence, actions
+  end
+  Context->>Review: Persist proposal and approval requirements
+  Review->>Audit: Record decision trace
+  User->>API: Approve / execute proposal
+  API->>Outbox: Create dispatchable event
+  Worker->>Outbox: Claim due events
+  Worker->>Channel: Dispatch action
+  Channel-->>Worker: Delivery result
+  Worker->>Outbox: Mark sent or retry
+  Worker->>Audit: Record operational outcome

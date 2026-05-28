@@ -1,6 +1,12 @@
 # INTERNAL: Go Backend Core
 
-**OVERVIEW** — Core Go backend: 23 packages, chi router, pgx/PostgreSQL, zap logger.
+**Generated:** 2026-05-28 15:45
+**Commit:** d908f6d
+**Branch:** main
+
+## OVERVIEW
+
+Core Go backend: 23 packages, chi router, pgx/PostgreSQL, zap logger.
 
 ## STRUCTURE
 

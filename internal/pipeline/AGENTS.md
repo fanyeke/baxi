@@ -1,5 +1,9 @@
 # PIPELINE
 
+**Generated:** 2026-05-28 15:45
+**Commit:** d908f6d
+**Branch:** main
+
 ## OVERVIEW
 Go data pipeline: 7 sequential steps, Step interface, per-step pgx transactions, audit logging.
 

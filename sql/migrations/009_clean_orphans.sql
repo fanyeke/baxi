@@ -1,3 +1,0 @@
--- Task 9: Clean orphaned records before adding FK constraints
--- Result from Task 8: All relationships are CLEAN (0 orphans)
--- No cleanup required

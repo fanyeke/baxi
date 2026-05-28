@@ -1,0 +1,72 @@
+flowchart LR
+  subgraph External["External systems"]
+    CSV["Olist CSV data"]
+    Feishu["Feishu / Lark"]
+    GitHub["GitHub"]
+    Qoder["Qoder or OpenAI-compatible LLM"]
+  end
+
+  subgraph React["React console"]
+    SPA["Vite SPA\nfrontend/src"]
+    Pages["Dashboard, alerts, tasks,\nknowledge, Qoder, analytics"]
+  end
+
+  subgraph Python["Python gateway :8765"]
+    FastAPI["FastAPI\napi/main.py"]
+    PyRoutes["/api/v1 routers"]
+    PyServices["services/*\nSQLite business logic"]
+    SQLite[("SQLite\ndata/olist_ops.db")]
+  end
+
+  subgraph Go["Go operational platform"]
+    GoAPI["chi API :8080\ncmd/baxi-api"]
+    CLI["CLI\ncmd/baxi-cli"]
+    Worker["Worker\ncmd/baxi-worker"]
+    Pipeline["Pipeline\ninternal/pipeline"]
+    Decision["Decision engine\ninternal/decision"]
+    Governance["Governance engine\ninternal/governance"]
+    Action["Action / review / outbox\ninternal/action, review, outbox"]
+    LLM["LLM factory\nrule-based + OpenAI-compatible"]
+  end
+
+  subgraph Data["PostgreSQL operational store"]
+    Raw[("raw schema")]
+    DWD[("dwd schema")]
+    Mart[("mart schema")]
+    Ops[("ops schema")]
+    Gov[("gov schema")]
+    AI[("ai schema")]
+    Audit[("audit schema")]
+  end
+
+  subgraph Config["Governance configuration"]
+    YAML["config/*.yml"]
+    Migrations["goose migrations"]
+  end
+
+  CSV --> Pipeline
+  Pipeline --> Raw --> DWD --> Mart
+  Pipeline --> Ops
+  YAML --> Governance
+  YAML --> Decision
+  Migrations --> Data
+
+  SPA --> Pages
+  Pages -->|dev proxy /api| FastAPI
+  FastAPI --> PyRoutes --> PyServices --> SQLite
+
+  CLI --> GoAPI
+  GoAPI --> Decision
+  GoAPI --> Governance
+  GoAPI --> Action
+  GoAPI --> Data
+  Worker --> Action
+  Worker --> Data
+  Decision --> LLM
+  LLM -. planned .-> Qoder
+  Action --> Feishu
+  Action --> GitHub
+  Decision --> AI
+  Governance --> Gov
+  Action --> Ops
+  Action --> Audit

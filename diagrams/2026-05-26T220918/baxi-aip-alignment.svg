@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Baxi alignment with Palantir AIP-style operating model</title>
+  <desc id="desc">Architecture diagram showing data foundation, ontology and governance, decision agents, human review, and action execution.</desc>
+  <rect width="1280" height="760" fill="#f7f8fb"/>
+
+  <text x="72" y="72" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#151922">Baxi: AIP-style operational decision platform</text>
+  <text x="72" y="106" font-family="Inter, Arial, sans-serif" font-size="17" fill="#526071">Ground enterprise context, apply governance, let agents propose actions, keep humans accountable.</text>
+
+  <rect x="70" y="150" width="250" height="470" rx="12" fill="#ffffff" stroke="#d8dde8" stroke-width="2"/>
+  <rect x="88" y="174" width="214" height="46" rx="8" fill="#e9f1ff"/>
+  <text x="110" y="204" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#12345b">1. Data foundation</text>
+  <text x="100" y="258" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Olist CSV ingestion</text>
+  <text x="100" y="294" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Go pipeline steps</text>
+  <text x="100" y="330" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">PostgreSQL schemas</text>
+  <text x="120" y="364" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">raw, dwd, mart</text>
+  <text x="120" y="392" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">ops, gov, ai, audit</text>
+  <rect x="100" y="446" width="190" height="104" rx="8" fill="#f7fbff" stroke="#c8d8f0"/>
+  <text x="120" y="480" font-family="Inter, Arial, sans-serif" font-size="14" fill="#2e3440">Current split:</text>
+  <text x="120" y="508" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">Python uses SQLite</text>
+  <text x="120" y="534" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">Go uses PostgreSQL</text>
+
+  <rect x="374" y="150" width="250" height="470" rx="12" fill="#ffffff" stroke="#d8dde8" stroke-width="2"/>
+  <rect x="392" y="174" width="214" height="46" rx="8" fill="#eaf7f0"/>
+  <text x="414" y="204" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#174b2e">2. Ontology + policy</text>
+  <text x="404" y="258" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Operational objects</text>
+  <text x="404" y="294" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Metrics and context</text>
+  <text x="404" y="330" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Governance YAML</text>
+  <text x="404" y="366" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Action whitelist</text>
+  <rect x="404" y="446" width="190" height="104" rx="8" fill="#f6fff8" stroke="#c8e6d3"/>
+  <text x="424" y="480" font-family="Inter, Arial, sans-serif" font-size="14" fill="#2e3440">AIP equivalent:</text>
+  <text x="424" y="508" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">Ontology is the safe</text>
+  <text x="424" y="534" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">operating interface.</text>
+
+  <rect x="678" y="150" width="250" height="470" rx="12" fill="#ffffff" stroke="#d8dde8" stroke-width="2"/>
+  <rect x="696" y="174" width="214" height="46" rx="8" fill="#fff2d9"/>
+  <text x="718" y="204" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#6f4300">3. Decision agents</text>
+  <text x="708" y="258" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Decision engine</text>
+  <text x="708" y="294" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Prompt registry</text>
+  <text x="708" y="330" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Rule fallback</text>
+  <text x="708" y="366" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">OpenAI-compatible LLM</text>
+  <rect x="708" y="446" width="190" height="104" rx="8" fill="#fffaf0" stroke="#edd49c"/>
+  <text x="728" y="480" font-family="Inter, Arial, sans-serif" font-size="14" fill="#2e3440">Gap:</text>
+  <text x="728" y="508" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">Qoder is contextual,</text>
+  <text x="728" y="534" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">not a decision provider.</text>
+
+  <rect x="982" y="150" width="228" height="470" rx="12" fill="#ffffff" stroke="#d8dde8" stroke-width="2"/>
+  <rect x="1000" y="174" width="192" height="46" rx="8" fill="#f4eefa"/>
+  <text x="1022" y="204" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#4a2b68">4. Action loop</text>
+  <text x="1012" y="258" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Human approval</text>
+  <text x="1012" y="294" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Proposal execution</text>
+  <text x="1012" y="330" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Outbox dispatch</text>
+  <text x="1012" y="366" font-family="Inter, Arial, sans-serif" font-size="15" fill="#2e3440">Feishu / GitHub</text>
+  <rect x="1012" y="446" width="168" height="104" rx="8" fill="#fbf8ff" stroke="#d7c6e8"/>
+  <text x="1032" y="480" font-family="Inter, Arial, sans-serif" font-size="14" fill="#2e3440">AIP principle:</text>
+  <text x="1032" y="508" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">Humans retain</text>
+  <text x="1032" y="534" font-family="Inter, Arial, sans-serif" font-size="14" fill="#667085">decision ownership.</text>
+
+  <path d="M320 385 C342 385 352 385 374 385" stroke="#8992a3" stroke-width="3" fill="none"/>
+  <path d="M362 377 L374 385 L362 393" stroke="#8992a3" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M624 385 C646 385 656 385 678 385" stroke="#8992a3" stroke-width="3" fill="none"/>
+  <path d="M666 377 L678 385 L666 393" stroke="#8992a3" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M928 385 C950 385 960 385 982 385" stroke="#8992a3" stroke-width="3" fill="none"/>
+  <path d="M970 377 L982 385 L970 393" stroke="#8992a3" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="72" y="665" width="1138" height="42" rx="8" fill="#ffffff" stroke="#d8dde8"/>
+  <text x="96" y="692" font-family="Inter, Arial, sans-serif" font-size="15" fill="#3b4453">Recommended rendering path: Mermaid for maintainable architecture sources, SVG for human-facing documents, whiteboard export only when publishing into Feishu/Lark.</text>
+</svg>
