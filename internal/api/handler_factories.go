@@ -204,7 +204,7 @@ func (s *Server) pipelineHandler() *handler.PipelineHandler {
 		Steps: pipelineSteps,
 		Log:   s.logger,
 	}
-	svc := &pipelineRunService{runner: runner, log: s.logger}
+	svc := &pipelineRunService{ctx: s.ctx, runner: runner, log: s.logger}
 	return handler.NewPipelineHandler(svc)
 }
 
@@ -514,6 +514,7 @@ func (a *actionHandlerSvc) GetProposalByID(ctx context.Context, pool *pgxpool.Po
 }
 
 type pipelineRunService struct {
+	ctx    context.Context
 	runner *pipeline.Runner
 	log    *zap.Logger
 }
@@ -530,7 +531,7 @@ func (s *pipelineRunService) Run(ctx context.Context, config string) (string, er
 			Mode:    "api",
 			DataDir: "./data/raw",
 		}
-		if err := s.runner.Run(context.Background(), input); err != nil {
+		if err := s.runner.Run(s.ctx, input); err != nil {
 			s.log.Error("pipeline run failed",
 				zap.String("run_id", runID),
 				zap.String("config", config),

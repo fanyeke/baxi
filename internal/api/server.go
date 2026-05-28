@@ -18,6 +18,8 @@ import (
 
 // Server represents the HTTP API server.
 type Server struct {
+	ctx                 context.Context
+	cancel              context.CancelFunc
 	router              chi.Router
 	logger              *zap.Logger
 	pool                *pgxpool.Pool
@@ -35,7 +37,10 @@ type Server struct {
 
 // New creates a new API server instance.
 func New(logger *zap.Logger, pool *pgxpool.Pool, cfg *config.Config) *Server {
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &Server{
+		ctx:                ctx,
+		cancel:             cancel,
 		router:             chi.NewRouter(),
 		logger:             logger,
 		pool:               pool,
@@ -65,5 +70,6 @@ func (s *Server) Start(addr string) error {
 // Shutdown gracefully stops the server.
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.logger.Info("shutting down API server")
+	defer s.cancel()
 	return s.http.Shutdown(ctx)
 }
