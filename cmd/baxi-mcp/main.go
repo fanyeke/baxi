@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -72,9 +73,14 @@ func main() {
 	}
 	v1Builder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, pool.Pool, action.NewActionTypeProviderAdapter(reg))
 
+	configDir := os.Getenv("BAXI_CONFIG_DIR")
+	if configDir == "" {
+		configDir = "config"
+	}
+
 	// Build v2 builder (ontology-aware).
 	var v2Builder *decision.ContextBuilderV2
-	objRegistry, regErr := ontology.NewObjectRegistry(ctx, nil, pool.Pool, "config/aip_object_schema.yml")
+	objRegistry, regErr := ontology.NewObjectRegistry(ctx, nil, pool.Pool, filepath.Join(configDir, "aip_object_schema.yml"))
 	if regErr != nil {
 		zapLog.Warn("failed to load object registry for v2 builder, v2/v3 unavailable", zap.Error(regErr))
 	} else {
@@ -136,7 +142,7 @@ func main() {
 	// Wire ontology service for ontology MCP tools.
 	// objRegistry may already be loaded above for the v2/v3 builder.
 	if objRegistry == nil {
-		objRegistry, regErr = ontology.NewObjectRegistry(ctx, nil, pool.Pool, "config/aip_object_schema.yml")
+		objRegistry, regErr = ontology.NewObjectRegistry(ctx, nil, pool.Pool, filepath.Join(configDir, "aip_object_schema.yml"))
 		if regErr != nil {
 			zapLog.Warn("failed to load object registry, ontology tools will be unavailable", zap.Error(regErr))
 		}
