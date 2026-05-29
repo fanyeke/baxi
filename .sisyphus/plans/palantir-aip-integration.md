@@ -1290,7 +1290,7 @@ Max Concurrent: 5 (Wave 5)
 
 ---
 
-- [ ] 19. 集成测试 — 决策生命周期
+- [x] 19. 集成测试 — 决策生命周期
 
   **What to do**:
   - 创建 `test/integration/decision_lifecycle_test.go` 文件
@@ -1348,7 +1348,7 @@ Max Concurrent: 5 (Wave 5)
 
 ---
 
-- [ ] 20. 集成测试 — Ontology MCP
+- [x] 20. 集成测试 — Ontology MCP
 
   **What to do**:
   - 创建 `test/integration/ontology_mcp_test.go` 文件

@@ -10,7 +10,8 @@
     "ses_18d523b9dffend5xQl6l97cm5n",
     "ses_18d4ca2a5ffeymST4EA4POZyLA",
     "ses_18d472364ffe4UJX0TCAVVWgca",
-    "ses_18d46d63affeNAF9rtMkkO4A2X"
+    "ses_18d46d63affeNAF9rtMkkO4A2X",
+    "ses_18d3b6ff3ffeui2DLSOhC8N2lY"
   ],
   "plan_name": "palantir-aip-integration",
   "agent": "atlas",
@@ -59,6 +60,15 @@
       "agent": "Sisyphus-Junior",
       "category": "visual-engineering",
       "updated_at": "2026-05-29T08:03:57.597Z"
+    },
+    "todo:19": {
+      "task_key": "todo:19",
+      "task_label": "19",
+      "task_title": "集成测试 — 决策生命周期",
+      "session_id": "ses_18d3b6ff3ffeui2DLSOhC8N2lY",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-29T08:14:38.330Z"
     }
   }
 }
