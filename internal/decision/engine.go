@@ -84,7 +84,7 @@ func (e *DecisionEngine) fallbackProviderName() string {
 }
 
 func (e *DecisionEngine) GenerateDecision(ctx context.Context, caseID string, context *DecisionContext) (*llm.DecisionOutput, error) {
-	llmSafeContext := buildLLMSafeContext(context)
+	llmSafeContext := BuildLLMSafeContext(context)
 
 	// Phase 2: Persist the LLM input context as a snapshot before calling the provider.
 	e.persistContextSnapshot(ctx, caseID, llmSafeContext)
@@ -286,7 +286,8 @@ func (e *DecisionEngine) updateCaseStatus(ctx context.Context, caseID string, st
 	return e.repo.UpdateCaseStatus(ctx, e.pool, caseID, status, nil, nil, nil)
 }
 
-func buildLLMSafeContext(dc *DecisionContext) llm.LLMSafeContext {
+// BuildLLMSafeContext maps a DecisionContext to an LLMSafeContext.
+func BuildLLMSafeContext(dc *DecisionContext) llm.LLMSafeContext {
 	return llm.LLMSafeContext{
 		CaseID: dc.DecisionCaseID,
 		Trigger: llm.TriggerInfo{
@@ -388,11 +389,10 @@ func (e *DecisionEngine) buildRepairContext(original llm.LLMSafeContext, validat
 	for i, verr := range validationErrors {
 		errMsgs[i] = verr.Field + ": " + verr.Message
 	}
-	// Append validation errors as a field in the governance info so they
-	// are included in the repair prompt rendered by the OpenAI provider.
 	repaired := original
 	if repaired.GovernanceInfo.Role == "" {
 		repaired.GovernanceInfo.Role = "agent_readonly"
 	}
+	repaired.GovernanceInfo.RepairErrors = errMsgs
 	return repaired
 }

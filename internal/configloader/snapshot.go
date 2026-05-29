@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
 
-func syncConfigSnapshots(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRegistry) error {
+func syncConfigSnapshots(ctx context.Context, tx pgx.Tx, registry *ConfigRegistry) error {
 	for configKey, raw := range registry.RawConfigs {
 		jsonBytes, err := yamlToJSON(raw.Content)
 		if err != nil {
@@ -23,7 +23,7 @@ func syncConfigSnapshots(ctx context.Context, pool *pgxpool.Pool, registry *Conf
 			VALUES ($1, $2, $3, $4::jsonb, $5, NOW())
 			ON CONFLICT (config_key, content_hash) DO NOTHING
 		`
-		_, err = pool.Exec(ctx, query,
+		_, err = tx.Exec(ctx, query,
 			configKey,
 			raw.ConfigType,
 			raw.SourcePath,
@@ -38,7 +38,7 @@ func syncConfigSnapshots(ctx context.Context, pool *pgxpool.Pool, registry *Conf
 	return nil
 }
 
-func syncObjectSchema(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRegistry) error {
+func syncObjectSchema(ctx context.Context, tx pgx.Tx, registry *ConfigRegistry) error {
 	if registry.ObjectSchema == nil {
 		slog.Warn("ObjectSchema not loaded, skipping gov.object_schema sync")
 		return nil
@@ -62,7 +62,7 @@ func syncObjectSchema(ctx context.Context, pool *pgxpool.Pool, registry *ConfigR
 		}
 
 		version := "1"
-		_, err = pool.Exec(ctx, query,
+		_, err = tx.Exec(ctx, query,
 			obj.ObjectTypeID,
 			obj.DisplayName,
 			string(schemaJSON),
@@ -76,7 +76,7 @@ func syncObjectSchema(ctx context.Context, pool *pgxpool.Pool, registry *ConfigR
 	return nil
 }
 
-func syncDataClassification(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRegistry) error {
+func syncDataClassification(ctx context.Context, tx pgx.Tx, registry *ConfigRegistry) error {
 	if registry.DataClassification == nil {
 		slog.Warn("DataClassification not loaded, skipping gov.data_classification sync")
 		return nil
@@ -94,7 +94,7 @@ func syncDataClassification(ctx context.Context, pool *pgxpool.Pool, registry *C
 	for _, c := range registry.DataClassification.Classifications {
 		score := sensitivityScore(c.Level)
 
-		_, err := pool.Exec(ctx, query,
+		_, err := tx.Exec(ctx, query,
 			c.AssetRef,
 			c.Level,
 			score,
@@ -109,7 +109,7 @@ func syncDataClassification(ctx context.Context, pool *pgxpool.Pool, registry *C
 		for field, fieldLevel := range c.AppliesToFields {
 			fieldPath := c.AssetRef + "." + field
 			fieldScore := sensitivityScore(fieldLevel)
-			_, err := pool.Exec(ctx, query,
+			_, err := tx.Exec(ctx, query,
 				fieldPath,
 				fieldLevel,
 				fieldScore,
@@ -124,7 +124,7 @@ func syncDataClassification(ctx context.Context, pool *pgxpool.Pool, registry *C
 	return nil
 }
 
-func syncDataLineage(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRegistry) error {
+func syncDataLineage(ctx context.Context, tx pgx.Tx, registry *ConfigRegistry) error {
 	if registry.DataLineage == nil {
 		slog.Warn("DataLineage not loaded, skipping gov.data_lineage sync")
 		return nil
@@ -141,7 +141,7 @@ func syncDataLineage(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRe
 
 	for _, edge := range registry.DataLineage.Edges {
 		confidence := lineageConfidence(edge.TransformType)
-		_, err := pool.Exec(ctx, query,
+		_, err := tx.Exec(ctx, query,
 			edge.From,
 			"",
 			edge.To,
@@ -157,7 +157,7 @@ func syncDataLineage(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRe
 	return nil
 }
 
-func syncAccessPolicy(ctx context.Context, pool *pgxpool.Pool, registry *ConfigRegistry) error {
+func syncAccessPolicy(ctx context.Context, tx pgx.Tx, registry *ConfigRegistry) error {
 	if registry.AccessPolicy == nil {
 		slog.Warn("AccessPolicy not loaded, skipping gov.access_policy sync")
 		return nil
@@ -178,7 +178,7 @@ func syncAccessPolicy(ctx context.Context, pool *pgxpool.Pool, registry *ConfigR
 	for _, role := range registry.AccessPolicy.AccessPolicy.Roles {
 		for _, action := range role.AllowedActions {
 			policyName := role.Role + "_" + action
-			_, err := pool.Exec(ctx, policyQuery,
+			_, err := tx.Exec(ctx, policyQuery,
 				policyName,
 				"api_action",
 				action,
@@ -196,7 +196,7 @@ func syncAccessPolicy(ctx context.Context, pool *pgxpool.Pool, registry *ConfigR
 
 		for _, access := range role.DataAccess {
 			policyName := role.Role + "_access_" + access
-			_, err := pool.Exec(ctx, policyQuery,
+			_, err := tx.Exec(ctx, policyQuery,
 				policyName,
 				"data_access",
 				access,
@@ -213,7 +213,7 @@ func syncAccessPolicy(ctx context.Context, pool *pgxpool.Pool, registry *ConfigR
 		}
 	}
 
-	_, err := pool.Exec(ctx, policyQuery,
+	_, err := tx.Exec(ctx, policyQuery,
 		"default_deny_all",
 		"policy",
 		"*",

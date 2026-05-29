@@ -74,8 +74,8 @@ func (a *FeishuAdapter) Execute(ctx context.Context, proposal action.ActionPropo
 	msgID, err := a.client.sendMessage(chatID, message, "text")
 	if err != nil {
 		return action.ExecutionResult{
-			Success: false,
-			Error:   err.Error(),
+			Success:         false,
+			Error:           err.Error(),
 			DispatchPayload: payload,
 		}, nil
 	}

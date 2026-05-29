@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 	"baxi/internal/testutil"
 )
@@ -340,7 +340,7 @@ func TestAccessPolicyService_CheckAccess_Allow(t *testing.T) {
 	svc := NewAccessPolicyService(pool, govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "read")
-	assert.Equal(t, dto.AccessAllowed, decision)
+	assert.Equal(t, model.AccessAllowed, decision)
 }
 
 func TestAccessPolicyService_CheckAccess_MatchingPolicy(t *testing.T) {
@@ -357,7 +357,7 @@ func TestAccessPolicyService_CheckAccess_MatchingPolicy(t *testing.T) {
 	svc := NewAccessPolicyService(pool, govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "delete")
-	assert.Equal(t, dto.AccessAllowed, decision)
+	assert.Equal(t, model.AccessAllowed, decision)
 }
 
 func TestAccessPolicyService_CheckAccess_DefaultDeny(t *testing.T) {
@@ -372,7 +372,7 @@ func TestAccessPolicyService_CheckAccess_DefaultDeny(t *testing.T) {
 	svc := NewAccessPolicyService(pool, govRepo)
 
 	decision := svc.CheckAccess(ctx, "viewer", "order", "read")
-	assert.Equal(t, dto.AccessDenied, decision)
+	assert.Equal(t, model.AccessDenied, decision)
 }
 
 func TestAccessPolicyService_CheckAccess_WrongRole(t *testing.T) {
@@ -389,7 +389,7 @@ func TestAccessPolicyService_CheckAccess_WrongRole(t *testing.T) {
 	svc := NewAccessPolicyService(pool, govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "read")
-	assert.Equal(t, dto.AccessDenied, decision)
+	assert.Equal(t, model.AccessDenied, decision)
 }
 
 func TestAccessPolicyService_CheckAccess_WildcardResource(t *testing.T) {
@@ -406,7 +406,7 @@ func TestAccessPolicyService_CheckAccess_WildcardResource(t *testing.T) {
 	svc := NewAccessPolicyService(pool, govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "product", "read")
-	assert.Equal(t, dto.AccessAllowed, decision)
+	assert.Equal(t, model.AccessAllowed, decision)
 }
 
 func TestAccessPolicyService_CheckAccess_Conditional(t *testing.T) {
@@ -429,7 +429,7 @@ func TestAccessPolicyService_CheckAccess_Conditional(t *testing.T) {
 	svc := NewAccessPolicyService(pool, govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "read")
-	assert.Equal(t, dto.AccessConditional, decision)
+	assert.Equal(t, model.AccessConditional, decision)
 }
 
 func TestAccessPolicyService_GetAll(t *testing.T) {
@@ -652,10 +652,10 @@ func TestRedactObjectContext_SortedRedactedFields(t *testing.T) {
 
 func TestRedactObjectContext_MarkingsAllRoles(t *testing.T) {
 	props := map[string]interface{}{
-		"pii_field":      "secret",
-		"financial":      "secret",
-		"raw_data":       "secret",
-		"operational":    "internal",
+		"pii_field":   "secret",
+		"financial":   "secret",
+		"raw_data":    "secret",
+		"operational": "internal",
 	}
 	classifications := map[string]string{}
 	markings := map[string]string{

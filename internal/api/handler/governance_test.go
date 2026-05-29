@@ -54,15 +54,15 @@ func TestHandleGovernanceStatus_Active(t *testing.T) {
 	resp := &model.GovernanceStatusResponse{
 		GovernanceLayer: "active",
 		Configs: map[string]string{
-			"data_catalog.yml":         "loaded",
-			"data_classification.yml":   "loaded",
-			"data_markings.yml":        "loaded",
-			"data_lineage.yml":         "loaded",
-			"checkpoint_rules.yml":     "loaded",
-			"retention_policies.yml":   "loaded",
-			"health_checks.yml":        "loaded",
-			"decision_eval_rules.yml":  "loaded",
-			"access_policy.yml":        "loaded",
+			"data_catalog.yml":        "loaded",
+			"data_classification.yml": "loaded",
+			"data_markings.yml":       "loaded",
+			"data_lineage.yml":        "loaded",
+			"checkpoint_rules.yml":    "loaded",
+			"retention_policies.yml":  "loaded",
+			"health_checks.yml":       "loaded",
+			"decision_eval_rules.yml": "loaded",
+			"access_policy.yml":       "loaded",
 		},
 	}
 	svc := &mockGovernanceService{resp: resp}
@@ -114,10 +114,10 @@ func TestHandleGovernanceStatus_Error(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "internal server error")
+	assert.Contains(t, body["message"].(string), "internal server error")
 }
 
 func TestHandleGovernanceStatus_ResponseFormat(t *testing.T) {
@@ -150,7 +150,7 @@ func TestHandleGovernanceStatus_PartialConfigs(t *testing.T) {
 	resp := &model.GovernanceStatusResponse{
 		GovernanceLayer: "active",
 		Configs: map[string]string{
-			"data_catalog.yml": "loaded",
+			"data_catalog.yml":  "loaded",
 			"access_policy.yml": "loaded",
 		},
 	}

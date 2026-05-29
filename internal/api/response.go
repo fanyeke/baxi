@@ -7,8 +7,8 @@ import (
 )
 
 type PaginatedResponse[T any] struct {
-	Items      []T                       `json:"items"`
-	Pagination httputil.PaginationMeta   `json:"pagination"`
+	Items      []T                     `json:"items"`
+	Pagination httputil.PaginationMeta `json:"pagination"`
 }
 
 func NewPaginatedResponse[T any](items []T, total int, pagination httputil.PaginationParams) PaginatedResponse[T] {
@@ -25,4 +25,3 @@ func NewPaginatedResponse[T any](items []T, total int, pagination httputil.Pagin
 func JSON(w http.ResponseWriter, status int, data interface{}) {
 	httputil.JSON(w, status, data)
 }
-

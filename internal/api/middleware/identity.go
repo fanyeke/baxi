@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
+	"fmt"
 	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // IdentityKey is the context key for storing the authenticated user identity.
@@ -20,12 +21,12 @@ type UserIdentity struct {
 
 // legacyIdentity returns the default identity for legacy (non-JWT) bearer tokens.
 // Legacy tokens are opaque strings that don't contain JWT claims, so we map them
-// to the "qoder" service account with admin role for backward compatibility.
+// to the "qoder" service account with viewer role.
 func legacyIdentity() *UserIdentity {
 	return &UserIdentity{
 		UserID:   "qoder",
 		Username: "qoder",
-		Roles:    []string{"admin"},
+		Roles:    []string{"viewer"},
 	}
 }
 
@@ -83,6 +84,16 @@ func extractIdentity(token string) *UserIdentity {
 	return identity
 }
 
+// jwtSecret is the HMAC key used for JWT signature verification.
+// Set via SetJWTSecret during server initialization.
+var jwtSecret []byte
+
+// SetJWTSecret configures the HMAC key used for JWT verification.
+// Must be called during server initialization before processing requests.
+func SetJWTSecret(secret []byte) {
+	jwtSecret = secret
+}
+
 // parseJWTClaims extracts claims from the JWT payload segment.
 // Returns an error if the token is not in JWT format or the payload cannot be decoded.
 func parseJWTClaims(token string) (*jwtClaims, error) {
@@ -91,17 +102,42 @@ func parseJWTClaims(token string) (*jwtClaims, error) {
 		return nil, ErrNotJWT
 	}
 
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if len(jwtSecret) == 0 {
+		return nil, fmt.Errorf("JWT secret not configured")
+	}
+
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{"HS256"}))
+	parsed, err := parser.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	var claims jwtClaims
-	if err := json.Unmarshal(payload, &claims); err != nil {
-		return nil, err
+	claims, ok := parsed.Claims.(jwt.MapClaims)
+	if !ok || !parsed.Valid {
+		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	return &claims, nil
+	result := &jwtClaims{}
+	if sub, ok := claims["sub"].(string); ok {
+		result.Sub = sub
+	}
+	if name, ok := claims["name"].(string); ok {
+		result.Name = name
+	}
+	if email, ok := claims["email"].(string); ok {
+		result.Email = email
+	}
+	if roles, ok := claims["roles"].([]interface{}); ok {
+		for _, r := range roles {
+			if s, ok := r.(string); ok {
+				result.Roles = append(result.Roles, s)
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // ErrNotJWT is returned when a token does not have JWT format (3 dot-separated segments).

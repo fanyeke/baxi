@@ -555,18 +555,18 @@ func TestBuildMetricDaily_HappyPath(t *testing.T) {
 
 	// Verify sample values for 2017-01-01 (o1: delivered, payment=100, 2 items)
 	type metricRow struct {
-		gmv                   float64
-		orderCount            int64
-		customerCount         int64
-		sellerCount           int64
-		avgOrderValue         float64
-		freightValue          float64
-		avgReviewScore        float64
-		lowReviewRate         float64
-		lateDeliveryRate      float64
-		cancelRate            float64
+		gmv                    float64
+		orderCount             int64
+		customerCount          int64
+		sellerCount            int64
+		avgOrderValue          float64
+		freightValue           float64
+		avgReviewScore         float64
+		lowReviewRate          float64
+		lateDeliveryRate       float64
+		cancelRate             float64
 		paymentInstallmentRate float64
-		marketingSellerShare  float64
+		marketingSellerShare   float64
 	}
 
 	var day1 metricRow

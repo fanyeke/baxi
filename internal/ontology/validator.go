@@ -19,9 +19,9 @@ func (v ValidationIssue) String() string {
 
 // ValidationResult holds the outcome of schema validation.
 type ValidationResult struct {
-	Valid   bool               `json:"valid"`
-	Issues  []ValidationIssue  `json:"issues"`
-	Summary string             `json:"summary"`
+	Valid   bool              `json:"valid"`
+	Issues  []ValidationIssue `json:"issues"`
+	Summary string            `json:"summary"`
 }
 
 // Validate checks the ObjectRegistry for schema completeness and consistency.

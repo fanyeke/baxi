@@ -52,10 +52,10 @@ func (s *Server) handleCheckAccess(ctx context.Context, req mcp.CallToolRequest)
 	}
 
 	result := map[string]interface{}{
-		"role":         role,
-		"object_type":  objectType,
-		"action":       action,
-		"access":       string(*accessDecision),
+		"role":        role,
+		"object_type": objectType,
+		"action":      action,
+		"access":      string(*accessDecision),
 	}
 
 	return mcp.NewToolResultJSON(result)

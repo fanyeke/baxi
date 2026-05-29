@@ -2,11 +2,21 @@ package adapter
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"baxi/internal/action"
 )
+
+// newTestAdapter creates a GitHubAdapter pointing at a test server.
+func newTestAdapter(server *httptest.Server, token string) *GitHubAdapter {
+	a := NewGitHubAdapter(GitHubConfig{Token: token, Repo: "owner/repo"})
+	a.baseURL = server.URL
+	return a
+}
 
 func TestGitHubAdapter_BuildLabels_FullPayload(t *testing.T) {
 	a := NewGitHubAdapter(GitHubConfig{Token: "tkn", Repo: "o/r"})
@@ -86,13 +96,13 @@ func TestGitHubAdapter_BuildIssue_FullPayload(t *testing.T) {
 		CaseID:     "case-001",
 		ActionType: "create_followup_task",
 		Payload: map[string]interface{}{
-			"rule_id":       "rule-42",
-			"metric_name":   "gmv",
-			"current_value": "1200",
+			"rule_id":        "rule-42",
+			"metric_name":    "gmv",
+			"current_value":  "1200",
 			"baseline_value": "1000",
-			"change_rate":   0.20,
-			"severity":      "high",
-			"owner_role":    "platform",
+			"change_rate":    0.20,
+			"severity":       "high",
+			"owner_role":     "platform",
 		},
 	}
 	issue := a.BuildIssue(proposal)
@@ -232,7 +242,32 @@ func TestGitHubAdapter_BuildComment_NilPayload(t *testing.T) {
 }
 
 func TestGitHubAdapter_CreateIssue_Success(t *testing.T) {
-	a := NewGitHubAdapter(GitHubConfig{Token: "ghp_token", Repo: "owner/repo"})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/repos/owner/repo/issues" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer ghp_token" {
+			t.Errorf("unexpected auth header: %s", r.Header.Get("Authorization"))
+		}
+
+		var body map[string]interface{}
+		json.NewDecoder(r.Body).Decode(&body)
+		if body["title"] != "Test Issue" {
+			t.Errorf("unexpected title: %v", body["title"])
+		}
+
+		w.WriteHeader(201)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"html_url": "https://github.com/owner/repo/issues/42",
+			"number":   42,
+		})
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
 	issue := GitHubIssue{
 		Title:  "Test Issue",
 		Body:   "Test body",
@@ -242,7 +277,7 @@ func TestGitHubAdapter_CreateIssue_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := "https://github.com/owner/repo/issues/preview"
+	want := "https://github.com/owner/repo/issues/42"
 	if url != want {
 		t.Errorf("url = %q, want %q", url, want)
 	}
@@ -270,11 +305,100 @@ func TestGitHubAdapter_CreateIssue_EmptyRepo(t *testing.T) {
 	}
 }
 
+func TestGitHubAdapter_CreateIssue_401(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+		w.Write([]byte(`{"message":"Bad credentials"}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "bad_token")
+	_, err := a.CreateIssue(context.Background(), GitHubIssue{Title: "t"})
+	if err == nil {
+		t.Fatal("expected error for 401")
+	}
+	if !strings.Contains(err.Error(), "401") {
+		t.Errorf("expected 401 in error, got: %q", err.Error())
+	}
+}
+
+func TestGitHubAdapter_CreateIssue_404(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"message":"Not Found"}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
+	_, err := a.CreateIssue(context.Background(), GitHubIssue{Title: "t"})
+	if err == nil {
+		t.Fatal("expected error for 404")
+	}
+	if !strings.Contains(err.Error(), "404") {
+		t.Errorf("expected 404 in error, got: %q", err.Error())
+	}
+}
+
+func TestGitHubAdapter_CreateIssue_RateLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(403)
+		w.Write([]byte(`{"message":"API rate limit exceeded"}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
+	_, err := a.CreateIssue(context.Background(), GitHubIssue{Title: "t"})
+	if err == nil {
+		t.Fatal("expected error for rate limit")
+	}
+	if !strings.Contains(err.Error(), "403") {
+		t.Errorf("expected 403 in error, got: %q", err.Error())
+	}
+}
+
+func TestGitHubAdapter_CreateIssue_422(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(422)
+		w.Write([]byte(`{"message":"Validation Failed"}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
+	_, err := a.CreateIssue(context.Background(), GitHubIssue{Title: "t"})
+	if err == nil {
+		t.Fatal("expected error for 422")
+	}
+	if !strings.Contains(err.Error(), "422") {
+		t.Errorf("expected 422 in error, got: %q", err.Error())
+	}
+}
+
 func TestGitHubAdapter_AddLabels_Success(t *testing.T) {
-	a := NewGitHubAdapter(GitHubConfig{Token: "tkn", Repo: "o/r"})
+	var receivedBody map[string]interface{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/repos/owner/repo/issues/42/labels" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.WriteHeader(200)
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
 	err := a.AddLabels(context.Background(), 42, []string{"bug", "urgent"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	labels, ok := receivedBody["labels"].([]interface{})
+	if !ok {
+		t.Fatal("expected labels in request body")
+	}
+	if len(labels) != 2 || labels[0] != "bug" || labels[1] != "urgent" {
+		t.Errorf("unexpected labels: %v", labels)
 	}
 }
 
@@ -294,12 +418,46 @@ func TestGitHubAdapter_AddLabels_EmptyRepo(t *testing.T) {
 	}
 }
 
+func TestGitHubAdapter_AddLabels_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"message":"Not Found"}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
+	err := a.AddLabels(context.Background(), 999, []string{"bug"})
+	if err == nil {
+		t.Fatal("expected error for 404")
+	}
+	if !strings.Contains(err.Error(), "404") {
+		t.Errorf("expected 404 in error, got: %q", err.Error())
+	}
+}
+
 func TestGitHubAdapter_AddComment_Success(t *testing.T) {
-	a := NewGitHubAdapter(GitHubConfig{Token: "tkn", Repo: "o/r"})
+	var receivedBody map[string]interface{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/repos/owner/repo/issues/99/comments" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.WriteHeader(201)
+		w.Write([]byte(`{"id":1}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
 	comment := GitHubComment{Body: "Follow-up comment"}
 	err := a.AddComment(context.Background(), 99, comment)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if receivedBody["body"] != "Follow-up comment" {
+		t.Errorf("unexpected body: %v", receivedBody["body"])
 	}
 }
 
@@ -316,6 +474,23 @@ func TestGitHubAdapter_AddComment_EmptyRepo(t *testing.T) {
 	err := a.AddComment(context.Background(), 1, GitHubComment{Body: "x"})
 	if err == nil {
 		t.Fatal("expected error for empty repo")
+	}
+}
+
+func TestGitHubAdapter_AddComment_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(403)
+		w.Write([]byte(`{"message":"Forbidden"}`))
+	}))
+	defer server.Close()
+
+	a := newTestAdapter(server, "ghp_token")
+	err := a.AddComment(context.Background(), 1, GitHubComment{Body: "x"})
+	if err == nil {
+		t.Fatal("expected error for 403")
+	}
+	if !strings.Contains(err.Error(), "403") {
+		t.Errorf("expected 403 in error, got: %q", err.Error())
 	}
 }
 
@@ -386,21 +561,35 @@ func TestGitHubAdapter_Execute_EmptyToken(t *testing.T) {
 }
 
 func TestGitHubAdapter_Execute_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/my-org/my-repo/issues" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.WriteHeader(201)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"html_url": "https://github.com/my-org/my-repo/issues/7",
+			"number":   7,
+		})
+	}))
+	defer server.Close()
+
 	ctx := context.Background()
-	a := NewGitHubAdapter(GitHubConfig{Token: "ghp_valid", Repo: "my-org/my-repo"})
+	a := newTestAdapter(server, "ghp_valid")
+	a.config.Repo = "my-org/my-repo"
+
 	proposal := action.ActionProposal{
 		ProposalID: "prop-007",
 		CaseID:     "case-007",
 		ActionType: "create_followup_task",
 		Title:      "Create follow-up GitHub issue",
 		Payload: map[string]interface{}{
-			"rule_id":       "rule-1",
-			"metric_name":   "revenue",
-			"current_value": "5000",
+			"rule_id":        "rule-1",
+			"metric_name":    "revenue",
+			"current_value":  "5000",
 			"baseline_value": "4500",
-			"change_rate":   0.111,
-			"severity":      "medium",
-			"owner_role":    "revenue-team",
+			"change_rate":    0.111,
+			"severity":       "medium",
+			"owner_role":     "revenue-team",
 		},
 	}
 	result, err := a.Execute(ctx, proposal, false)
@@ -418,6 +607,10 @@ func TestGitHubAdapter_Execute_Success(t *testing.T) {
 	}
 	if ch, ok := result.DispatchPayload["channel"]; !ok || ch != "github" {
 		t.Errorf("expected channel=github, got %v", ch)
+	}
+	issueURL, ok := result.DispatchPayload["issue_url"].(string)
+	if !ok || issueURL != "https://github.com/my-org/my-repo/issues/7" {
+		t.Errorf("expected issue_url in payload, got %v", result.DispatchPayload["issue_url"])
 	}
 	issueRaw, ok := result.DispatchPayload["issue"]
 	if !ok {
@@ -461,6 +654,63 @@ func TestGitHubAdapter_Execute_NilPayload(t *testing.T) {
 	}
 }
 
+func TestGitHubAdapter_Execute_APIError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+		w.Write([]byte(`{"message":"Bad credentials"}`))
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	a := newTestAdapter(server, "bad_token")
+	proposal := action.ActionProposal{
+		ProposalID: "prop-009",
+		CaseID:     "case-009",
+		ActionType: "create_followup_task",
+		Payload: map[string]interface{}{
+			"rule_id": "rule-1",
+		},
+	}
+	result, err := a.Execute(ctx, proposal, false)
+	if err != nil {
+		t.Fatalf("Execute should return result, not error: %v", err)
+	}
+	if result.Success {
+		t.Error("expected Success=false on API error")
+	}
+	if !strings.Contains(result.Error, "401") {
+		t.Errorf("expected 401 in error, got: %q", result.Error)
+	}
+}
+
+func TestGitHubAdapter_Execute_DryRunDoesNotCallAPI(t *testing.T) {
+	apiCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiCalled = true
+		t.Error("API should not be called in dry-run mode")
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	a := newTestAdapter(server, "ghp_token")
+	proposal := action.ActionProposal{
+		ProposalID: "prop-010",
+		CaseID:     "case-010",
+		ActionType: "create_followup_task",
+		Payload:    map[string]interface{}{},
+	}
+	result, err := a.Execute(ctx, proposal, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.DryRun {
+		t.Error("expected DryRun=true")
+	}
+	if apiCalled {
+		t.Error("API was called during dry-run")
+	}
+}
+
 func TestGitHubAdapter_getString(t *testing.T) {
 	m := map[string]interface{}{
 		"key": "value",
@@ -481,8 +731,8 @@ func TestGitHubAdapter_getString(t *testing.T) {
 
 func TestGitHubAdapter_getFloat(t *testing.T) {
 	m := map[string]interface{}{
-		"f": 1.5,
-		"i": 10,
+		"f":   1.5,
+		"i":   10,
 		"i64": int64(20),
 	}
 	if got := getFloat(m, "f", 0); got != 1.5 {

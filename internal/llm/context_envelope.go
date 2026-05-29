@@ -33,8 +33,8 @@ type EvidenceItem struct {
 // RedactionSummary summarizes what was redacted from the object context
 // before it was sent to the LLM.
 type RedactionSummary struct {
-	TotalFields    int      `json:"total_fields"`
-	RedactedCount  int      `json:"redacted_count"`
-	RedactedList   []string `json:"redacted_list"`
-	AppliedRole    string   `json:"applied_role"`
+	TotalFields   int      `json:"total_fields"`
+	RedactedCount int      `json:"redacted_count"`
+	RedactedList  []string `json:"redacted_list"`
+	AppliedRole   string   `json:"applied_role"`
 }

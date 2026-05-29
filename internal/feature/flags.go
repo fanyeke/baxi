@@ -19,12 +19,12 @@ const (
 )
 
 var flagNames = map[Flag]string{
-	FlagOntologyAwareRepo:       "USE_ONTOLOGY_AWARE_REPO",
-	FlagMarkingService:          "USE_MARKING_SERVICE",
-	FlagDecisionLineageService:  "USE_DECISION_LINEAGE_SERVICE",
-	FlagNewContextBuilder:       "USE_NEW_CONTEXT_BUILDER",
-	FlagDualWrite:               "USE_DUAL_WRITE",
-	FlagGoPrimaryWrite:          "USE_GO_PRIMARY_WRITE",
+	FlagOntologyAwareRepo:      "USE_ONTOLOGY_AWARE_REPO",
+	FlagMarkingService:         "USE_MARKING_SERVICE",
+	FlagDecisionLineageService: "USE_DECISION_LINEAGE_SERVICE",
+	FlagNewContextBuilder:      "USE_NEW_CONTEXT_BUILDER",
+	FlagDualWrite:              "USE_DUAL_WRITE",
+	FlagGoPrimaryWrite:         "USE_GO_PRIMARY_WRITE",
 }
 
 // FeatureFlags holds all feature flag values.

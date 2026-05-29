@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func testPassThroughHandler() http.HandlerFunc {
@@ -389,21 +392,21 @@ func TestAuthMiddleware_LegacyTokenIdentity(t *testing.T) {
 	if identity.UserID != "qoder" {
 		t.Errorf("expected user_id 'qoder', got %q", identity.UserID)
 	}
-	if len(identity.Roles) != 1 || identity.Roles[0] != "admin" {
-		t.Errorf("expected roles ['admin'], got %v", identity.Roles)
+	if len(identity.Roles) != 1 || identity.Roles[0] != "viewer" {
+		t.Errorf("expected roles ['viewer'], got %v", identity.Roles)
 	}
 }
 
 func makeJWTToken(t *testing.T, claims map[string]any) string {
 	t.Helper()
-	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
-	payload, err := json.Marshal(claims)
+	secret := []byte("test-jwt-secret-for-unit-tests-32")
+	SetJWTSecret(secret)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims(claims))
+	signed, err := token.SignedString(secret)
 	if err != nil {
-		t.Fatalf("failed to marshal claims: %v", err)
+		t.Fatalf("failed to sign JWT: %v", err)
 	}
-	payloadB64 := base64.RawURLEncoding.EncodeToString(payload)
-	sig := base64.RawURLEncoding.EncodeToString([]byte("test-sig"))
-	return header + "." + payloadB64 + "." + sig
+	return signed
 }
 
 func TestAuthMiddleware_JWTTokenIdentity(t *testing.T) {
@@ -523,8 +526,8 @@ func TestGetIdentity_Fallback(t *testing.T) {
 	if identity.Username != "qoder" {
 		t.Errorf("expected 'qoder', got %q", identity.Username)
 	}
-	if len(identity.Roles) != 1 || identity.Roles[0] != "admin" {
-		t.Errorf("expected roles ['admin'], got %v", identity.Roles)
+	if len(identity.Roles) != 1 || identity.Roles[0] != "viewer" {
+		t.Errorf("expected roles ['viewer'], got %v", identity.Roles)
 	}
 }
 
@@ -542,5 +545,102 @@ func TestExtractIdentity_NonJSONPayload(t *testing.T) {
 	identity := extractIdentity(token)
 	if identity.Username != "qoder" {
 		t.Errorf("expected 'qoder' fallback, got %q", identity.Username)
+	}
+}
+
+func TestParseJWTClaims_ValidHS256(t *testing.T) {
+	secret := []byte("test-jwt-secret-for-unit-tests-32")
+	SetJWTSecret(secret)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   "user-789",
+		"name":  "bob",
+		"roles": []string{"analyst", "reviewer"},
+		"email": "bob@example.com",
+	})
+	signed, err := token.SignedString(secret)
+	if err != nil {
+		t.Fatalf("failed to sign JWT: %v", err)
+	}
+
+	claims, err := parseJWTClaims(signed)
+	if err != nil {
+		t.Fatalf("expected valid claims, got error: %v", err)
+	}
+	if claims.Sub != "user-789" {
+		t.Errorf("expected sub 'user-789', got %q", claims.Sub)
+	}
+	if claims.Name != "bob" {
+		t.Errorf("expected name 'bob', got %q", claims.Name)
+	}
+	if claims.Email != "bob@example.com" {
+		t.Errorf("expected email 'bob@example.com', got %q", claims.Email)
+	}
+	if len(claims.Roles) != 2 || claims.Roles[0] != "analyst" || claims.Roles[1] != "reviewer" {
+		t.Errorf("expected roles ['analyst','reviewer'], got %v", claims.Roles)
+	}
+}
+
+func TestParseJWTClaims_TamperedSignature(t *testing.T) {
+	secret := []byte("test-jwt-secret-for-unit-tests-32")
+	SetJWTSecret(secret)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":  "user-123",
+		"name": "alice",
+	})
+	signed, err := token.SignedString(secret)
+	if err != nil {
+		t.Fatalf("failed to sign JWT: %v", err)
+	}
+
+	// Tamper with the signature (change last character)
+	tampered := signed[:len(signed)-1] + "X"
+
+	_, err = parseJWTClaims(tampered)
+	if err == nil {
+		t.Error("expected error for tampered JWT signature, got nil")
+	}
+}
+
+func TestParseJWTClaims_ExpiredJWT(t *testing.T) {
+	secret := []byte("test-jwt-secret-for-unit-tests-32")
+	SetJWTSecret(secret)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": "user-123",
+		"exp": time.Now().Add(-1 * time.Hour).Unix(),
+	})
+	signed, err := token.SignedString(secret)
+	if err != nil {
+		t.Fatalf("failed to sign JWT: %v", err)
+	}
+
+	_, err = parseJWTClaims(signed)
+	if err == nil {
+		t.Error("expected error for expired JWT, got nil")
+	}
+}
+
+func TestParseJWTClaims_MissingSecret(t *testing.T) {
+	// Clear the secret
+	SetJWTSecret(nil)
+
+	_, err := parseJWTClaims("header.payload.signature")
+	if err == nil {
+		t.Error("expected error when JWT secret not configured, got nil")
+	}
+
+	// Restore for other tests
+	SetJWTSecret([]byte("test-jwt-secret-for-unit-tests-32"))
+}
+
+func TestLegacyIdentity_ViewerRole(t *testing.T) {
+	identity := legacyIdentity()
+	if identity.Username != "qoder" {
+		t.Errorf("expected username 'qoder', got %q", identity.Username)
+	}
+	if len(identity.Roles) != 1 || identity.Roles[0] != "viewer" {
+		t.Errorf("expected roles ['viewer'], got %v", identity.Roles)
 	}
 }

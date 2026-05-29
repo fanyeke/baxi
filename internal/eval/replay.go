@@ -27,10 +27,10 @@ type ReplayData struct {
 
 // ReplayOptions configures the behavior of a decision replay.
 type ReplayOptions struct {
-	ContextHash  string // optional: specify exact context version to replay
-	Provider     string // optional: "openai", "rule_based", or empty for original
+	ContextHash   string // optional: specify exact context version to replay
+	Provider      string // optional: "openai", "rule_based", or empty for original
 	PromptVersion string // optional: specific prompt version
-	DryRun       bool   // default false: executes provider call
+	DryRun        bool   // default false: executes provider call
 }
 
 // DecisionDiff holds the comparison result between original and replayed decisions.
@@ -45,13 +45,13 @@ type DecisionDiff struct {
 
 // ReplayResult holds the outcome of a decision replay.
 type ReplayResult struct {
-	OriginalDecision *llm.DecisionOutput `json:"original_decision"`
-	ReplayedDecision *llm.DecisionOutput `json:"replayed_decision,omitempty"`
-	Diff             *DecisionDiff       `json:"diff,omitempty"`
-	ContextHash      string              `json:"context_hash"`
-	PromptVersion    string              `json:"prompt_version"`
-	Model            string              `json:"model"`
-	DryRun           bool                `json:"dry_run"`
+	OriginalDecision *llm.DecisionOutput   `json:"original_decision"`
+	ReplayedDecision *llm.DecisionOutput   `json:"replayed_decision,omitempty"`
+	Diff             *DecisionDiff         `json:"diff,omitempty"`
+	ContextHash      string                `json:"context_hash"`
+	PromptVersion    string                `json:"prompt_version"`
+	Model            string                `json:"model"`
+	DryRun           bool                  `json:"dry_run"`
 	ValidationResult *llm.ValidationResult `json:"validation_result,omitempty"`
 }
 

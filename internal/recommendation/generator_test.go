@@ -92,14 +92,14 @@ func TestTaskGenerator_GenerateTasks(t *testing.T) {
 
 	// Insert sample recommendations: 1 global + 4 dimensional = 5 total
 	recommendations := []struct {
-		recID         string
-		alertID       string
-		title         string
-		detail        string
-		objType       string
-		objID         string
-		riskLevel     string
-		ownerRole     string
+		recID     string
+		alertID   string
+		title     string
+		detail    string
+		objType   string
+		objID     string
+		riskLevel string
+		ownerRole string
 	}{
 		{
 			recID:     "rec-gmv_drop_2018-10-17",
@@ -186,52 +186,52 @@ func TestTaskGenerator_GenerateTasks(t *testing.T) {
 
 	// Verify task ID transformations
 	expectedTasks := map[string]struct {
-		taskID      string
-		recID       string
-		title       string
-		source      string
-		priority    string
-		status      string
+		taskID   string
+		recID    string
+		title    string
+		source   string
+		priority string
+		status   string
 	}{
 		"task-gmv_drop_2018-10-17": {
-			taskID: "task-gmv_drop_2018-10-17",
-			recID:  "rec-gmv_drop_2018-10-17",
-			title:  "Review gmv anomaly from rule gmv_drop",
-			source: "heuristic_strategy",
+			taskID:   "task-gmv_drop_2018-10-17",
+			recID:    "rec-gmv_drop_2018-10-17",
+			title:    "Review gmv anomaly from rule gmv_drop",
+			source:   "heuristic_strategy",
 			priority: "high",
-			status: "pending",
+			status:   "pending",
 		},
 		"dimtask-dim-76085bfcd31d": {
-			taskID: "dimtask-dim-76085bfcd31d",
-			recID:  "dimrec-dim-76085bfcd31d",
-			title:  "排查区域 SP 延迟配送",
-			source: "dimensional_rule",
+			taskID:   "dimtask-dim-76085bfcd31d",
+			recID:    "dimrec-dim-76085bfcd31d",
+			title:    "排查区域 SP 延迟配送",
+			source:   "dimensional_rule",
 			priority: "high",
-			status: "pending",
+			status:   "pending",
 		},
 		"dimtask-dim-8bbbe8e62d34": {
-			taskID: "dimtask-dim-8bbbe8e62d34",
-			recID:  "dimrec-dim-8bbbe8e62d34",
-			title:  "排查卖家 1f50f920176fa81dab994f9023523100 评分异常",
-			source: "dimensional_rule",
+			taskID:   "dimtask-dim-8bbbe8e62d34",
+			recID:    "dimrec-dim-8bbbe8e62d34",
+			title:    "排查卖家 1f50f920176fa81dab994f9023523100 评分异常",
+			source:   "dimensional_rule",
 			priority: "medium",
-			status: "pending",
+			status:   "pending",
 		},
 		"dimtask-dim-455b469ba24c": {
-			taskID: "dimtask-dim-455b469ba24c",
-			recID:  "dimrec-dim-455b469ba24c",
-			title:  "排查品类 health_beauty GMV 下降",
-			source: "dimensional_rule",
+			taskID:   "dimtask-dim-455b469ba24c",
+			recID:    "dimrec-dim-455b469ba24c",
+			title:    "排查品类 health_beauty GMV 下降",
+			source:   "dimensional_rule",
 			priority: "medium",
-			status: "pending",
+			status:   "pending",
 		},
 		"dimtask-dim-3bb9eaf850d5": {
-			taskID: "dimtask-dim-3bb9eaf850d5",
-			recID:  "dimrec-dim-3bb9eaf850d5",
-			title:  "排查区域 SP 取消率异常",
-			source: "dimensional_rule",
+			taskID:   "dimtask-dim-3bb9eaf850d5",
+			recID:    "dimrec-dim-3bb9eaf850d5",
+			title:    "排查区域 SP 取消率异常",
+			source:   "dimensional_rule",
 			priority: "medium",
-			status: "pending",
+			status:   "pending",
 		},
 	}
 

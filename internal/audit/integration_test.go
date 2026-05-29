@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"baxi/internal/testutil"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"baxi/internal/testutil"
 )
 
 func setupTestDB(t *testing.T) (*testutil.PostgresContainer, *pgxpool.Pool, pgx.Tx) {

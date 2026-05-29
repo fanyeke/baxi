@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/model"
 )
@@ -57,7 +58,7 @@ func NewOutboxHandler(svc OutboxService) *OutboxHandler {
 func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
@@ -65,7 +66,7 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 
 	resp, err := h.svc.List(r.Context(), filters, pagination.Limit, pagination.Offset)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -75,7 +76,7 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "event_id required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
 		return
 	}
 
@@ -83,11 +84,11 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case isNotFound(err):
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 		case isInvalidState(err):
-			httputil.JSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, err.Error())
 		default:
-			httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+			writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		}
 		return
 	}
@@ -101,30 +102,28 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "event_id required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
 		return
 	}
 
 	event, err := h.svc.GetEvent(r.Context(), eventID)
 	if err != nil {
 		if isNotFound(err) {
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 			return
 		}
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
 	if event.Status != "pending" && event.Status != "failed" {
-		httputil.JSON(w, http.StatusConflict, map[string]string{
-			"error": fmt.Sprintf("event cannot be cancelled in %s state", event.Status),
-		})
+		writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, fmt.Sprintf("event cannot be cancelled in %s state", event.Status))
 		return
 	}
 
 	err = h.svc.CancelEvent(r.Context(), eventID)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -137,17 +136,17 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 func (h *OutboxHandler) HandleGetDetail(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "event_id required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
 		return
 	}
 
 	event, err := h.svc.GetEvent(r.Context(), eventID)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 	if event == nil {
-		httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "event not found"})
+		writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "event not found")
 		return
 	}
 
@@ -191,7 +190,7 @@ type BatchDispatchResponse struct {
 
 // HandleBatchDispatch handles POST /outbox/dispatch.
 func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Request) {
-	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
 }
 
 // dtoFromOutboxListResponse converts model.OutboxListResponse to dto.OutboxListResponse.

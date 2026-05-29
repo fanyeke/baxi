@@ -56,11 +56,11 @@ func (s *QoderService) GetContext(ctx context.Context, requestID string, params 
 			TotalOpenTasks:     totalTasks,
 			TotalPendingOutbox: totalOutbox,
 		},
-		TopAlerts:       topAlerts,
-		OpenTasks:       openTasks,
-		PendingOutbox:   pendingOutbox,
-		RecentDiagnosis: []string{},
-		AllowedActions:  caps.AllowedActions(),
+		TopAlerts:        topAlerts,
+		OpenTasks:        openTasks,
+		PendingOutbox:    pendingOutbox,
+		RecentDiagnosis:  []string{},
+		AllowedActions:   caps.AllowedActions(),
 		ForbiddenActions: caps.ForbiddenActions(),
 		// Enrichment: ontology, governance, agent_policy
 		// These are static until configloader services are wired.

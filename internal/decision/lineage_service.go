@@ -10,25 +10,25 @@ import (
 type LineageEventType string
 
 const (
-	LineageEventCaseCreated         LineageEventType = "case_created"
-	LineageEventContextBuilt        LineageEventType = "context_built"
-	LineageEventDecisionRequested   LineageEventType = "decision_requested"
-	LineageEventDecisionGenerated   LineageEventType = "decision_generated"
-	LineageEventProposalCreated     LineageEventType = "proposal_created"
-	LineageEventProposalApproved    LineageEventType = "proposal_approved"
-	LineageEventProposalRejected    LineageEventType = "proposal_rejected"
-	LineageEventActionApplying      LineageEventType = "action_applying"
-	LineageEventActionApplied       LineageEventType = "action_applied"
-	LineageEventActionFailed        LineageEventType = "action_failed"
-	LineageEventCaseClosed          LineageEventType = "case_closed"
-	LineageEventCaseFailed          LineageEventType = "case_failed"
-	LineageEventFallbackUsed        LineageEventType = "fallback_used"
-	LineageEventValidationFailed    LineageEventType = "validation_failed"
-	LineageEventRepairAttempted     LineageEventType = "repair_attempted"
-	LineageEventRepairSucceeded     LineageEventType = "repair_succeeded"
-	LineageEventRepairFailed        LineageEventType = "repair_failed"
-	LineageEventDispatchSucceeded   LineageEventType = "dispatch_succeeded"
-	LineageEventDispatchFailed      LineageEventType = "dispatch_failed"
+	LineageEventCaseCreated       LineageEventType = "case_created"
+	LineageEventContextBuilt      LineageEventType = "context_built"
+	LineageEventDecisionRequested LineageEventType = "decision_requested"
+	LineageEventDecisionGenerated LineageEventType = "decision_generated"
+	LineageEventProposalCreated   LineageEventType = "proposal_created"
+	LineageEventProposalApproved  LineageEventType = "proposal_approved"
+	LineageEventProposalRejected  LineageEventType = "proposal_rejected"
+	LineageEventActionApplying    LineageEventType = "action_applying"
+	LineageEventActionApplied     LineageEventType = "action_applied"
+	LineageEventActionFailed      LineageEventType = "action_failed"
+	LineageEventCaseClosed        LineageEventType = "case_closed"
+	LineageEventCaseFailed        LineageEventType = "case_failed"
+	LineageEventFallbackUsed      LineageEventType = "fallback_used"
+	LineageEventValidationFailed  LineageEventType = "validation_failed"
+	LineageEventRepairAttempted   LineageEventType = "repair_attempted"
+	LineageEventRepairSucceeded   LineageEventType = "repair_succeeded"
+	LineageEventRepairFailed      LineageEventType = "repair_failed"
+	LineageEventDispatchSucceeded LineageEventType = "dispatch_succeeded"
+	LineageEventDispatchFailed    LineageEventType = "dispatch_failed"
 )
 
 // SnapshotType represents the type of data snapshot.
@@ -93,8 +93,8 @@ type DataSnapshotRecord struct {
 
 // DecisionLineageChain holds the full lineage chain for a decision case.
 type DecisionLineageChain struct {
-	CaseID    string                  `json:"case_id"`
-	Events    []DecisionLineageEvent  `json:"events"`
+	CaseID    string                 `json:"case_id"`
+	Events    []DecisionLineageEvent `json:"events"`
 	Snapshots []DecisionDataSnapshot `json:"snapshots"`
 }
 

@@ -18,21 +18,30 @@ import (
 
 // Server represents the HTTP API server.
 type Server struct {
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	router              chi.Router
-	logger              *zap.Logger
-	pool                *pgxpool.Pool
-	http                *http.Server
-	taskSvc             *service.TaskService
-	bearerToken         string
-	corsAllowedOrigins  string
-	cfg                 *config.Config
-	decisionHandlerVal  *handler.DecisionHandler
-	actionHandlerVal    *handler.ActionHandler
-	llmHandlerVal       *handler.LLMHandler
-	feishuHandlerVal    *handler.FeishuHandler
-	diagnosisHandlerVal *handler.DiagnosisHandler
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	router               chi.Router
+	logger               *zap.Logger
+	pool                 *pgxpool.Pool
+	http                 *http.Server
+	taskSvc              *service.TaskService
+	bearerToken          string
+	corsAllowedOrigins   string
+	cfg                  *config.Config
+	decisionHandlerVal   *handler.DecisionHandler
+	actionHandlerVal     *handler.ActionHandler
+	llmHandlerVal        *handler.LLMHandler
+	feishuHandlerVal     *handler.FeishuHandler
+	diagnosisHandlerVal  *handler.DiagnosisHandler
+	outboxHandlerVal     *handler.OutboxHandler
+	governanceHandlerVal *handler.GovernanceHandler
+	qoderHandlerVal      *handler.QoderHandler
+	statusHandlerVal     *handler.StatusHandler
+	logHandlerVal        *handler.LogHandler
+	agentLogHandlerVal   *handler.AgentLogHandler
+	alertHandlerVal      *handler.AlertHandler
+	reviewHandlerVal     *handler.ReviewHandler
+	pipelineHandlerVal   *handler.PipelineHandler
 }
 
 // New creates a new API server instance.

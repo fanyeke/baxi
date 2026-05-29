@@ -20,8 +20,8 @@ import (
 // with a YAML file as fallback, and exposes typed accessor methods. All public
 // methods are safe for concurrent use.
 type ObjectRegistry struct {
-	mu       sync.RWMutex
-	objects  map[string]*ObjectType
+	mu      sync.RWMutex
+	objects map[string]*ObjectType
 }
 
 // NewObjectRegistry creates an ObjectRegistry, loading object schema from the

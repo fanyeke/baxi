@@ -32,8 +32,8 @@ type FeishuTableResult struct {
 // feishuResponse is the shared response body for all Feishu endpoints.
 // Matches Python FeishuExportResponse / FeishuSyncResponse / FeishuStatusImportResponse.
 type feishuResponse struct {
-	Status  string             `json:"status"`
-	Message string             `json:"message"`
+	Status  string              `json:"status"`
+	Message string              `json:"message"`
 	Tables  []FeishuTableResult `json:"tables"`
 }
 

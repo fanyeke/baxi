@@ -89,8 +89,8 @@ func TestHandleContext_ResponseFormat(t *testing.T) {
 					DispatchAttempts: 1,
 				},
 			},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{"read_status", "read_alerts"},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{"read_status", "read_alerts"},
 			ForbiddenActions: []string{"execute_actions"},
 		},
 	}
@@ -121,14 +121,14 @@ func TestHandleContext_ResponseFormat(t *testing.T) {
 func TestHandleContext_ResponseObjectShape(t *testing.T) {
 	mock := &mockContextFetcher{
 		response: &model.ContextResponse{
-			RequestID:       "test-req-456",
-			System:          model.SystemInfo{},
-			Summary:         model.ContextSummary{TotalAlerts: 5, TotalOpenTasks: 3, TotalPendingOutbox: 1},
-			TopAlerts:       []model.AlertItem{},
-			OpenTasks:       []model.TaskItem{},
-			PendingOutbox:   []model.OutboxItem{},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{},
+			RequestID:        "test-req-456",
+			System:           model.SystemInfo{},
+			Summary:          model.ContextSummary{TotalAlerts: 5, TotalOpenTasks: 3, TotalPendingOutbox: 1},
+			TopAlerts:        []model.AlertItem{},
+			OpenTasks:        []model.TaskItem{},
+			PendingOutbox:    []model.OutboxItem{},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{},
 			ForbiddenActions: []string{},
 		},
 	}
@@ -162,11 +162,11 @@ func TestHandleContext_SummaryCounts(t *testing.T) {
 				TotalOpenTasks:     15,
 				TotalPendingOutbox: 8,
 			},
-			TopAlerts:       []model.AlertItem{},
-			OpenTasks:       []model.TaskItem{},
-			PendingOutbox:   []model.OutboxItem{},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{},
+			TopAlerts:        []model.AlertItem{},
+			OpenTasks:        []model.TaskItem{},
+			PendingOutbox:    []model.OutboxItem{},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{},
 			ForbiddenActions: []string{},
 		},
 	}
@@ -190,14 +190,14 @@ func TestHandleContext_SummaryCounts(t *testing.T) {
 func TestHandleContext_EmptyState(t *testing.T) {
 	mock := &mockContextFetcher{
 		response: &model.ContextResponse{
-			RequestID:       "empty-ctx",
-			System:          model.SystemInfo{},
-			Summary:         model.ContextSummary{},
-			TopAlerts:       []model.AlertItem{},
-			OpenTasks:       []model.TaskItem{},
-			PendingOutbox:   []model.OutboxItem{},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{},
+			RequestID:        "empty-ctx",
+			System:           model.SystemInfo{},
+			Summary:          model.ContextSummary{},
+			TopAlerts:        []model.AlertItem{},
+			OpenTasks:        []model.TaskItem{},
+			PendingOutbox:    []model.OutboxItem{},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{},
 			ForbiddenActions: []string{},
 		},
 	}
@@ -252,14 +252,14 @@ func TestHandleContext_ServiceError(t *testing.T) {
 func TestHandleContext_QueryParams(t *testing.T) {
 	mock := &mockContextFetcher{
 		response: &model.ContextResponse{
-			RequestID:       "params-test",
-			System:          model.SystemInfo{},
-			Summary:         model.ContextSummary{TotalAlerts: 0, TotalOpenTasks: 0, TotalPendingOutbox: 0},
-			TopAlerts:       []model.AlertItem{},
-			OpenTasks:       []model.TaskItem{},
-			PendingOutbox:   []model.OutboxItem{},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{},
+			RequestID:        "params-test",
+			System:           model.SystemInfo{},
+			Summary:          model.ContextSummary{TotalAlerts: 0, TotalOpenTasks: 0, TotalPendingOutbox: 0},
+			TopAlerts:        []model.AlertItem{},
+			OpenTasks:        []model.TaskItem{},
+			PendingOutbox:    []model.OutboxItem{},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{},
 			ForbiddenActions: []string{},
 		},
 	}
@@ -275,14 +275,14 @@ func TestHandleContext_QueryParams(t *testing.T) {
 func TestHandleContext_InvalidLimitParams(t *testing.T) {
 	mock := &mockContextFetcher{
 		response: &model.ContextResponse{
-			RequestID:       "bad-params",
-			System:          model.SystemInfo{},
-			Summary:         model.ContextSummary{},
-			TopAlerts:       []model.AlertItem{},
-			OpenTasks:       []model.TaskItem{},
-			PendingOutbox:   []model.OutboxItem{},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{},
+			RequestID:        "bad-params",
+			System:           model.SystemInfo{},
+			Summary:          model.ContextSummary{},
+			TopAlerts:        []model.AlertItem{},
+			OpenTasks:        []model.TaskItem{},
+			PendingOutbox:    []model.OutboxItem{},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{},
 			ForbiddenActions: []string{},
 		},
 	}
@@ -367,14 +367,14 @@ func TestHandleContext_RejectsNonGET(t *testing.T) {
 func TestHandleContext_JSONArrayShape(t *testing.T) {
 	mock := &mockContextFetcher{
 		response: &model.ContextResponse{
-			RequestID:       "shape-test",
-			System:          model.SystemInfo{},
-			Summary:         model.ContextSummary{TotalAlerts: 0, TotalOpenTasks: 0, TotalPendingOutbox: 0},
-			TopAlerts:       []model.AlertItem{},
-			OpenTasks:       []model.TaskItem{},
-			PendingOutbox:   []model.OutboxItem{},
-			RecentDiagnosis: []string{},
-			AllowedActions:  []string{},
+			RequestID:        "shape-test",
+			System:           model.SystemInfo{},
+			Summary:          model.ContextSummary{TotalAlerts: 0, TotalOpenTasks: 0, TotalPendingOutbox: 0},
+			TopAlerts:        []model.AlertItem{},
+			OpenTasks:        []model.TaskItem{},
+			PendingOutbox:    []model.OutboxItem{},
+			RecentDiagnosis:  []string{},
+			AllowedActions:   []string{},
 			ForbiddenActions: []string{},
 		},
 	}

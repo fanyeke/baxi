@@ -152,7 +152,7 @@ func (r *Repository) queryLogs(
 ) ([]LogRow, int, error) {
 	rows, err := r.Query(ctx, query, limit, offset)
 	if err != nil {
-		return []LogRow{}, 0, nil
+		return nil, 0, fmt.Errorf("query logs: %w", err)
 	}
 	defer rows.Close()
 

@@ -41,10 +41,10 @@ type CaseStatusUpdater interface {
 
 // ProposalService generates and manages action proposals from decisions.
 type ProposalService struct {
-	repo    ProposalRepository
-	caseSvc CaseStatusUpdater
+	repo     ProposalRepository
+	caseSvc  CaseStatusUpdater
 	registry *ActionRegistry
-	pool    *pgxpool.Pool
+	pool     *pgxpool.Pool
 }
 
 // NewProposalService creates a new ProposalService.

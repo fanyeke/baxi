@@ -38,18 +38,18 @@ type AlertRule struct {
 
 // AlertResult holds the output of a single rule evaluation.
 type AlertResult struct {
-	AlertID      string
-	RuleID       string
-	EventDate    string
-	MetricName   string
-	CurrentValue float64
+	AlertID       string
+	RuleID        string
+	EventDate     string
+	MetricName    string
+	CurrentValue  float64
 	BaselineValue float64
-	DeltaValue   float64
-	DeltaPct     float64
-	Severity     Severity
-	Message      string
-	EvidenceJSON string
-	SampleSize   int64
+	DeltaValue    float64
+	DeltaPct      float64
+	Severity      Severity
+	Message       string
+	EvidenceJSON  string
+	SampleSize    int64
 }
 
 // GlobalRules returns all global alert rules.

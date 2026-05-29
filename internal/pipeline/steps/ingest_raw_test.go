@@ -69,17 +69,17 @@ furniture,furniture
 
 // expectedRows maps CSV filename -> expected row count after ingestion.
 var expectedRows = map[string]int64{
-	"olist_customers_dataset.csv":              2,
-	"olist_orders_dataset.csv":                  2,
-	"olist_order_items_dataset.csv":             2,
-	"olist_order_payments_dataset.csv":          2,
-	"olist_order_reviews_dataset.csv":           2,
-	"olist_products_dataset.csv":                2,
-	"olist_sellers_dataset.csv":                 2,
-	"olist_geolocation_dataset.csv":             2,
-	"product_category_name_translation.csv":     2,
+	"olist_customers_dataset.csv":                 2,
+	"olist_orders_dataset.csv":                    2,
+	"olist_order_items_dataset.csv":               2,
+	"olist_order_payments_dataset.csv":            2,
+	"olist_order_reviews_dataset.csv":             2,
+	"olist_products_dataset.csv":                  2,
+	"olist_sellers_dataset.csv":                   2,
+	"olist_geolocation_dataset.csv":               2,
+	"product_category_name_translation.csv":       2,
 	"olist_marketing_qualified_leads_dataset.csv": 2,
-	"olist_closed_deals_dataset.csv":            2,
+	"olist_closed_deals_dataset.csv":              2,
 }
 
 // DDL to create raw tables for testing. This mirrors migrations/002_raw_tables.sql

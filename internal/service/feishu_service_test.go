@@ -14,9 +14,9 @@ import (
 
 // mockBitableClient is a test double for FeishuBitableClient.
 type mockBitableClient struct {
-	listRecordsFunc   func(tableID string, pageSize int, filterConfig map[string]any) ([]map[string]any, error)
-	upsertByKeyFunc   func(tableID string, records []map[string]any, keyField string) (created []map[string]any, updated []map[string]any, err error)
-	sendMessageFunc   func(chatID, content string, dryRun bool) (string, error)
+	listRecordsFunc func(tableID string, pageSize int, filterConfig map[string]any) ([]map[string]any, error)
+	upsertByKeyFunc func(tableID string, records []map[string]any, keyField string) (created []map[string]any, updated []map[string]any, err error)
+	sendMessageFunc func(chatID, content string, dryRun bool) (string, error)
 }
 
 func (m *mockBitableClient) ListRecords(tableID string, pageSize int, filterConfig map[string]any) ([]map[string]any, error) {

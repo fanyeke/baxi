@@ -17,10 +17,10 @@ type DiagnosisLogEntry struct {
 
 // DiagnosisResponse is the structured diagnosis result for a request_id lookup.
 type DiagnosisResponse struct {
-	RequestID       string                `json:"request_id"`
-	Summary         string                `json:"summary"`
-	ErrorCode       string                `json:"error_code"`
-	Diagnosis       string                `json:"diagnosis"`
-	SuggestedAction string                `json:"suggested_action"`
-	RelatedLogs     []DiagnosisLogEntry   `json:"related_logs"`
+	RequestID       string              `json:"request_id"`
+	Summary         string              `json:"summary"`
+	ErrorCode       string              `json:"error_code"`
+	Diagnosis       string              `json:"diagnosis"`
+	SuggestedAction string              `json:"suggested_action"`
+	RelatedLogs     []DiagnosisLogEntry `json:"related_logs"`
 }

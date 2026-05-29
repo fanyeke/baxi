@@ -19,13 +19,13 @@ type LLMSafeContext struct {
 
 // TriggerInfo describes the event that triggered a decision request.
 type TriggerInfo struct {
-	AlertID      string  `json:"alert_id"`
-	RuleID       string  `json:"rule_id"`
-	Severity     string  `json:"severity"`
-	MetricName   string  `json:"metric_name"`
-	CurrentValue float64 `json:"current_value"`
+	AlertID       string  `json:"alert_id"`
+	RuleID        string  `json:"rule_id"`
+	Severity      string  `json:"severity"`
+	MetricName    string  `json:"metric_name"`
+	CurrentValue  float64 `json:"current_value"`
 	BaselineValue float64 `json:"baseline_value"`
-	DeltaPct     float64 `json:"delta_pct"`
+	DeltaPct      float64 `json:"delta_pct"`
 }
 
 // ObjectContext describes the target object of a decision.
@@ -41,6 +41,7 @@ type GovernanceInfo struct {
 	RedactionApplied bool     `json:"redaction_applied"`
 	RedactedFields   []string `json:"redacted_fields"`
 	Role             string   `json:"role"`
+	RepairErrors     []string `json:"repair_errors,omitempty"`
 }
 
 // DecisionType values.
@@ -62,22 +63,22 @@ const (
 
 // ActionType values.
 const (
-	ActionTypeCreateFollowupTask = "create_followup_task"
-	ActionTypeNotifyOwner        = "notify_owner"
-	ActionTypeExportReport       = "export_report"
+	ActionTypeCreateFollowupTask  = "create_followup_task"
+	ActionTypeNotifyOwner         = "notify_owner"
+	ActionTypeExportReport        = "export_report"
 	ActionTypeCreateOutboxMessage = "create_outbox_message"
-	ActionTypeEscalateToHuman    = "escalate_to_human"
+	ActionTypeEscalateToHuman     = "escalate_to_human"
 )
 
 // DecisionOutput is the structured result from a DecisionProvider.
 type DecisionOutput struct {
-	SchemaVersion      string               `json:"schema_version"`        // "decision_output.v1" or empty for legacy
-	DecisionType       string               `json:"decision_type"`
-	Severity           string               `json:"severity"`
-	Summary            string               `json:"summary"`
-	Rationale          []string             `json:"rationale"`
-	RecommendedActions []RecommendedAction  `json:"recommended_actions"`
-	Confidence         float64              `json:"confidence"`
+	SchemaVersion       string              `json:"schema_version"` // "decision_output.v1" or empty for legacy
+	DecisionType        string              `json:"decision_type"`
+	Severity            string              `json:"severity"`
+	Summary             string              `json:"summary"`
+	Rationale           []string            `json:"rationale"`
+	RecommendedActions  []RecommendedAction `json:"recommended_actions"`
+	Confidence          float64             `json:"confidence"`
 	RequiresHumanReview bool                `json:"requires_human_review"`
 }
 

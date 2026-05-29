@@ -22,10 +22,10 @@ type LineageEventRepository interface {
 // LineageService (table-level lineage), DecisionRepository (case data),
 // and LineageEventRepository (decision-specific lineage events).
 type DecisionLineageAdapter struct {
-	lineageSvc   *governance.LineageService
-	caseRepo     *repository.DecisionRepository
-	eventRepo    LineageEventRepository
-	pool         *pgxpool.Pool
+	lineageSvc *governance.LineageService
+	caseRepo   *repository.DecisionRepository
+	eventRepo  LineageEventRepository
+	pool       *pgxpool.Pool
 }
 
 // NewDecisionLineageAdapter creates a new DecisionLineageAdapter.

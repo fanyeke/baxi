@@ -53,5 +53,3 @@ func TestDBAuditLogger_NilPoolDoesNotPanic(t *testing.T) {
 	logger.LogDecisionReplayed(ctx, "case-1", "orig-1")
 	logger.LogEvalCompleted(ctx, "case-1", "eval-1")
 }
-
-

@@ -42,7 +42,7 @@ type ApplyService struct {
 	registry      *ActionRegistry
 	executors     map[string]ActionExecutor
 	loader        ProposalLoader
-	lineageVerify  LineageVerifier
+	lineageVerify LineageVerifier
 	lineageRecord LineageRecorder
 	pool          *pgxpool.Pool
 }

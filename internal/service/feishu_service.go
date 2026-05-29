@@ -439,9 +439,9 @@ type FeishuImportTableResult struct {
 }
 
 type FeishuImportResult struct {
-	Status  string                     `json:"status"`
-	Message string                     `json:"message"`
-	Tables  []FeishuImportTableResult  `json:"tables"`
+	Status  string                    `json:"status"`
+	Message string                    `json:"message"`
+	Tables  []FeishuImportTableResult `json:"tables"`
 }
 
 // ImportStatusFromFeishu pulls status from Feishu and imports to local storage.

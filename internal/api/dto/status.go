@@ -4,9 +4,9 @@ package dto
 // StatusResponse is the system status response aggregating table counts,
 // pipeline run info, and database connectivity.
 type StatusResponse struct {
-	Database        DatabaseInfo    `json:"database"`
-	LastPipelineRun *PipelineRun   `json:"last_pipeline_run"`
-	Version         string         `json:"version"`
+	Database        DatabaseInfo `json:"database"`
+	LastPipelineRun *PipelineRun `json:"last_pipeline_run"`
+	Version         string       `json:"version"`
 }
 
 // DatabaseInfo holds database connection metadata and table counts.

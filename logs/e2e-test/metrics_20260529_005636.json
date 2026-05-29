@@ -1,0 +1,8 @@
+{"test":"T01_ListAlerts","tool":"list_alerts","args":{"limit":5},"duration_ms":30004,"is_error":False,"timestamp":"2026-05-29T00:57:08+08:00"}
+{"test":"T02_ListCases","tool":"list_cases","args":{"limit":5},"duration_ms":30004,"is_error":False,"timestamp":"2026-05-29T00:57:38+08:00"}
+{"test":"T03_CheckAccess","tool":"check_access","args":{"role":"admin","object_type":"order","action":"read"},"duration_ms":30004,"is_error":False,"timestamp":"2026-05-29T00:58:08+08:00"}
+{"test":"T04_GetClassification","tool":"get_classification","args":{"field_path":"customer.email"},"duration_ms":30003,"is_error":False,"timestamp":"2026-05-29T00:58:38+08:00"}
+{"test":"T05_GetCase","tool":"get_case","args":{"case_id":"dc_1779986531_PSvyYI"},"duration_ms":30004,"is_error":False,"timestamp":"2026-05-29T00:59:08+08:00"}
+{"test":"T06_ListProposals","tool":"list_proposals","args":{"case_id":"dc_1779986531_PSvyYI"},"duration_ms":30003,"is_error":False,"timestamp":"2026-05-29T00:59:38+08:00"}
+{"test":"T07_CreateCase","tool":"create_decision_case","args":{"alert_id":"dim-76085bfcd31d","created_by":"e2e_test"},"duration_ms":30004,"is_error":False,"timestamp":"2026-05-29T01:00:08+08:00"}
+{"test":"T08_RunPipeline","tool":"run_pipeline","args":{"config":"daily"},"duration_ms":30003,"is_error":False,"timestamp":"2026-05-29T01:00:38+08:00"}

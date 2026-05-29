@@ -11,10 +11,10 @@ func TestRuleBasedProvider_SatisfiesInterface(t *testing.T) {
 
 func TestRuleBasedProvider_GenerateDecision(t *testing.T) {
 	tests := []struct {
-		name       string
-		severity   string
-		wantType   string
-		wantConf   float64
+		name        string
+		severity    string
+		wantType    string
+		wantConf    float64
 		wantActions int
 		wantSummary string
 	}{
@@ -68,13 +68,13 @@ func TestRuleBasedProvider_GenerateDecision(t *testing.T) {
 			input := LLMSafeContext{
 				CaseID: "case-001",
 				Trigger: TriggerInfo{
-					AlertID:      "alert-001",
-					RuleID:       "rule-001",
-					Severity:     tt.severity,
-					MetricName:   "test_metric",
-					CurrentValue: 50,
+					AlertID:       "alert-001",
+					RuleID:        "rule-001",
+					Severity:      tt.severity,
+					MetricName:    "test_metric",
+					CurrentValue:  50,
 					BaselineValue: 100,
-					DeltaPct:     -50,
+					DeltaPct:      -50,
 				},
 			}
 

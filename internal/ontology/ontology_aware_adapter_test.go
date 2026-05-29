@@ -13,8 +13,8 @@ import (
 )
 
 type mockQuerier struct {
-	getObj    *repository.ObjectInstance
-	getErr    error
+	getObj      *repository.ObjectInstance
+	getErr      error
 	queryResult *repository.ObjectQueryResult
 	queryErr    error
 }
@@ -43,10 +43,10 @@ func newTestRegistry() *mockRegistry {
 	return &mockRegistry{
 		types: map[string]*ObjectType{
 			"customer": {
-				Name:       "customer",
+				Name:        "customer",
 				DisplayName: "Customer",
-				Grain:      "customer_unique_id",
-				PrimaryKey: "customer_unique_id",
+				Grain:       "customer_unique_id",
+				PrimaryKey:  "customer_unique_id",
 				Properties: map[string]ObjectProperty{
 					"customer_unique_id": {Name: "customer_unique_id", Type: "string", IsPK: true},
 					"customer_state":     {Name: "customer_state", Type: "string"},
@@ -54,10 +54,10 @@ func newTestRegistry() *mockRegistry {
 				},
 			},
 			"order": {
-				Name:       "order",
+				Name:        "order",
 				DisplayName: "Order",
-				Grain:      "order_id",
-				PrimaryKey: "order_id",
+				Grain:       "order_id",
+				PrimaryKey:  "order_id",
 				Properties: map[string]ObjectProperty{
 					"order_id":     {Name: "order_id", Type: "string", IsPK: true},
 					"order_status": {Name: "order_status", Type: "string"},

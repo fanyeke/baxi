@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/model"
 )
@@ -26,7 +27,7 @@ func NewAlertHandler(svc AlertLister) *AlertHandler {
 func (h *AlertHandler) HandleListAlerts(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
@@ -41,7 +42,7 @@ func (h *AlertHandler) HandleListAlerts(w http.ResponseWriter, r *http.Request) 
 
 	resp, err := h.svc.ListAlerts(r.Context(), filters, sort, pagination.Limit, pagination.Offset)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -80,4 +81,3 @@ func dtoFromAlertListResponse(m *model.AlertListResponse) *dto.AlertListResponse
 		Total: m.Total,
 	}
 }
-

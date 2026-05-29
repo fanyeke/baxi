@@ -12,15 +12,15 @@ import (
 
 // Diagnoser is the interface for cross-source request tracing.
 type Diagnoser interface {
-	DiagnoseByRequestID(requestID string) (*	model.DiagnosisResponse, error)
+	DiagnoseByRequestID(requestID string) (*model.DiagnosisResponse, error)
 }
 
 // DiagnosisService performs cross-source request tracing by reading
 // error.log (JSONL), audit_dispatch.csv, and audit_feishu.csv.
 type DiagnosisService struct {
-	errorLogPath     string
-	auditCSVPath     string
-	auditFeishuPath  string
+	errorLogPath    string
+	auditCSVPath    string
+	auditFeishuPath string
 }
 
 // NewDiagnosisService creates a new DiagnosisService with the given file paths.
@@ -34,15 +34,15 @@ func NewDiagnosisService(errorLogPath, auditCSVPath, auditFeishuPath string) *Di
 
 // DiagnoseByRequestID searches error.log, audit_dispatch.csv, and audit_feishu.csv
 // for entries matching the given request_id and returns a structured diagnosis.
-func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*	model.DiagnosisResponse, error) {
+func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*model.DiagnosisResponse, error) {
 	errorEntries := s.searchJSONL(s.errorLogPath, requestID)
 	auditEntries := s.searchCSV(s.auditCSVPath, requestID)
 	feishuEntries := s.searchCSV(s.auditFeishuPath, requestID)
 
-	var relatedLogs []	model.LogEntry
+	var relatedLogs []model.LogEntry
 
 	for _, e := range errorEntries {
-		relatedLogs = append(relatedLogs, 	model.LogEntry{
+		relatedLogs = append(relatedLogs, model.LogEntry{
 			Source:    "error.log",
 			Ts:        getString(e, "timestamp", "ts"),
 			ErrorCode: getString(e, "error_code"),
@@ -52,7 +52,7 @@ func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*	model.Diagno
 	}
 
 	for _, a := range auditEntries {
-		relatedLogs = append(relatedLogs, 	model.LogEntry{
+		relatedLogs = append(relatedLogs, model.LogEntry{
 			Source:    "audit_dispatch.csv",
 			Timestamp: a["timestamp"],
 			OutboxID:  a["outbox_id"],
@@ -62,7 +62,7 @@ func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*	model.Diagno
 	}
 
 	for _, a := range feishuEntries {
-		relatedLogs = append(relatedLogs, 	model.LogEntry{
+		relatedLogs = append(relatedLogs, model.LogEntry{
 			Source:    "audit_feishu.csv",
 			Timestamp: a["timestamp"],
 			Action:    a["action"],
@@ -84,7 +84,7 @@ func (s *DiagnosisService) DiagnoseByRequestID(requestID string) (*	model.Diagno
 		summary = "No error message recorded"
 	}
 
-	return &	model.DiagnosisResponse{
+	return &model.DiagnosisResponse{
 		RequestID:       requestID,
 		Summary:         summary,
 		ErrorCode:       getString(primaryError, "error_code"),

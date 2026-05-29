@@ -168,8 +168,9 @@ func (s *BuildMetricDimensionDailyStep) Name() string {
 //   - region:   group by dwd.order_level.customer_state
 //
 // Metrics per dimension (all 7):
-//   gmv, order_count, customer_count, avg_order_value,
-//   avg_review_score, late_delivery_rate, cancel_rate
+//
+//	gmv, order_count, customer_count, avg_order_value,
+//	avg_review_score, late_delivery_rate, cancel_rate
 func (s *BuildMetricDimensionDailyStep) Run(ctx context.Context, tx pgx.Tx, input pipeline.StepInput) (*pipeline.StepOutput, error) {
 	insertSQL := `
 WITH

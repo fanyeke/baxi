@@ -9,6 +9,9 @@ import Feishu from "./pages/Feishu"
 import Pipeline from "./pages/Pipeline"
 import Governance from "./pages/Governance"
 import AgentLogs from "./pages/AgentLogs"
+import CaseDetail from "./pages/CaseDetail"
+import AuditTimeline from "./pages/AuditTimeline"
+import PolicyInspector from "./pages/PolicyInspector"
 
 function App() {
   return (
@@ -23,6 +26,9 @@ function App() {
         <Route path="/pipeline" element={<Pipeline />} />
         <Route path="/governance" element={<Governance />} />
         <Route path="/agent-logs" element={<AgentLogs />} />
+        <Route path="/cases/:id" element={<CaseDetail />} />
+        <Route path="/audit-timeline" element={<AuditTimeline />} />
+        <Route path="/policy-inspector" element={<PolicyInspector />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

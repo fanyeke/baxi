@@ -83,27 +83,27 @@ type LineageNode struct {
 
 // LineageEdge defines an edge connecting two lineage nodes.
 type LineageEdge struct {
-	From           string `yaml:"from"`
-	To             string `yaml:"to"`
-	Transform      string `yaml:"transform"`
-	TransformType  string `yaml:"transform_type"`
+	From          string `yaml:"from"`
+	To            string `yaml:"to"`
+	Transform     string `yaml:"transform"`
+	TransformType string `yaml:"transform_type"`
 }
 
 // DataMarkingsConfig mirrors config/data_markings.yml.
 type DataMarkingsConfig struct {
-	Markings             map[string]Marking       `yaml:"markings"`
-	PipelineStageMarkings []PipelineStageMarking  `yaml:"pipeline_stage_markings"`
+	Markings              map[string]Marking     `yaml:"markings"`
+	PipelineStageMarkings []PipelineStageMarking `yaml:"pipeline_stage_markings"`
 }
 
 // Marking defines a mandatory access control marking.
 type Marking struct {
-	MandatoryControl      bool     `yaml:"mandatory_control"`
-	AccessType            string   `yaml:"access_type"`
-	Conjunctive           bool     `yaml:"conjunctive"`
-	Inheritance           []string `yaml:"inheritance"`
-	AppliesTo             []string `yaml:"applies_to"`
-	Policy                string   `yaml:"policy"`
-	ExpandAccessPermission string  `yaml:"expand_access_permission"`
+	MandatoryControl       bool     `yaml:"mandatory_control"`
+	AccessType             string   `yaml:"access_type"`
+	Conjunctive            bool     `yaml:"conjunctive"`
+	Inheritance            []string `yaml:"inheritance"`
+	AppliesTo              []string `yaml:"applies_to"`
+	Policy                 string   `yaml:"policy"`
+	ExpandAccessPermission string   `yaml:"expand_access_permission"`
 }
 
 // PipelineStageMarking maps a pipeline stage to a marking.
@@ -120,54 +120,54 @@ type HealthChecksConfig struct {
 
 // MonitoringView defines a scope-based monitoring rule.
 type MonitoringView struct {
-	ID           string   `yaml:"id"`
-	Scope        string   `yaml:"scope"`
-	CheckType    string   `yaml:"check_type"`
-	Rule         string   `yaml:"rule"`
-	Severity     string   `yaml:"severity"`
+	ID            string   `yaml:"id"`
+	Scope         string   `yaml:"scope"`
+	CheckType     string   `yaml:"check_type"`
+	Rule          string   `yaml:"rule"`
+	Severity      string   `yaml:"severity"`
 	AlertChannels []string `yaml:"alert_channels"`
 }
 
 // HealthCheck defines a per-resource health validation.
 type HealthCheck struct {
-	ID           string   `yaml:"id"`
-	Resource     string   `yaml:"resource"`
-	Description  string   `yaml:"description"`
-	CheckType    string   `yaml:"check_type"`
-	Validation   string   `yaml:"validation"`
-	Severity     string   `yaml:"severity"`
+	ID            string   `yaml:"id"`
+	Resource      string   `yaml:"resource"`
+	Description   string   `yaml:"description"`
+	CheckType     string   `yaml:"check_type"`
+	Validation    string   `yaml:"validation"`
+	Severity      string   `yaml:"severity"`
 	AlertChannels []string `yaml:"alert_channels,omitempty"`
 }
 
 // CheckpointRulesConfig mirrors config/checkpoint_rules.yml.
 type CheckpointRulesConfig struct {
-	Checkpoints       map[string]Checkpoint `yaml:"checkpoints"`
-	CheckpointAudit   CheckpointAuditConfig `yaml:"checkpoint_audit"`
-	Frequency         FrequencyConfig       `yaml:"frequency"`
+	Checkpoints     map[string]Checkpoint `yaml:"checkpoints"`
+	CheckpointAudit CheckpointAuditConfig `yaml:"checkpoint_audit"`
+	Frequency       FrequencyConfig       `yaml:"frequency"`
 }
 
 // Checkpoint defines a single checkpoint rule.
 type Checkpoint struct {
-	Scope               string   `yaml:"scope"`
-	Endpoint            string   `yaml:"endpoint,omitempty"`
-	RequiresJustification bool   `yaml:"requires_justification"`
-	Prompt              string   `yaml:"prompt,omitempty"`
-	RecordFields        []string `yaml:"record_fields,omitempty"`
-	CheckpointTypes     []string `yaml:"checkpoint_types,omitempty"`
+	Scope                 string   `yaml:"scope"`
+	Endpoint              string   `yaml:"endpoint,omitempty"`
+	RequiresJustification bool     `yaml:"requires_justification"`
+	Prompt                string   `yaml:"prompt,omitempty"`
+	RecordFields          []string `yaml:"record_fields,omitempty"`
+	CheckpointTypes       []string `yaml:"checkpoint_types,omitempty"`
 }
 
 // CheckpointAuditConfig configures the checkpoint audit file.
 type CheckpointAuditConfig struct {
-	File         string   `yaml:"file"`
-	Format       string   `yaml:"format"`
-	Columns      []string `yaml:"columns"`
-	RetentionDays int     `yaml:"retention_days"`
+	File          string   `yaml:"file"`
+	Format        string   `yaml:"format"`
+	Columns       []string `yaml:"columns"`
+	RetentionDays int      `yaml:"retention_days"`
 }
 
 // FrequencyConfig configures checkpoint prompting frequency.
 type FrequencyConfig struct {
-	Default         string `yaml:"default"`
-	CacheSameRule   bool   `yaml:"cache_same_rule"`
+	Default       string `yaml:"default"`
+	CacheSameRule bool   `yaml:"cache_same_rule"`
 }
 
 // AlertRulesConfig mirrors config/alert_rules.yml.
@@ -177,14 +177,14 @@ type AlertRulesConfig struct {
 
 // AlertRule defines a single alert rule.
 type AlertRule struct {
-	RuleID         string `yaml:"rule_id"`
-	Metric         string `yaml:"metric"`
-	Condition      string `yaml:"condition"`
-	Severity       string `yaml:"severity"`
-	OwnerRole      string `yaml:"owner_role"`
-	Dimension      string `yaml:"dimension"`
-	MinSampleSize  int    `yaml:"min_sample_size"`
-	Description    string `yaml:"description"`
+	RuleID        string `yaml:"rule_id"`
+	Metric        string `yaml:"metric"`
+	Condition     string `yaml:"condition"`
+	Severity      string `yaml:"severity"`
+	OwnerRole     string `yaml:"owner_role"`
+	Dimension     string `yaml:"dimension"`
+	MinSampleSize int    `yaml:"min_sample_size"`
+	Description   string `yaml:"description"`
 }
 
 // MetricsConfig mirrors config/metrics.yml.
@@ -206,14 +206,14 @@ type Metric struct {
 // configTypeKey maps config key (filename without .yml) to a normalized type.
 var configTypeKey = map[string]string{
 	"aip_object_schema":   "object_schema",
-	"data_classification":  "data_classification",
-	"access_policy":        "access_policy",
-	"data_lineage":         "data_lineage",
-	"data_markings":        "data_markings",
-	"health_checks":        "health_checks",
-	"checkpoint_rules":     "checkpoint_rules",
-	"alert_rules":          "alert_rules",
-	"metrics":              "metrics",
+	"data_classification": "data_classification",
+	"access_policy":       "access_policy",
+	"data_lineage":        "data_lineage",
+	"data_markings":       "data_markings",
+	"health_checks":       "health_checks",
+	"checkpoint_rules":    "checkpoint_rules",
+	"alert_rules":         "alert_rules",
+	"metrics":             "metrics",
 }
 
 func detectConfigType(configKey string) string {

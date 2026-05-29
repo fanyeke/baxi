@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/model"
 )
 
 // handleListTasks handles GET /api/v1/tasks.
@@ -18,7 +19,7 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var filters dto.TaskFilters
+	var filters model.TaskFilters
 
 	if status := r.URL.Query().Get("status"); status != "" {
 		filters.Status = &status
@@ -37,7 +38,43 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Convert model to DTO
+	dtoResp := dtoFromTaskListResponse(resp)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(dtoResp)
+}
+
+// dtoFromTaskListResponse converts model.TaskListResponse to dto.TaskListResponse.
+func dtoFromTaskListResponse(m *model.TaskListResponse) *dto.TaskListResponse {
+	if m == nil {
+		return nil
+	}
+
+	items := make([]dto.TaskItem, len(m.Items))
+	for i, item := range m.Items {
+		items[i] = dto.TaskItem{
+			TaskID:           item.TaskID,
+			TaskTitle:        item.TaskTitle,
+			TaskDescription:  item.TaskDescription,
+			Status:           item.Status,
+			Priority:         item.Priority,
+			OwnerRole:        item.OwnerRole,
+			OwnerUserID:      item.OwnerUserID,
+			DueAt:            item.DueAt,
+			CreatedAt:        item.CreatedAt,
+			CompletedAt:      item.CompletedAt,
+			Feedback:         item.Feedback,
+			RecommendationID: item.RecommendationID,
+			EventID:          item.EventID,
+			TargetObjectType: item.TargetObjectType,
+			TargetObjectID:   item.TargetObjectID,
+		}
+	}
+
+	return &dto.TaskListResponse{
+		Items: items,
+		Total: m.Total,
+	}
 }

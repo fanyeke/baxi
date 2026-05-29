@@ -109,24 +109,31 @@ func (b *ContextBuilder) redactProperties(objectType string, role string, proper
 	return allowed, redacted
 }
 
+// sensitivityLevel extracts the numeric level from an L0-L4 code.
+// Returns -1 if the input is not a valid level code.
+func sensitivityLevel(s string) int {
+	if len(s) == 2 && s[0] == 'L' && s[1] >= '0' && s[1] <= '4' {
+		return int(s[1] - '0')
+	}
+	return -1
+}
+
 // shouldRedact returns true if the given sensitivity classification must be
 // redacted for the specified role.
 func shouldRedact(role, sensitivity string) bool {
-	if sensitivity == "" {
+	level := sensitivityLevel(sensitivity)
+	if level < 0 {
 		return false
 	}
-
 	switch role {
-	case "analyst":
-		return sensitivity == "pii"
-	case "agent_readonly", "":
-		return sensitivity == "pii" || sensitivity == "sensitive" || sensitivity == "derived_sensitive"
-	case "viewer":
-		return sensitivity == "pii" || sensitivity == "sensitive" || sensitivity == "derived_sensitive" || sensitivity == "internal"
 	case "admin":
 		return false
+	case "analyst":
+		return level >= 3
+	case "viewer", "agent_readonly", "":
+		return level >= 2
 	default:
-		return sensitivity == "pii" || sensitivity == "sensitive" || sensitivity == "derived_sensitive"
+		return level >= 2
 	}
 }
 

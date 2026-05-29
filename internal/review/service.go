@@ -127,10 +127,10 @@ func (s *ReviewService) transitionProposal(ctx context.Context, proposalID, revi
 			caseID = proposal.CaseID
 		}
 		_ = s.lineage.RecordLineageEvent(ctx, tx, caseID, auditAction, reviewerID, map[string]interface{}{
-			"proposal_id":  proposalID,
-			"action_type":  proposal.ActionType,
-			"verdict":      string(verdict),
-			"feedback":     feedback,
+			"proposal_id": proposalID,
+			"action_type": proposal.ActionType,
+			"verdict":     string(verdict),
+			"feedback":    feedback,
 		})
 	}
 

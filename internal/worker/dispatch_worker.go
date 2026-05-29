@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"baxi/internal/action"
@@ -85,6 +86,7 @@ type DispatchWorker struct {
 	executors map[string]action.ActionExecutor
 	config    DispatchConfig
 	cancel    context.CancelFunc
+	mu        sync.Mutex // guards processBatch against concurrent ticks
 }
 
 // NewDispatchWorker creates a DispatchWorker.
@@ -109,8 +111,11 @@ func NewDispatchWorker(
 
 // Run starts the dispatch loop and blocks until the context is cancelled.
 func (w *DispatchWorker) Run(ctx context.Context) error {
-	ctx, w.cancel = context.WithCancel(ctx)
-	defer w.cancel()
+	ctx, cancel := context.WithCancel(ctx)
+	w.mu.Lock()
+	w.cancel = cancel
+	w.mu.Unlock()
+	defer cancel()
 
 	log.Printf("[DispatchWorker] started (poll_interval=%s, batch_size=%d, max_retries=%d, dry_run=%v)",
 		w.config.PollInterval, w.config.BatchSize, w.config.MaxRetries, w.config.DryRun)
@@ -124,15 +129,23 @@ func (w *DispatchWorker) Run(ctx context.Context) error {
 			log.Printf("[DispatchWorker] shutting down")
 			return nil
 		case <-ticker.C:
-			w.processBatch(ctx)
+			if w.mu.TryLock() {
+				w.processBatch(ctx)
+				w.mu.Unlock()
+			} else {
+				log.Printf("[DispatchWorker] skipping tick: previous batch still running")
+			}
 		}
 	}
 }
 
 // Stop cancels the worker context, triggering Run() to exit cleanly.
 func (w *DispatchWorker) Stop() {
-	if w.cancel != nil {
-		w.cancel()
+	w.mu.Lock()
+	cancel := w.cancel
+	w.mu.Unlock()
+	if cancel != nil {
+		cancel()
 	}
 }
 

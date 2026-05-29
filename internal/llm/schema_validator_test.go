@@ -15,11 +15,11 @@ func validAllowedActions() []string {
 
 func validDecisionOutput() *DecisionOutput {
 	return &DecisionOutput{
-		DecisionType:       DecisionTypeInvestigate,
-		Severity:           SeverityMedium,
-		Summary:            "Test summary",
-		Rationale:          []string{"reason 1", "reason 2"},
-		Confidence:         0.85,
+		DecisionType:        DecisionTypeInvestigate,
+		Severity:            SeverityMedium,
+		Summary:             "Test summary",
+		Rationale:           []string{"reason 1", "reason 2"},
+		Confidence:          0.85,
 		RequiresHumanReview: true,
 		RecommendedActions: []RecommendedAction{
 			{ActionType: ActionTypeNotifyOwner, Priority: "high", OwnerRole: "data_engineer"},
@@ -157,9 +157,9 @@ func TestValidator_NilOutput_ReturnsError(t *testing.T) {
 
 func TestValidator_MultipleErrors_Accumulate(t *testing.T) {
 	output := &DecisionOutput{
-		DecisionType:       "",
-		Severity:           "",
-		Confidence:         -0.5,
+		DecisionType:        "",
+		Severity:            "",
+		Confidence:          -0.5,
 		RequiresHumanReview: false,
 		RecommendedActions: []RecommendedAction{
 			{ActionType: "invalid_action"},

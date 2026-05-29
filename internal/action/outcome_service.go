@@ -11,17 +11,17 @@ import (
 
 // ActionOutcome represents a single outcome record for an executed action proposal.
 type ActionOutcome struct {
-	OutcomeID        string                 `json:"outcome_id"`
-	CaseID           string                 `json:"case_id"`
-	ProposalID       string                 `json:"proposal_id"`
-	ActionType       string                 `json:"action_type"`
-	ExecutionStatus  string                 `json:"execution_status"`
-	BusinessResult   string                 `json:"business_result,omitempty"`
-	BusinessImpact   map[string]interface{} `json:"business_impact,omitempty"`
-	IsEffective      *bool                  `json:"is_effective,omitempty"`
-	RecordedBy       string                 `json:"recorded_by"`
-	RecordedAt       time.Time              `json:"recorded_at"`
-	Notes            string                 `json:"notes,omitempty"`
+	OutcomeID       string                 `json:"outcome_id"`
+	CaseID          string                 `json:"case_id"`
+	ProposalID      string                 `json:"proposal_id"`
+	ActionType      string                 `json:"action_type"`
+	ExecutionStatus string                 `json:"execution_status"`
+	BusinessResult  string                 `json:"business_result,omitempty"`
+	BusinessImpact  map[string]interface{} `json:"business_impact,omitempty"`
+	IsEffective     *bool                  `json:"is_effective,omitempty"`
+	RecordedBy      string                 `json:"recorded_by"`
+	RecordedAt      time.Time              `json:"recorded_at"`
+	Notes           string                 `json:"notes,omitempty"`
 }
 
 // RecordOutcomeInput is the input for recording an action outcome.
@@ -79,17 +79,17 @@ func (s *OutcomeService) RecordOutcome(ctx context.Context, input RecordOutcomeI
 	}
 
 	return &ActionOutcome{
-		OutcomeID:        outcomeID,
-		CaseID:           input.CaseID,
-		ProposalID:       input.ProposalID,
-		ActionType:       input.ActionType,
-		ExecutionStatus:  input.ExecutionStatus,
-		BusinessResult:   input.BusinessResult,
-		BusinessImpact:   input.BusinessImpact,
-		IsEffective:      input.IsEffective,
-		RecordedBy:       input.RecordedBy,
-		RecordedAt:       time.Now(),
-		Notes:            input.Notes,
+		OutcomeID:       outcomeID,
+		CaseID:          input.CaseID,
+		ProposalID:      input.ProposalID,
+		ActionType:      input.ActionType,
+		ExecutionStatus: input.ExecutionStatus,
+		BusinessResult:  input.BusinessResult,
+		BusinessImpact:  input.BusinessImpact,
+		IsEffective:     input.IsEffective,
+		RecordedBy:      input.RecordedBy,
+		RecordedAt:      time.Now(),
+		Notes:           input.Notes,
 	}, nil
 }
 

@@ -484,10 +484,10 @@ func TestBuildDWDItemLevel_HappyPath(t *testing.T) {
 	defer rows.Close()
 
 	type itemRow struct {
-		orderID, productID, sellerID      string
+		orderID, productID, sellerID     string
 		catName, catNameEng, sellerState string
-		price, freightValue               string
-		batchID, pipelineRunID            string
+		price, freightValue              string
+		batchID, pipelineRunID           string
 	}
 
 	var results []itemRow

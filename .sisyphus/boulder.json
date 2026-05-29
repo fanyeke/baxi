@@ -1,3 +1,73 @@
-{}
+{
+  "active_plan": "/home/zzz/project/baxi/.sisyphus/plans/pi-agent-integration.md",
+  "started_at": "2026-05-29T05:18:23.853Z",
+  "session_ids": [
+    "ses_18df58b5cffeo3UvQdKup6BulY",
+    "ses_18dd442a2ffebArIeeQz4Ukq8q",
+    "ses_18dd3ef52ffeyg2hg3ioiUr45r",
+    "ses_18dd40d9affeeDeRbbNFY8TgCN",
+    "ses_18dd3af1fffe4zUjxqOVQ8E6Pf",
+    "ses_18dd3d196ffeLQFWStAOHWW063",
+    "ses_18dd24afeffe81lEgaHoQ2SvYJ",
+    "ses_18dcfa02bffeeODr9ICQ0VJqu9",
+    "ses_18dcf8c27ffemTqqs5lkXKGMR4",
+    "ses_18dcf789effeaiAM2S3Pg2uK6R",
+    "ses_18dcbc85effeHqTgNWX3XNzGwK",
+    "ses_18dcbd73fffeAdk2XAzvI1kUbj",
+    "ses_18dcbaee7ffei6J8kA41y2jtn0",
+    "ses_18dcbbb8bffemBKciZDHJbVwK3",
+    "ses_18dc3defaffeLUPrMoxdXjg1qM",
+    "ses_18dbd3d3bffe8Om37zEPlKjGmJ",
+    "ses_18db74c83ffeXSc0ZxNYGxrymr",
+    "ses_18db752ffffeQATXJr84dUxlsT"
+  ],
+  "plan_name": "pi-agent-integration",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "修复 Migration 005 - 添加 next_retry_at 列",
+      "session_id": "ses_18dd24afeffe81lEgaHoQ2SvYJ",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-29T05:23:25.450Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "修复 Action 白名单 - 空配置应禁用所有动作",
+      "session_id": "ses_18dcfa02bffeeODr9ICQ0VJqu9",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-29T05:25:21.058Z"
+    },
+    "todo:13": {
+      "task_key": "todo:13",
+      "task_label": "13",
+      "task_title": "优化 MCP 配置 - 混合模式",
+      "session_id": "ses_18dcbd73fffeAdk2XAzvI1kUbj",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-29T05:35:13.700Z"
+    },
+    "todo:14": {
+      "task_key": "todo:14",
+      "task_label": "14",
+      "task_title": "实现主动预警检测",
+      "session_id": "ses_18dbd3d3bffe8Om37zEPlKjGmJ",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-29T05:49:32.798Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**计划合规审计** — `oracle`",
+      "session_id": "ses_18db752ffffeQATXJr84dUxlsT",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-29T05:52:10.764Z"
+    }
   }
 }

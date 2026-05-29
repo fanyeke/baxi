@@ -72,7 +72,7 @@ func TestOutboxRepository_CreateEvent(t *testing.T) {
 	ctx := context.Background()
 
 	payload, _ := json.Marshal(map[string]interface{}{
-		"task_id": "task-gmv_drop_2018-10-17",
+		"task_id":  "task-gmv_drop_2018-10-17",
 		"priority": "high",
 	})
 
@@ -198,8 +198,8 @@ func TestOutboxRepository_CreateEvents(t *testing.T) {
 	events := make([]OutboxEvent, 3)
 	for i := 0; i < 3; i++ {
 		payload, _ := json.Marshal(map[string]interface{}{
-			"task_id":   "task-foo",
-			"index":     i,
+			"task_id": "task-foo",
+			"index":   i,
 		})
 		events[i] = OutboxEvent{
 			EventID:       "outbox-task-foo-" + itoa(i),

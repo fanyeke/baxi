@@ -19,11 +19,11 @@ func validAllowedActions() []string {
 // validDecisionOutput returns a valid DecisionOutput used as baseline for tests.
 func validDecisionOutput() *llm.DecisionOutput {
 	return &llm.DecisionOutput{
-		DecisionType:       llm.DecisionTypeInvestigate,
-		Severity:           llm.SeverityMedium,
-		Summary:            "Test summary for evaluation",
-		Rationale:          []string{"reason 1", "reason 2"},
-		Confidence:         0.85,
+		DecisionType:        llm.DecisionTypeInvestigate,
+		Severity:            llm.SeverityMedium,
+		Summary:             "Test summary for evaluation",
+		Rationale:           []string{"reason 1", "reason 2"},
+		Confidence:          0.85,
 		RequiresHumanReview: true,
 		RecommendedActions: []llm.RecommendedAction{
 			{ActionType: llm.ActionTypeNotifyOwner, Priority: "high", OwnerRole: "data_engineer"},

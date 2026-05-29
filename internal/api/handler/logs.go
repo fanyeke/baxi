@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/model"
 )
@@ -31,13 +32,13 @@ func NewLogHandler(svc LogLister) *LogHandler {
 func (h *LogHandler) HandleListRecent(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
 	resp, err := h.svc.ListRecent(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -48,13 +49,13 @@ func (h *LogHandler) HandleListRecent(w http.ResponseWriter, r *http.Request) {
 func (h *LogHandler) HandleListErrors(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
 	resp, err := h.svc.ListErrors(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -65,13 +66,13 @@ func (h *LogHandler) HandleListErrors(w http.ResponseWriter, r *http.Request) {
 func (h *LogHandler) HandleListAudit(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
 	resp, err := h.svc.ListAudit(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 

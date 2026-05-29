@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/review"
 )
@@ -73,26 +74,26 @@ type reviewActionFunc func(ctx context.Context, proposalID, reviewerID, feedback
 func (h *ReviewHandler) handleReviewAction(w http.ResponseWriter, r *http.Request, proposalID string, action reviewActionFunc) {
 	var req approveRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "invalid request body")
 		return
 	}
 
 	if req.ReviewerID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "reviewer_id is required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "reviewer_id is required")
 		return
 	}
 
 	record, err := action(r.Context(), proposalID, req.ReviewerID, req.Feedback)
 	if err != nil {
 		if errors.Is(err, review.ErrProposalNotFound) {
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "proposal not found"})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "proposal not found")
 			return
 		}
 		if errors.Is(err, review.ErrInvalidState) {
-			httputil.JSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, err.Error())
 			return
 		}
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -105,11 +106,11 @@ func (h *ReviewHandler) HandleGetReview(w http.ResponseWriter, r *http.Request) 
 
 	record, err := h.svc.GetReviewByProposal(r.Context(), proposalID)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 	if record == nil {
-		httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "review not found"})
+		writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "review not found")
 		return
 	}
 

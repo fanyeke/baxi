@@ -25,3 +25,12 @@ Tests use `unittest.mock.patch("services.dispatch_service.resolve_adapter", ...)
 - All 4 new tests pass
 - Full suite: 272 tests pass, zero regressions
 - LSP diagnostics: clean
+
+## 2026-05-28: ontology_repository.go migration
+
+- Migrated `internal/repository/ontology_repository.go` to `internal/repository/ontology/` subpackage
+- Pattern: new subpackage defines its own duplicate types (to avoid circular import with `repository` parent). The compat layer converts between ontology.ObjectInstance and repository.ObjectInstance via helper functions (toObjectInstanceSlice, toObjectQueryResult, etc.)
+- The subpackage methods use `r.Query()` / `r.QueryRow()` from embedded `*common.PoolProvider` instead of `pool.Query()` / `pool.QueryRow()`
+- `WithRole` re-exported from the compat layer (backward compat for `internal/ontology/query_service.go`)
+- Follows same pattern as governance_repository.go and decision_repository.go compat layers
+- `ontology_aware_adapter.go` and `ontology_aware_repo.go` unchanged - they only define interfaces using types from `interfaces.go` still in the `repository` package

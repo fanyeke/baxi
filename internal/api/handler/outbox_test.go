@@ -175,7 +175,9 @@ func (a *testOutboxAdapter) CancelEvent(ctx context.Context, id string) error {
 }
 
 func TestHandler_ListOutbox_NoFilters(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -199,7 +201,9 @@ func TestHandler_ListOutbox_NoFilters(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_WithFilters(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -221,7 +225,9 @@ func TestHandler_ListOutbox_WithFilters(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_WithPagination(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -244,7 +250,9 @@ func TestHandler_ListOutbox_WithPagination(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_EmptyResponse(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	handler := newOutboxHandlerForTest(pool)
@@ -264,7 +272,9 @@ func TestHandler_ListOutbox_EmptyResponse(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_MultipleFilters(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -293,7 +303,9 @@ func TestHandler_ListOutbox_MultipleFilters(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_InvalidLimit(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	handler := newOutboxHandlerForTest(pool)
@@ -304,7 +316,9 @@ func TestHandler_ListOutbox_InvalidLimit(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_AllQueryParams(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -329,7 +343,9 @@ func TestHandler_ListOutbox_AllQueryParams(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_ItemJSONStructure(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -391,7 +407,9 @@ func TestParseOutboxFilters_Partial(t *testing.T) {
 }
 
 func TestHandler_ListOutbox_ResponseFormat(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -407,7 +425,9 @@ func TestHandler_ListOutbox_ResponseFormat(t *testing.T) {
 }
 
 func TestHandler_GetDetail_Found(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -427,7 +447,9 @@ func TestHandler_GetDetail_Found(t *testing.T) {
 }
 
 func TestHandler_GetDetail_NotFound(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	h := newOutboxHandlerForTest(pool)
@@ -438,7 +460,9 @@ func TestHandler_GetDetail_NotFound(t *testing.T) {
 }
 
 func TestHandler_Dispatch_Pending(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -462,7 +486,9 @@ func TestHandler_Dispatch_Pending(t *testing.T) {
 }
 
 func TestHandler_Dispatch_AlreadyDispatched(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -475,7 +501,9 @@ func TestHandler_Dispatch_AlreadyDispatched(t *testing.T) {
 }
 
 func TestHandler_Dispatch_NotFound(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	h := newOutboxHandlerForTest(pool)
@@ -486,7 +514,9 @@ func TestHandler_Dispatch_NotFound(t *testing.T) {
 }
 
 func TestHandler_Cancel_Pending(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -508,7 +538,9 @@ func TestHandler_Cancel_Pending(t *testing.T) {
 }
 
 func TestHandler_Cancel_Dispatched(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -521,7 +553,9 @@ func TestHandler_Cancel_Dispatched(t *testing.T) {
 }
 
 func TestHandler_Cancel_Failed(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -538,7 +572,9 @@ func TestHandler_Cancel_Failed(t *testing.T) {
 }
 
 func TestHandler_GetDetail_ReturnsAllFields(t *testing.T) {
-	if testing.Short() { t.Skip("skipping in short mode") }
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
 	pool := setupHlrOutboxTestDB(t)
 	ctx := context.Background()
 	now := time.Now().UTC()

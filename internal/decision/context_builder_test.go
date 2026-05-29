@@ -128,7 +128,7 @@ func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
-SourceID: strPtr("alert-1"),
+				SourceID:   strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -203,7 +203,7 @@ func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
-SourceID: strPtr("alert-1"),
+				SourceID:   strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -301,7 +301,7 @@ func TestContextBuilder_BuildDecisionContext_RedactedFieldsInGovernance(t *testi
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
-SourceID: strPtr("alert-1"),
+				SourceID:   strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,
@@ -401,8 +401,8 @@ func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 			objectID := "seller-1"
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
-SourceType: strPtr("manual"),
-SourceID:   strPtr("manual-1"),
+				SourceType: strPtr("manual"),
+				SourceID:   strPtr("manual-1"),
 				Severity:   &severity,
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -447,7 +447,7 @@ func TestContextBuilder_BuildDecisionContext_AlertError(t *testing.T) {
 			return &repository.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
-SourceID: strPtr("alert-1"),
+				SourceID:   strPtr("alert-1"),
 				AlertID:    &alertID,
 				Severity:   &severity,
 				ObjectType: &objectType,

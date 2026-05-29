@@ -28,16 +28,16 @@ type DecisionComparison struct {
 // Compare compares two decision outputs across multiple dimensions.
 func Compare(caseID string, llmDecision, ruleDecision *llm.DecisionOutput) *DecisionComparison {
 	c := &DecisionComparison{
-		DecisionCaseID:    caseID,
-		DecisionTypeMatch: llmDecision.DecisionType == ruleDecision.DecisionType,
-		SeverityMatch:     llmDecision.Severity == ruleDecision.Severity,
-		ActionOverlap:     jaccardIndex(llmDecision.RecommendedActions, ruleDecision.RecommendedActions),
-		LLMValid:          true,
-		RuleValid:         true,
-		ConfidenceDiff:    math.Abs(llmDecision.Confidence - ruleDecision.Confidence),
+		DecisionCaseID:     caseID,
+		DecisionTypeMatch:  llmDecision.DecisionType == ruleDecision.DecisionType,
+		SeverityMatch:      llmDecision.Severity == ruleDecision.Severity,
+		ActionOverlap:      jaccardIndex(llmDecision.RecommendedActions, ruleDecision.RecommendedActions),
+		LLMValid:           true,
+		RuleValid:          true,
+		ConfidenceDiff:     math.Abs(llmDecision.Confidence - ruleDecision.Confidence),
 		LLMRequiresReview:  llmDecision.RequiresHumanReview,
 		RuleRequiresReview: ruleDecision.RequiresHumanReview,
-		CreatedAt:         time.Now(),
+		CreatedAt:          time.Now(),
 	}
 
 	if llmDecision.DecisionType != "" {

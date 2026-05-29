@@ -112,10 +112,10 @@ func TestReviewHandler_HandleApprove_400_MissingReviewerID(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Equal(t, "reviewer_id is required", resp["error"])
+	assert.Equal(t, "reviewer_id is required", resp["message"])
 }
 
 func TestReviewHandler_HandleApprove_400_InvalidJSON(t *testing.T) {
@@ -131,10 +131,10 @@ func TestReviewHandler_HandleApprove_400_InvalidJSON(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "invalid request body")
+	assert.Contains(t, resp["message"].(string), "invalid request body")
 }
 
 func TestReviewHandler_HandleApprove_404_ProposalNotFound(t *testing.T) {
@@ -155,10 +155,10 @@ func TestReviewHandler_HandleApprove_404_ProposalNotFound(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "proposal not found")
+	assert.Contains(t, resp["message"].(string), "proposal not found")
 }
 
 func TestReviewHandler_HandleApprove_409_InvalidState(t *testing.T) {
@@ -179,10 +179,10 @@ func TestReviewHandler_HandleApprove_409_InvalidState(t *testing.T) {
 
 	require.Equal(t, http.StatusConflict, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "invalid proposal state for operation")
+	assert.Contains(t, resp["message"].(string), "invalid proposal state for operation")
 }
 
 func TestReviewHandler_HandleReject_200(t *testing.T) {
@@ -311,10 +311,10 @@ func TestReviewHandler_HandleGetReview_404(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "review not found")
+	assert.Contains(t, resp["message"].(string), "review not found")
 }
 
 func TestReviewHandler_HandleApprove_500_InternalError(t *testing.T) {
@@ -335,10 +335,10 @@ func TestReviewHandler_HandleApprove_500_InternalError(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "internal server error")
+	assert.Contains(t, resp["message"].(string), "internal server error")
 }
 
 func TestReviewHandler_HandleGetReview_500_InternalError(t *testing.T) {
@@ -357,8 +357,8 @@ func TestReviewHandler_HandleGetReview_500_InternalError(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "internal server error")
+	assert.Contains(t, resp["message"].(string), "internal server error")
 }

@@ -1,13 +1,20 @@
 package adapter
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"strings"
+	"time"
 
 	"baxi/internal/action"
 )
+
+const defaultGitHubBaseURL = "https://api.github.com"
 
 // GitHubIssue represents the payload for creating or updating a GitHub issue.
 type GitHubIssue struct {
@@ -23,12 +30,20 @@ type GitHubComment struct {
 
 // GitHubAdapter dispatches action proposals to GitHub (via API).
 type GitHubAdapter struct {
-	config GitHubConfig
+	config     GitHubConfig
+	httpClient *http.Client
+	token      string
+	baseURL    string
 }
 
 // NewGitHubAdapter creates a new GitHubAdapter with the given config.
 func NewGitHubAdapter(config GitHubConfig) *GitHubAdapter {
-	return &GitHubAdapter{config: config}
+	return &GitHubAdapter{
+		config:     config,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+		token:      config.Token,
+		baseURL:    defaultGitHubBaseURL,
+	}
 }
 
 // BuildLabels extracts label names from the proposal payload.
@@ -110,52 +125,141 @@ func (a *GitHubAdapter) BuildComment(proposal action.ActionProposal) GitHubComme
 	return GitHubComment{Body: body}
 }
 
-// CreateIssue is a stub for creating a GitHub issue via the REST API.
-// In the current preview implementation it logs the intent and returns
-// a synthetic issue URL without making an HTTP call.
+// doRequest executes an HTTP request against the GitHub API.
+func (a *GitHubAdapter) doRequest(method, path string, body interface{}) ([]byte, error) {
+	url := a.baseURL + path
+
+	var reqBody io.Reader
+	if body != nil {
+		jsonBytes, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+		reqBody = bytes.NewReader(jsonBytes)
+	}
+
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+a.token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	switch resp.StatusCode {
+	case 200, 201:
+		return respBody, nil
+	case 401:
+		return nil, fmt.Errorf("github api error: 401 unauthorized")
+	case 403:
+		return nil, fmt.Errorf("github api error: 403 forbidden (possible rate limit)")
+	case 404:
+		return nil, fmt.Errorf("github api error: 404 not found")
+	case 422:
+		return nil, fmt.Errorf("github api error: 422 validation failed: %s", string(respBody))
+	default:
+		return nil, fmt.Errorf("github api error: %d %s", resp.StatusCode, string(respBody))
+	}
+}
+
+// CreateIssue creates a GitHub issue via the REST API and returns its URL.
 func (a *GitHubAdapter) CreateIssue(ctx context.Context, issue GitHubIssue) (string, error) {
-	if a.config.Token == "" {
+	if a.token == "" {
 		return "", fmt.Errorf("github token not configured")
 	}
 	if a.config.Repo == "" {
 		return "", fmt.Errorf("github repo not configured")
 	}
-	log.Printf("[GitHubAdapter] CreateIssue: repo=%s title=%q labels=%v",
-		a.config.Repo, issue.Title, issue.Labels)
-	// Return a synthetic URL for dry-run / preview mode.
-	return fmt.Sprintf("https://github.com/%s/issues/preview", a.config.Repo), nil
+
+	path := fmt.Sprintf("/repos/%s/issues", a.config.Repo)
+	payload := map[string]interface{}{
+		"title":  issue.Title,
+		"body":   issue.Body,
+		"labels": issue.Labels,
+	}
+
+	body, err := a.doRequest("POST", path, payload)
+	if err != nil {
+		return "", fmt.Errorf("create issue: %w", err)
+	}
+
+	var result struct {
+		HTMLURL string `json:"html_url"`
+		Number  int    `json:"number"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("failed to parse create issue response: %w", err)
+	}
+
+	log.Printf("[GitHubAdapter] CreateIssue: repo=%s issue=#%d url=%s",
+		a.config.Repo, result.Number, result.HTMLURL)
+
+	return result.HTMLURL, nil
 }
 
-// AddLabels is a stub for adding labels to an existing GitHub issue.
+// AddLabels adds labels to an existing GitHub issue.
 func (a *GitHubAdapter) AddLabels(ctx context.Context, issueNumber int, labels []string) error {
-	if a.config.Token == "" {
+	if a.token == "" {
 		return fmt.Errorf("github token not configured")
 	}
 	if a.config.Repo == "" {
 		return fmt.Errorf("github repo not configured")
 	}
+
+	path := fmt.Sprintf("/repos/%s/issues/%d/labels", a.config.Repo, issueNumber)
+	payload := map[string]interface{}{
+		"labels": labels,
+	}
+
+	_, err := a.doRequest("POST", path, payload)
+	if err != nil {
+		return fmt.Errorf("add labels: %w", err)
+	}
+
 	log.Printf("[GitHubAdapter] AddLabels: repo=%s issue=#%d labels=%v",
 		a.config.Repo, issueNumber, labels)
 	return nil
 }
 
-// AddComment is a stub for adding a comment to an existing GitHub issue.
+// AddComment adds a comment to an existing GitHub issue.
 func (a *GitHubAdapter) AddComment(ctx context.Context, issueNumber int, comment GitHubComment) error {
-	if a.config.Token == "" {
+	if a.token == "" {
 		return fmt.Errorf("github token not configured")
 	}
 	if a.config.Repo == "" {
 		return fmt.Errorf("github repo not configured")
 	}
+
+	path := fmt.Sprintf("/repos/%s/issues/%d/comments", a.config.Repo, issueNumber)
+	payload := map[string]interface{}{
+		"body": comment.Body,
+	}
+
+	_, err := a.doRequest("POST", path, payload)
+	if err != nil {
+		return fmt.Errorf("add comment: %w", err)
+	}
+
 	log.Printf("[GitHubAdapter] AddComment: repo=%s issue=#%d body_len=%d",
 		a.config.Repo, issueNumber, len(comment.Body))
 	return nil
 }
 
 // Execute implements action.ActionExecutor. In dry-run mode it builds the
-// GitHub issue payload and returns it without making HTTP calls. When the
-// token is empty it returns an error. Otherwise it logs the dispatch and
-// returns success with the issue payload embedded.
+// GitHub issue payload and returns it without making HTTP calls. Otherwise
+// it creates a real GitHub issue and stores the URL in the dispatch payload.
 func (a *GitHubAdapter) Execute(ctx context.Context, proposal action.ActionProposal, dryRun bool) (action.ExecutionResult, error) {
 	issue := a.BuildIssue(proposal)
 
@@ -180,12 +284,22 @@ func (a *GitHubAdapter) Execute(ctx context.Context, proposal action.ActionPropo
 		}, nil
 	}
 
-	if a.config.Token == "" {
+	if a.token == "" {
 		return action.ExecutionResult{}, fmt.Errorf("github token not configured")
 	}
 
-	log.Printf("[GitHubAdapter] dispatching to repo %s: proposal_id=%s action_type=%s title=%q",
-		a.config.Repo, proposal.ProposalID, proposal.ActionType, proposal.Title)
+	issueURL, err := a.CreateIssue(ctx, issue)
+	if err != nil {
+		return action.ExecutionResult{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+
+	payload["issue_url"] = issueURL
+
+	log.Printf("[GitHubAdapter] dispatched to repo %s: proposal_id=%s action_type=%s url=%s",
+		a.config.Repo, proposal.ProposalID, proposal.ActionType, issueURL)
 
 	return action.ExecutionResult{
 		Success:         true,

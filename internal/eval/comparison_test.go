@@ -12,12 +12,12 @@ func TestCompareIdentical(t *testing.T) {
 		{ActionType: llm.ActionTypeCreateOutboxMessage, Priority: "high", OwnerRole: "ops"},
 	}
 	output := &llm.DecisionOutput{
-		DecisionType:       llm.DecisionTypeInvestigate,
-		Severity:           llm.SeverityMedium,
-		Summary:            "identical decision",
-		Rationale:          []string{"reason"},
-		RecommendedActions: actions,
-		Confidence:         0.85,
+		DecisionType:        llm.DecisionTypeInvestigate,
+		Severity:            llm.SeverityMedium,
+		Summary:             "identical decision",
+		Rationale:           []string{"reason"},
+		RecommendedActions:  actions,
+		Confidence:          0.85,
 		RequiresHumanReview: true,
 	}
 
@@ -195,11 +195,11 @@ func TestJaccardIndex(t *testing.T) {
 
 func TestCompare_RequiresReviewFields(t *testing.T) {
 	llmDecision := &llm.DecisionOutput{
-		DecisionType:       llm.DecisionTypeInvestigate,
+		DecisionType:        llm.DecisionTypeInvestigate,
 		RequiresHumanReview: false,
 	}
 	ruleDecision := &llm.DecisionOutput{
-		DecisionType:       llm.DecisionTypeInvestigate,
+		DecisionType:        llm.DecisionTypeInvestigate,
 		RequiresHumanReview: true,
 	}
 

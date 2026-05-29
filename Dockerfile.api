@@ -20,6 +20,7 @@ RUN go build -o /app/baxi-api ./cmd/baxi-api
 # Final stage
 FROM alpine:latest
 
+RUN adduser -D -s /bin/sh appuser
 RUN apk --no-cache add ca-certificates tzdata
 ENV TZ=UTC
 
@@ -27,4 +28,5 @@ COPY --from=builder /app/baxi-api /app/baxi-api
 
 EXPOSE 8080
 
+USER appuser
 CMD ["/app/baxi-api"]

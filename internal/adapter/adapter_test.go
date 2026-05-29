@@ -2,6 +2,9 @@ package adapter
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"baxi/internal/action"
@@ -161,11 +164,21 @@ func TestGitHubAdapter_EmptyToken(t *testing.T) {
 }
 
 func TestGitHubAdapter_ExecuteSuccess(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(201)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"html_url": "https://github.com/my-org/my-repo/issues/1",
+			"number":   1,
+		})
+	}))
+	defer server.Close()
+
 	ctx := context.Background()
 	adapter := NewGitHubAdapter(GitHubConfig{
 		Token: "ghp_valid_token",
 		Repo:  "my-org/my-repo",
 	})
+	adapter.baseURL = server.URL
 
 	proposal := action.ActionProposal{
 		ProposalID: "prop-006",

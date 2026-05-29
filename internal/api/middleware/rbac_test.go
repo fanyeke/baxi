@@ -142,7 +142,7 @@ func TestRBACMiddleware_UserWithNoRoles(t *testing.T) {
 }
 
 func TestRBACMiddleware_NoIdentityInContext_UsesLegacy(t *testing.T) {
-	rbac := NewRBACMiddleware("admin")
+	rbac := NewRBACMiddleware("viewer")
 
 	var called bool
 	handler := rbac(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -157,17 +157,35 @@ func TestRBACMiddleware_NoIdentityInContext_UsesLegacy(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	if !called {
-		t.Error("expected handler to be called — legacy identity has admin role")
+		t.Error("expected handler to be called — legacy identity has viewer role")
 	}
 	if w.Result().StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", w.Result().StatusCode)
 	}
 }
 
+func TestRBACMiddleware_LegacyIdentity_IsViewer(t *testing.T) {
+	rbac := NewRBACMiddleware("admin")
+
+	handler := rbac(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("handler should not be called — legacy viewer cannot access admin route")
+	}))
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	r = r.WithContext(context.WithValue(r.Context(), RequestIDKey, "test-rid"))
+
+	handler.ServeHTTP(w, r)
+
+	if w.Result().StatusCode != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", w.Result().StatusCode)
+	}
+}
+
 func TestRBACMiddleware_FullChain_AuthThenRBAC(t *testing.T) {
 	token := "this-is-a-valid-token-that-is-long-enough-32"
 	authMw := NewAuthMiddleware(token)
-	rbacMw := NewRBACMiddleware("admin")
+	rbacMw := NewRBACMiddleware("viewer")
 
 	var identity *UserIdentity
 	handler := authMw(rbacMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -190,6 +208,9 @@ func TestRBACMiddleware_FullChain_AuthThenRBAC(t *testing.T) {
 	}
 	if identity.Username != "qoder" {
 		t.Errorf("expected username 'qoder', got %q", identity.Username)
+	}
+	if len(identity.Roles) != 1 || identity.Roles[0] != "viewer" {
+		t.Errorf("expected roles [viewer], got %v", identity.Roles)
 	}
 }
 

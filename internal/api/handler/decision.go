@@ -12,6 +12,7 @@ import (
 
 	"baxi/internal/action"
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/decision"
 	"baxi/internal/httputil"
 	"baxi/internal/llm"
@@ -42,18 +43,18 @@ func NewDecisionHandler(svc DecisionService) *DecisionHandler {
 func (h *DecisionHandler) CreateCase(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateCaseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "invalid request body")
 		return
 	}
 
 	if req.SourceType == "" || req.SourceID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "source_type and source_id are required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "source_type and source_id are required")
 		return
 	}
 
 	c, err := h.svc.CreateCaseFromAlert(r.Context(), req.SourceID, "api_user")
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -82,10 +83,10 @@ func (h *DecisionHandler) GetCase(w http.ResponseWriter, r *http.Request) {
 	c, err := h.svc.GetCase(r.Context(), caseID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "case not found"})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -96,7 +97,7 @@ func (h *DecisionHandler) GetCase(w http.ResponseWriter, r *http.Request) {
 func (h *DecisionHandler) ListCases(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
@@ -117,7 +118,7 @@ func (h *DecisionHandler) ListCases(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ListCases(r.Context(), filter)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -141,16 +142,16 @@ func (h *DecisionHandler) BuildContext(w http.ResponseWriter, r *http.Request) {
 	c, err := h.svc.GetCase(r.Context(), caseID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "case not found"})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
 	decCtx, err := h.svc.BuildContext(r.Context(), caseID)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -172,10 +173,10 @@ func (h *DecisionHandler) Decide(w http.ResponseWriter, r *http.Request) {
 	decCtx, output, proposals, err := h.svc.Decide(r.Context(), caseID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "case not found"})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -194,7 +195,7 @@ func (h *DecisionHandler) ListProposals(w http.ResponseWriter, r *http.Request) 
 
 	proposals, err := h.svc.ListProposals(r.Context(), caseID)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -263,25 +264,25 @@ func structToMap(v interface{}) map[string]interface{} {
 
 // DecideLLM handles POST /decisions/cases/{case_id}/decide/llm.
 func (h *DecisionHandler) DecideLLM(w http.ResponseWriter, r *http.Request) {
-	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
 }
 
 // Compare handles POST /decisions/cases/{case_id}/compare.
 func (h *DecisionHandler) Compare(w http.ResponseWriter, r *http.Request) {
-	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
 }
 
 // Replay handles POST /decisions/cases/{case_id}/replay.
 func (h *DecisionHandler) Replay(w http.ResponseWriter, r *http.Request) {
-	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
 }
 
 // ListLLMDecisions handles GET /decisions/cases/{case_id}/llm-decisions.
 func (h *DecisionHandler) ListLLMDecisions(w http.ResponseWriter, r *http.Request) {
-	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
 }
 
 // ListEvals handles GET /decisions/cases/{case_id}/evals.
 func (h *DecisionHandler) ListEvals(w http.ResponseWriter, r *http.Request) {
-	httputil.JSON(w, http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
 }

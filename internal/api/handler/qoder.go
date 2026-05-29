@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5/middleware"
-
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/model"
 )
@@ -46,19 +45,19 @@ func (h *QoderHandler) HandleCapabilities(w http.ResponseWriter, r *http.Request
 // include_logs (default false).
 func (h *QoderHandler) HandleContext(w http.ResponseWriter, r *http.Request) {
 	if h.ctxFetcher == nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "context fetcher not available"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "context fetcher not available")
 		return
 	}
 
 	params := parseContextParams(r)
-	requestID := middleware.GetReqID(r.Context())
+	requestID := middleware.GetRequestID(r.Context())
 	if requestID == "" {
 		requestID = "unknown"
 	}
 
 	resp, err := h.ctxFetcher.GetContext(r.Context(), requestID, params)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 

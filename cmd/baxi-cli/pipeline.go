@@ -93,14 +93,14 @@ type TableValidation struct {
 
 // validationTables defines all pipeline output tables to validate.
 var validationTables = []TableValidation{
-	{Key: "dwd_order_level",          Table: "dwd.order_level",          Expected: 99441,  WarnPct: 0},
-	{Key: "dwd_item_level",           Table: "dwd.item_level",           Expected: 112650, WarnPct: 0},
-	{Key: "metric_daily",             Table: "mart.metric_daily",        Expected: 634,    WarnPct: 0},
-	{Key: "metric_dimension_daily",   Table: "mart.metric_dimension_daily", Expected: 693602, WarnPct: 0.5},   // 0.5% tolerance for known NULL handling diff
-	{Key: "alert_events",             Table: "ops.metric_alert",         Expected: 36,     WarnPct: 5},     // ~3% tolerance for known threshold diff
-	{Key: "strategy_recommendations", Table: "ops.recommendation",       Expected: 36,     WarnPct: 5},
-	{Key: "action_tasks",             Table: "ops.task",                 Expected: 36,     WarnPct: 5},
-	{Key: "event_outbox",             Table: "ops.outbox_event",         Expected: 36,     WarnPct: 5},
+	{Key: "dwd_order_level", Table: "dwd.order_level", Expected: 99441, WarnPct: 0},
+	{Key: "dwd_item_level", Table: "dwd.item_level", Expected: 112650, WarnPct: 0},
+	{Key: "metric_daily", Table: "mart.metric_daily", Expected: 634, WarnPct: 0},
+	{Key: "metric_dimension_daily", Table: "mart.metric_dimension_daily", Expected: 693602, WarnPct: 0.5}, // 0.5% tolerance for known NULL handling diff
+	{Key: "alert_events", Table: "ops.metric_alert", Expected: 36, WarnPct: 5},                            // ~3% tolerance for known threshold diff
+	{Key: "strategy_recommendations", Table: "ops.recommendation", Expected: 36, WarnPct: 5},
+	{Key: "action_tasks", Table: "ops.task", Expected: 36, WarnPct: 5},
+	{Key: "event_outbox", Table: "ops.outbox_event", Expected: 36, WarnPct: 5},
 }
 
 func handleValidate(ctx context.Context, args []string, log *zap.Logger, pool *pgxpool.Pool) {

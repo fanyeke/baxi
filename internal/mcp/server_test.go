@@ -198,51 +198,51 @@ func (m *MockExecuteService) ExecuteProposal(ctx context.Context, pool *pgxpool.
 
 func TestNewServer(t *testing.T) {
 	server, err := NewServer(
-			&MockDecisionService{},
-			&MockDecisionEngine{},
-			&MockContextBuilder{},
-			&MockProposalService{},
-			&MockAlertService{},
-			&MockGovernanceService{},
-			&MockPipelineRunner{},
-			&MockReviewService{},
-			&MockOutboxService{},
-			&MockPipelineInfoService{},
-			&MockExecuteService{},
-			(*pgxpool.Pool)(nil),
-			&MockSystemStatusService{},
-			&MockObjectSearchService{},
-		)
-		if err != nil {
-			t.Fatalf("NewServer failed: %v", err)
-		}
-
-		if server == nil {
-			t.Fatal("Server is nil")
-		}
-
-		if server.server == nil {
-			t.Fatal("MCP server is nil")
-		}
+		&MockDecisionService{},
+		&MockDecisionEngine{},
+		&MockContextBuilder{},
+		&MockProposalService{},
+		&MockAlertService{},
+		&MockGovernanceService{},
+		&MockPipelineRunner{},
+		&MockReviewService{},
+		&MockOutboxService{},
+		&MockPipelineInfoService{},
+		&MockExecuteService{},
+		(*pgxpool.Pool)(nil),
+		&MockSystemStatusService{},
+		&MockObjectSearchService{},
+	)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
 	}
 
-	func TestServerToolRegistration(t *testing.T) {
-		server, err := NewServer(
-			&MockDecisionService{},
-			&MockDecisionEngine{},
-			&MockContextBuilder{},
-			&MockProposalService{},
-			&MockAlertService{},
-			&MockGovernanceService{},
-			&MockPipelineRunner{},
-			&MockReviewService{},
-			&MockOutboxService{},
-			&MockPipelineInfoService{},
-			&MockExecuteService{},
-			(*pgxpool.Pool)(nil),
-			&MockSystemStatusService{},
-			&MockObjectSearchService{},
-		)
+	if server == nil {
+		t.Fatal("Server is nil")
+	}
+
+	if server.server == nil {
+		t.Fatal("MCP server is nil")
+	}
+}
+
+func TestServerToolRegistration(t *testing.T) {
+	server, err := NewServer(
+		&MockDecisionService{},
+		&MockDecisionEngine{},
+		&MockContextBuilder{},
+		&MockProposalService{},
+		&MockAlertService{},
+		&MockGovernanceService{},
+		&MockPipelineRunner{},
+		&MockReviewService{},
+		&MockOutboxService{},
+		&MockPipelineInfoService{},
+		&MockExecuteService{},
+		(*pgxpool.Pool)(nil),
+		&MockSystemStatusService{},
+		&MockObjectSearchService{},
+	)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
 	}

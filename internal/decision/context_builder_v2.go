@@ -272,7 +272,7 @@ func (b *ContextBuilderV2) BuildEnvelope(ctx context.Context, caseID string, pro
 		return nil, fmt.Errorf("build decision context: %w", err)
 	}
 
-	llmSafeCtx := buildLLMSafeContext(decisionCtx)
+	llmSafeCtx := BuildLLMSafeContext(decisionCtx)
 	contextHash, err := ComputeContextHash(llmSafeCtx)
 	if err != nil {
 		return nil, fmt.Errorf("compute context hash: %w", err)

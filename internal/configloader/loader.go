@@ -142,35 +142,45 @@ func (cl *ConfigLoader) LoadAll(ctx context.Context, dir string) (*ConfigRegistr
 // Each sync operation is independent; errors from individual table syncs are
 // logged but do not prevent other syncs from proceeding.
 func (cl *ConfigLoader) SyncSnapshots(ctx context.Context, registry *ConfigRegistry) error {
+	tx, err := cl.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	var syncErr bool
 
-	if err := syncConfigSnapshots(ctx, cl.pool, registry); err != nil {
+	if err := syncConfigSnapshots(ctx, tx, registry); err != nil {
 		slog.Error("config snapshot sync failed", "error", err)
 		syncErr = true
 	}
 
-	if err := syncObjectSchema(ctx, cl.pool, registry); err != nil {
+	if err := syncObjectSchema(ctx, tx, registry); err != nil {
 		slog.Error("object schema sync failed", "error", err)
 		syncErr = true
 	}
 
-	if err := syncDataClassification(ctx, cl.pool, registry); err != nil {
+	if err := syncDataClassification(ctx, tx, registry); err != nil {
 		slog.Error("data classification sync failed", "error", err)
 		syncErr = true
 	}
 
-	if err := syncDataLineage(ctx, cl.pool, registry); err != nil {
+	if err := syncDataLineage(ctx, tx, registry); err != nil {
 		slog.Error("data lineage sync failed", "error", err)
 		syncErr = true
 	}
 
-	if err := syncAccessPolicy(ctx, cl.pool, registry); err != nil {
+	if err := syncAccessPolicy(ctx, tx, registry); err != nil {
 		slog.Error("access policy sync failed", "error", err)
 		syncErr = true
 	}
 
 	if syncErr {
 		return fmt.Errorf("one or more sync operations failed")
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	slog.Info("config sync complete",

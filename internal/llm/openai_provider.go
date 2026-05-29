@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"baxi/internal/config"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
-	"baxi/internal/config"
 )
 
 // ProviderError wraps errors from LLM providers with metadata.

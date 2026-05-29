@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"baxi/internal/api"
+	apimw "baxi/internal/api/middleware"
 	"baxi/internal/config"
 	"baxi/internal/db"
 	"baxi/internal/logger"
@@ -44,6 +45,9 @@ func main() {
 		zapLog.Fatal("failed to connect to database", zap.Error(err))
 	}
 	defer pool.Close()
+
+	// Configure JWT secret for token verification
+	apimw.SetJWTSecret([]byte(cfg.APIBearerToken))
 
 	// Create and start API server
 	server := api.New(zapLog, pool.Pool, cfg)

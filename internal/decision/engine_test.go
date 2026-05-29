@@ -79,11 +79,11 @@ func validDecisionContext() *DecisionContext {
 
 func validDecisionOutput() *llm.DecisionOutput {
 	return &llm.DecisionOutput{
-		DecisionType:        llm.DecisionTypeInvestigate,
-		Severity:            llm.SeverityHigh,
-		Summary:             "Test summary",
-		Rationale:           []string{"reason 1"},
-		RecommendedActions:  []llm.RecommendedAction{
+		DecisionType: llm.DecisionTypeInvestigate,
+		Severity:     llm.SeverityHigh,
+		Summary:      "Test summary",
+		Rationale:    []string{"reason 1"},
+		RecommendedActions: []llm.RecommendedAction{
 			{ActionType: llm.ActionTypeNotifyOwner, Priority: llm.SeverityHigh, OwnerRole: "ops"},
 		},
 		Confidence:          0.85,

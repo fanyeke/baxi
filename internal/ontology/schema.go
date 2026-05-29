@@ -13,16 +13,16 @@ package ontology
 // that back it, typed properties, relationships to other object types,
 // allowed actions, LLM access policy, and alert field references.
 type ObjectType struct {
-	Name           string                  `json:"name"`
-	DisplayName    string                  `json:"display_name"`
-	Grain          string                  `json:"grain"`
-	SourceTables   []string                `json:"source_tables"`
-	PrimaryKey     string                  `json:"primary_key"`
+	Name           string                    `json:"name"`
+	DisplayName    string                    `json:"display_name"`
+	Grain          string                    `json:"grain"`
+	SourceTables   []string                  `json:"source_tables"`
+	PrimaryKey     string                    `json:"primary_key"`
 	Properties     map[string]ObjectProperty `json:"properties"`
-	Links          []ObjectLink            `json:"links"`
-	AllowedActions []string                `json:"allowed_actions"`
-	LLMAccess      LLMAccessPolicy         `json:"llm_access"`
-	AlertFields    []string                `json:"alert_fields"`
+	Links          []ObjectLink              `json:"links"`
+	AllowedActions []string                  `json:"allowed_actions"`
+	LLMAccess      LLMAccessPolicy           `json:"llm_access"`
+	AlertFields    []string                  `json:"alert_fields"`
 }
 
 // ObjectProperty describes a single property of an object type.
@@ -74,13 +74,13 @@ type objectSchemaConfig struct {
 
 // rawObjectType mirrors the YAML structure for a single object type definition.
 type rawObjectType struct {
-	ObjectTypeID  string                         `yaml:"object_type_id"`
-	DisplayName   string                         `yaml:"display_name"`
-	SourceTables  []string                       `yaml:"source_tables"`
-	Grain         string                         `yaml:"grain"`
-	Properties    map[string]rawObjectProperty   `yaml:"properties"`
+	ObjectTypeID  string                           `yaml:"object_type_id"`
+	DisplayName   string                           `yaml:"display_name"`
+	SourceTables  []string                         `yaml:"source_tables"`
+	Grain         string                           `yaml:"grain"`
+	Properties    map[string]rawObjectProperty     `yaml:"properties"`
 	Relationships map[string]rawObjectRelationship `yaml:"relationships,omitempty"`
-	AlertFields   []string                       `yaml:"alert_fields"`
+	AlertFields   []string                         `yaml:"alert_fields"`
 }
 
 // rawObjectProperty mirrors the YAML property entry for a single field.

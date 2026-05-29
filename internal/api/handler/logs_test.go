@@ -108,10 +108,10 @@ func TestHandleListRecent_BadPagination(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "invalid limit")
+	assert.Contains(t, body["message"].(string), "invalid limit")
 }
 
 func TestHandleListRecent_Error(t *testing.T) {

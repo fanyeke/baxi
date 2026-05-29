@@ -57,15 +57,15 @@ func TestCreate(t *testing.T) {
 	ctx := context.Background()
 
 	exec := &AgentExecution{
-		ExecutionID: "exec-001",
-		SessionID:   strPtr("sess-001"),
-		ToolName:    "analyze",
-		InputArgs:   json.RawMessage(`{"query":"test"}`),
+		ExecutionID:  "exec-001",
+		SessionID:    strPtr("sess-001"),
+		ToolName:     "analyze",
+		InputArgs:    json.RawMessage(`{"query":"test"}`),
 		OutputResult: json.RawMessage(`{"result":"ok"}`),
-		Status:      "completed",
-		DurationMs:  int64Ptr(1500),
-		LLMModel:    strPtr("gpt-4"),
-		LLMTokens:   int64Ptr(500),
+		Status:       "completed",
+		DurationMs:   int64Ptr(1500),
+		LLMModel:     strPtr("gpt-4"),
+		LLMTokens:    int64Ptr(500),
 	}
 
 	err := repo.Create(ctx, exec)
@@ -103,20 +103,20 @@ func TestList(t *testing.T) {
 
 	// Insert two records
 	exec1 := &AgentExecution{
-		ExecutionID: "exec-list-001",
-		SessionID:   strPtr("sess-list"),
-		ToolName:    "tool-a",
-		InputArgs:   json.RawMessage(`{}`),
+		ExecutionID:  "exec-list-001",
+		SessionID:    strPtr("sess-list"),
+		ToolName:     "tool-a",
+		InputArgs:    json.RawMessage(`{}`),
 		OutputResult: json.RawMessage(`{}`),
-		Status:      "completed",
+		Status:       "completed",
 	}
 	exec2 := &AgentExecution{
-		ExecutionID: "exec-list-002",
-		SessionID:   strPtr("sess-list"),
-		ToolName:    "tool-b",
-		InputArgs:   json.RawMessage(`{}`),
+		ExecutionID:  "exec-list-002",
+		SessionID:    strPtr("sess-list"),
+		ToolName:     "tool-b",
+		InputArgs:    json.RawMessage(`{}`),
 		OutputResult: json.RawMessage(`{}`),
-		Status:      "failed",
+		Status:       "failed",
 	}
 
 	err := repo.Create(ctx, exec1)

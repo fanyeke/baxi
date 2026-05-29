@@ -15,8 +15,8 @@ import (
 )
 
 type mockStatusService struct {
-	resp  *model.StatusResponse
-	err   error
+	resp   *model.StatusResponse
+	err    error
 	called bool
 }
 
@@ -30,12 +30,12 @@ func (m *mockStatusService) GetStatus(_ context.Context) (*model.StatusResponse,
 
 func TestHandleStatus_Success(t *testing.T) {
 	tables := map[string]int{
-		"alert_events":          36,
-		"action_tasks":          36,
-		"dwd_order_level":       99441,
-		"dwd_item_level":        112650,
-		"event_outbox":          36,
-		"metric_daily":          634,
+		"alert_events":           36,
+		"action_tasks":           36,
+		"dwd_order_level":        99441,
+		"dwd_item_level":         112650,
+		"event_outbox":           36,
+		"metric_daily":           634,
 		"metric_dimension_daily": 690326,
 	}
 	finishedAt := "2026-05-24 03:48:59.449642"
@@ -46,14 +46,14 @@ func TestHandleStatus_Success(t *testing.T) {
 			Tables: tables,
 		},
 		LastPipelineRun: &model.PipelineRun{
-			RunID:       "ingest-full-2026-05-24T03:48:59",
-			RunType:     "ingestion",
-			Mode:        "full",
-			Status:      "completed",
-			StartedAt:   "2026-05-24T03:48:59.449458",
-			FinishedAt:  &finishedAt,
-			InputCount:  0,
-			OutputCount: 0,
+			RunID:        "ingest-full-2026-05-24T03:48:59",
+			RunType:      "ingestion",
+			Mode:         "full",
+			Status:       "completed",
+			StartedAt:    "2026-05-24T03:48:59.449458",
+			FinishedAt:   &finishedAt,
+			InputCount:   0,
+			OutputCount:  0,
 			ErrorMessage: nil,
 		},
 		Version: "0.6.0",
@@ -156,20 +156,20 @@ func TestHandleStatus_Error(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "internal server error")
+	assert.Contains(t, body["message"].(string), "internal server error")
 }
 
 func TestHandleStatus_TableCounts(t *testing.T) {
 	tables := map[string]int{
-		"alert_events":          36,
-		"action_tasks":          36,
-		"event_outbox":          36,
-		"dwd_order_level":       99441,
-		"dwd_item_level":        112650,
-		"metric_daily":          634,
+		"alert_events":           36,
+		"action_tasks":           36,
+		"event_outbox":           36,
+		"dwd_order_level":        99441,
+		"dwd_item_level":         112650,
+		"metric_daily":           634,
 		"metric_dimension_daily": 690326,
 	}
 	resp := &model.StatusResponse{

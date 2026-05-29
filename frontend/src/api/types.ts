@@ -189,3 +189,32 @@ export interface AgentLogListResponse {
   items: AgentExecutionLog[]
   total: number
 }
+
+export interface PolicyResults {
+  human_approval_required: boolean
+  allowed_actions: string[]
+  blocked_actions: string[]
+  risk_levels: Record<string, string>
+  requires_approval_actions: string[]
+  evidence_sources: string[]
+}
+
+export interface DecisionCaseResponse {
+  decision_case_id: string
+  status: string
+  object_type: string
+  object_id: string
+  source_type: string
+  source_id: string
+  severity: string
+  context_hash: string
+  created_at: string
+  updated_at: string
+  policy_results: PolicyResults
+}
+
+export interface GovernanceStatusResponse {
+  overall_health: string
+  version: string
+  configs: Record<string, string>
+}

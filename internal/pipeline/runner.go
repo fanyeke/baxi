@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -38,6 +39,9 @@ type RunInput struct {
 //  5. On failure the transaction is rolled back, the step is marked "failed",
 //     the run is marked "failed", and the error is returned immediately.
 func (r *Runner) Run(ctx context.Context, input RunInput) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+
 	recorder := &AuditRecorder{
 		Pool:   r.DB,
 		Logger: r.Log,

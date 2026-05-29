@@ -15,14 +15,14 @@ type Config struct {
 	CORSAllowedOrigins string
 
 	// LLM / AI provider
-	LLMAPIKey         string
-	LLMAPIBase        string
-	LLMModel          string
-	LLMTemperature    float64
-	LLMMaxTokens      int
-	LLMTimeoutSeconds int
-	LLMEnabled        bool
-	LLMProvider       string
+	LLMAPIKey          string
+	LLMAPIBase         string
+	LLMModel           string
+	LLMTemperature     float64
+	LLMMaxTokens       int
+	LLMTimeoutSeconds  int
+	LLMEnabled         bool
+	LLMProvider        string
 	LLMFallbackEnabled bool
 	LLMStoreRawOutput  bool
 	LLMMaxRetries      int
@@ -67,12 +67,12 @@ func Load() (*Config, error) {
 		CORSAllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"),
 
 		// LLM / AI provider
-		LLMAPIKey:         os.Getenv("LLM_API_KEY"),
-		LLMAPIBase:        os.Getenv("LLM_API_BASE"),
-		LLMModel:          getEnv("LLM_MODEL", "gpt-4o-mini"),
-		LLMTemperature:    llmTemperature,
-		LLMMaxTokens:      llmMaxTokens,
-		LLMTimeoutSeconds: llmTimeoutSeconds,
+		LLMAPIKey:          os.Getenv("LLM_API_KEY"),
+		LLMAPIBase:         os.Getenv("LLM_API_BASE"),
+		LLMModel:           getEnv("LLM_MODEL", "gpt-4o-mini"),
+		LLMTemperature:     llmTemperature,
+		LLMMaxTokens:       llmMaxTokens,
+		LLMTimeoutSeconds:  llmTimeoutSeconds,
 		LLMEnabled:         llmEnabled,
 		LLMProvider:        getEnv("LLM_PROVIDER", "disabled"),
 		LLMFallbackEnabled: llmFallbackEnabled,

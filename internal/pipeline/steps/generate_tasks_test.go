@@ -93,36 +93,36 @@ func insertTestRecommendations(t *testing.T, pool *pgxpool.Pool) {
 	}{
 		{
 			id: "rec-gmv_drop_2018-10-17", alertID: "gmv_drop_2018-10-17",
-			title: "Review gmv anomaly from rule gmv_drop",
-			detail: "GMV 7日均值较前14天均值下降超过15%",
+			title:   "Review gmv anomaly from rule gmv_drop",
+			detail:  "GMV 7日均值较前14天均值下降超过15%",
 			objType: "global", objID: "global",
 			riskLevel: "high", ownerRole: "business_ops",
 		},
 		{
 			id: "dimrec-dim-76085bfcd31d", alertID: "dim-76085bfcd31d",
-			title: "排查区域 SP 延迟配送",
-			detail: "区域延迟配送率超过20%且样本>=30单",
+			title:   "排查区域 SP 延迟配送",
+			detail:  "区域延迟配送率超过20%且样本>=30单",
 			objType: "region", objID: "SP",
 			riskLevel: "high", ownerRole: "logistics_ops",
 		},
 		{
 			id: "dimrec-dim-8bbbe8e62d34", alertID: "dim-8bbbe8e62d34",
-			title: "排查卖家 1f50f920176fa81dab994f9023523100 评分异常",
-			detail: "卖家评分低于3.5且样本>=20单",
+			title:   "排查卖家 1f50f920176fa81dab994f9023523100 评分异常",
+			detail:  "卖家评分低于3.5且样本>=20单",
 			objType: "seller", objID: "1f50f920176fa81dab994f9023523100",
 			riskLevel: "medium", ownerRole: "seller_ops",
 		},
 		{
 			id: "dimrec-dim-455b469ba24c", alertID: "dim-455b469ba24c",
-			title: "排查品类 health_beauty GMV 下降",
-			detail: "品类GMV环比下降超过20%且样本>=30单",
+			title:   "排查品类 health_beauty GMV 下降",
+			detail:  "品类GMV环比下降超过20%且样本>=30单",
 			objType: "category", objID: "health_beauty",
 			riskLevel: "medium", ownerRole: "category_ops",
 		},
 		{
 			id: "dimrec-dim-3bb9eaf850d5", alertID: "dim-3bb9eaf850d5",
-			title: "排查区域 SP 取消率异常",
-			detail: "区域取消率超过5%且样本>=30单",
+			title:   "排查区域 SP 取消率异常",
+			detail:  "区域取消率超过5%且样本>=30单",
 			objType: "region", objID: "SP",
 			riskLevel: "medium", ownerRole: "logistics_ops",
 		},
@@ -206,11 +206,11 @@ func TestGenerateTasksStep_HappyPath(t *testing.T) {
 
 	// Verify specific tasks exist with correct properties
 	type taskRow struct {
-		taskID, recID, alertID     string
-		title, description         string
-		objType, objID             string
+		taskID, recID, alertID      string
+		title, description          string
+		objType, objID              string
 		source, ownerRole, priority string
-		status                     string
+		status                      string
 	}
 
 	rows, err := tx.Query(ctx, `

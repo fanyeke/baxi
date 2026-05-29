@@ -16,9 +16,11 @@ RUN go build -o /app/baxi-worker ./cmd/baxi-worker
 # Final stage
 FROM alpine:latest
 
+RUN adduser -D -s /bin/sh appuser
 RUN apk --no-cache add ca-certificates tzdata
 ENV TZ=UTC
 
 COPY --from=builder /app/baxi-worker /app/baxi-worker
 
+USER appuser
 CMD ["/app/baxi-worker"]

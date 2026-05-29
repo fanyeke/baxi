@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/service"
 )
@@ -30,13 +31,13 @@ func NewAgentLogHandler(svc AgentLogLister) *AgentLogHandler {
 func (h *AgentLogHandler) HandleListAgentLogs(w http.ResponseWriter, r *http.Request) {
 	pagination, err := httputil.ParsePagination(r)
 	if err != nil {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, err.Error())
 		return
 	}
 
 	resp, err := h.svc.ListAgentLogs(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 

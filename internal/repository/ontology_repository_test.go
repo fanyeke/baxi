@@ -148,18 +148,18 @@ func TestOntologyRepo_QueryByObjectType_Customer(t *testing.T) {
 	repo := NewOntologyRepo()
 
 	insertOrderLevelRow(t, pool, map[string]interface{}{
-		"order_id":                "o-1",
-		"customer_unique_id":      "cust-1",
-		"customer_state":          "SP",
-		"customer_city":           "Sao Paulo",
-		"order_status":            "delivered",
-		"total_payment_value":     150.0,
-		"payment_value":           150.0,
-		"payment_type":            "credit_card",
-		"review_score":            5,
+		"order_id":                 "o-1",
+		"customer_unique_id":       "cust-1",
+		"customer_state":           "SP",
+		"customer_city":            "Sao Paulo",
+		"order_status":             "delivered",
+		"total_payment_value":      150.0,
+		"payment_value":            150.0,
+		"payment_type":             "credit_card",
+		"review_score":             5,
 		"order_purchase_timestamp": "2024-01-10T00:00:00Z",
-		"delivery_status":         "on_time",
-		"seller_state":            "RJ",
+		"delivery_status":          "on_time",
+		"seller_state":             "RJ",
 	})
 
 	result, err := repo.QueryByObjectType(ctx, pool, "customer", ObjectFilters{Limit: 10})
@@ -412,7 +412,7 @@ func TestOntologyRepo_GetObjectMetrics_Product(t *testing.T) {
 		"item_key": "ik-1", "order_id": "o-1", "product_id": "p-1",
 		"seller_id": "s-1", "product_category_name": "electronics",
 		"product_category_name_english": "electronics",
-		"price": 200.0, "freight_value": 15.0, "product_weight_g": 1000.0,
+		"price":                         200.0, "freight_value": 15.0, "product_weight_g": 1000.0,
 		"review_score": 3,
 	})
 
@@ -450,7 +450,7 @@ func TestOntologyRepo_SearchObjects_Found(t *testing.T) {
 	insertOrderLevelRow(t, pool, map[string]interface{}{
 		"order_id": "o-abc", "customer_unique_id": "cust-abc",
 		"customer_state": "SP", "customer_city": "Sao Paulo",
-		"order_status": "delivered",
+		"order_status":        "delivered",
 		"total_payment_value": 100.0, "payment_value": 100.0,
 		"review_score": 5, "order_purchase_timestamp": "2024-01-10T00:00:00Z",
 	})
@@ -475,7 +475,7 @@ func TestOntologyRepo_SearchObjects_NotFound(t *testing.T) {
 	insertOrderLevelRow(t, pool, map[string]interface{}{
 		"order_id": "o-1", "customer_unique_id": "cust-1",
 		"customer_state": "SP", "customer_city": "Sao Paulo",
-		"order_status": "delivered",
+		"order_status":        "delivered",
 		"total_payment_value": 100.0, "payment_value": 100.0,
 		"review_score": 5, "order_purchase_timestamp": "2024-01-10T00:00:00Z",
 	})
@@ -499,8 +499,8 @@ func TestOntologyRepo_SearchObjects_EmptyQuery(t *testing.T) {
 
 	insertOrderLevelRow(t, pool, map[string]interface{}{
 		"order_id": "o-1", "customer_unique_id": "cust-1",
-		"customer_state": "SP",
-		"order_status": "delivered",
+		"customer_state":      "SP",
+		"order_status":        "delivered",
 		"total_payment_value": 100.0, "payment_value": 100.0,
 		"review_score": 5, "order_purchase_timestamp": "2024-01-10T00:00:00Z",
 	})
@@ -554,8 +554,8 @@ func TestOntologyRepo_RBAC_AdminHasFullAccess(t *testing.T) {
 
 	insertOrderLevelRow(t, pool, map[string]interface{}{
 		"order_id": "o-1", "customer_unique_id": "cust-1",
-		"customer_state": "SP",
-		"order_status": "delivered",
+		"customer_state":      "SP",
+		"order_status":        "delivered",
 		"total_payment_value": 100.0, "payment_value": 100.0,
 		"review_score": 5, "order_purchase_timestamp": "2024-01-10T00:00:00Z",
 	})

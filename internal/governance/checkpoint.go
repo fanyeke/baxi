@@ -11,9 +11,9 @@ import (
 
 // CheckpointRule represents a checkpoint rule from config_snapshot.
 type CheckpointRule struct {
-	Action             string `json:"action"`
-	RequiresReason     bool   `json:"requires_reason"`
-	RequiresHumanReview bool  `json:"requires_human_review"`
+	Action              string `json:"action"`
+	RequiresReason      bool   `json:"requires_reason"`
+	RequiresHumanReview bool   `json:"requires_human_review"`
 }
 
 // checkpointRulesConfig wraps the checkpoint_rules key from config_snapshot.
@@ -36,7 +36,7 @@ func NewCheckpointService(pool *pgxpool.Pool, repo *repository.GovernanceReposit
 // Returns true for actions: "execute_dispatch", "modify_business_policy", "trigger_pipeline".
 func (s *CheckpointService) RequiresCheckpoint(ctx context.Context, action string) bool {
 	sensitiveActions := map[string]bool{
-		"execute_dispatch":      true,
+		"execute_dispatch":       true,
 		"modify_business_policy": true,
 		"trigger_pipeline":       true,
 	}

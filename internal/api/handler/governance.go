@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/model"
 )
@@ -42,7 +43,7 @@ func NewGovernanceHandler(svc GovernanceStatusProvider, data GovernanceDataProvi
 func (h *GovernanceHandler) HandleGovernanceStatus(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.svc.GetStatus(r.Context())
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -53,7 +54,7 @@ func (h *GovernanceHandler) HandleGovernanceStatus(w http.ResponseWriter, r *htt
 func (h *GovernanceHandler) HandleCatalog(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.data.GetCatalog(r.Context())
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -67,7 +68,7 @@ func (h *GovernanceHandler) HandleClassification(w http.ResponseWriter, r *http.
 
 	resp, err := h.data.GetClassification(r.Context(), fieldPath)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -82,7 +83,7 @@ func (h *GovernanceHandler) HandleMarkings(w http.ResponseWriter, r *http.Reques
 
 	resp, err := h.data.GetFieldMarking(r.Context(), objectType, property)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -95,7 +96,7 @@ func (h *GovernanceHandler) HandleLineage(w http.ResponseWriter, r *http.Request
 
 	resp, err := h.data.GetLineage(r.Context(), resource)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -106,7 +107,7 @@ func (h *GovernanceHandler) HandleLineage(w http.ResponseWriter, r *http.Request
 func (h *GovernanceHandler) HandleCheckpoints(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.data.GetCheckpoints(r.Context())
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
@@ -117,7 +118,7 @@ func (h *GovernanceHandler) HandleCheckpoints(w http.ResponseWriter, r *http.Req
 func (h *GovernanceHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.data.GetHealthChecks(r.Context())
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 

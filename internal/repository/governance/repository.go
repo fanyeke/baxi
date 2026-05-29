@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
+
 	"baxi/internal/repository/common"
 )
 
@@ -102,7 +104,7 @@ func (r *Repository) GetConfigSnapshots(ctx context.Context) ([]ConfigSnapshotRo
 // CountTableRows returns the number of rows in the given schema.table.
 // Returns 0 if the table does not exist or is empty (error is swallowed for missing tables).
 func (r *Repository) CountTableRows(ctx context.Context, schema, table string) int {
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s.%s`, schema, table)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s`, pgx.Identifier{schema, table}.Sanitize())
 	var count int
 	err := r.QueryRow(ctx, query).Scan(&count)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -36,6 +37,11 @@ type metricRow struct {
 func (e *Engine) EvaluateGlobalRules(ctx context.Context, tx pgx.Tx) ([]AlertResult, error) {
 	rules := GlobalRules()
 
+	lastDate, err := e.getLatestDate(ctx, tx)
+	if err != nil {
+		return nil, fmt.Errorf("get latest date: %w", err)
+	}
+
 	var results []AlertResult
 	for _, rule := range rules {
 		if !rule.Enabled {
@@ -43,11 +49,6 @@ func (e *Engine) EvaluateGlobalRules(ctx context.Context, tx pgx.Tx) ([]AlertRes
 		}
 		if rule.Condition == nil {
 			continue
-		}
-
-		lastDate, err := e.getLatestDate(ctx, tx)
-		if err != nil {
-			return nil, fmt.Errorf("%s: get latest date: %w", rule.RuleID, err)
 		}
 
 		result, err := rule.Condition(ctx, tx, lastDate)
@@ -325,7 +326,7 @@ func roundTo(v float64, decimals int) float64 {
 	for i := 0; i < decimals; i++ {
 		pow *= 10
 	}
-	return float64(int64(v*pow+0.5)) / pow
+	return math.Round(v*pow) / pow
 }
 
 func absFloat(v float64) float64 {

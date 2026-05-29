@@ -426,14 +426,14 @@ func TestDecisionRepository_ListProposalsByCase(t *testing.T) {
 		ActionType: "notify_owner", ApplyStatus: "proposed",
 		CreatedAt: now.Add(-2 * time.Hour), Title: "First proposal",
 		RequiresHumanReview: true,
-		Payload: &payload1,
+		Payload:             &payload1,
 	}
 	prop2 := &ActionProposalRow{
 		ProposalID: "prop-l-2", CaseID: "case-prop-list-1",
 		ActionType: "create_followup_task", ApplyStatus: "approved",
 		CreatedAt: now.Add(-1 * time.Hour), Title: "Second proposal",
 		RequiresHumanReview: true,
-		Payload: &payload2,
+		Payload:             &payload2,
 	}
 
 	insertTestActionProposal(t, pool, prop1)

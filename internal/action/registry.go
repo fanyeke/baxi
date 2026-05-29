@@ -33,7 +33,6 @@ type ActionConfig struct {
 	PayloadSchemaRaw map[string]interface{} `yaml:"payload_schema"`
 }
 
-
 // ActionRegistryConfig is the top-level YAML structure.
 type ActionRegistryConfig struct {
 	Actions map[string]ActionConfig `yaml:"actions"`
@@ -323,11 +322,11 @@ func (r *ActionRegistry) ValidatePayload(actionType string, payload map[string]i
 
 func buildContract(actionType string, cfg ActionConfig) ActionContract {
 	c := ActionContract{
-		ActionType:      actionType,
-		Description:     cfg.LLMDescription,
-		RiskLevel:       cfg.RiskLevel,
-		RequiresReview:  cfg.RequiresApproval,
-		Adapter:         cfg.Adapter,
+		ActionType:     actionType,
+		Description:    cfg.LLMDescription,
+		RiskLevel:      cfg.RiskLevel,
+		RequiresReview: cfg.RequiresApproval,
+		Adapter:        cfg.Adapter,
 	}
 	if cfg.PayloadSchemaRaw != nil {
 		if required, ok := cfg.PayloadSchemaRaw["required"]; ok {

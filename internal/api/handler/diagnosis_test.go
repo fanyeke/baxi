@@ -151,9 +151,9 @@ func TestHandleDiagnosis_ResponseFormat(t *testing.T) {
 
 func TestHandleDiagnosis_EmptyRelatedLogs(t *testing.T) {
 	result := &model.DiagnosisResponse{
-		RequestID:       "req-123",
-		Summary:         "test",
-		RelatedLogs:     []model.LogEntry{},
+		RequestID:   "req-123",
+		Summary:     "test",
+		RelatedLogs: []model.LogEntry{},
 	}
 	svc := &mockDiagnoser{result: result}
 	h := NewDiagnosisHandler(svc)

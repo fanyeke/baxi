@@ -88,8 +88,8 @@ type SystemInfo struct {
 
 // ContextSummary holds aggregated counts in the context response.
 type ContextSummary struct {
-	TotalAlerts       int `json:"total_alerts"`
-	TotalOpenTasks    int `json:"total_open_tasks"`
+	TotalAlerts        int `json:"total_alerts"`
+	TotalOpenTasks     int `json:"total_open_tasks"`
 	TotalPendingOutbox int `json:"total_pending_outbox"`
 }
 
@@ -126,14 +126,14 @@ type AgentPolicyInfo struct {
 
 // ContextResponse is the composite aggregation response for GET /api/v1/qoder/context.
 type ContextResponse struct {
-	RequestID       string          `json:"request_id"`
-	System          SystemInfo      `json:"system"`
-	Summary         ContextSummary  `json:"summary"`
-	TopAlerts       []AlertItem     `json:"top_alerts"`
-	OpenTasks       []TaskItem      `json:"open_tasks"`
-	PendingOutbox   []OutboxItem    `json:"pending_outbox"`
-	RecentDiagnosis []interface{}   `json:"recent_diagnosis"`
-	AllowedActions  []string        `json:"allowed_actions"`
+	RequestID        string         `json:"request_id"`
+	System           SystemInfo     `json:"system"`
+	Summary          ContextSummary `json:"summary"`
+	TopAlerts        []AlertItem    `json:"top_alerts"`
+	OpenTasks        []TaskItem     `json:"open_tasks"`
+	PendingOutbox    []OutboxItem   `json:"pending_outbox"`
+	RecentDiagnosis  []interface{}  `json:"recent_diagnosis"`
+	AllowedActions   []string       `json:"allowed_actions"`
 	ForbiddenActions []string       `json:"forbidden_actions"`
 	// Enrichment fields for agent context
 	Ontology    OntologyInfo    `json:"ontology"`
@@ -149,4 +149,3 @@ type ContextQueryParams struct {
 	LimitOutbox int
 	IncludeLogs bool
 }
-

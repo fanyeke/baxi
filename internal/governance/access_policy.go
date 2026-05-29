@@ -2,11 +2,12 @@ package governance
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"baxi/internal/api/dto"
+	"baxi/internal/model"
 	"baxi/internal/repository"
 )
 
@@ -24,19 +25,32 @@ func NewAccessPolicyService(pool *pgxpool.Pool, repo *repository.GovernanceRepos
 
 // CheckAccess evaluates whether a user role can perform an action on an object type.
 // Returns ALLOW if an explicit allow policy matches, DENY otherwise (default deny).
-func (s *AccessPolicyService) CheckAccess(ctx context.Context, userRole, objectType, action string) dto.AccessDecision {
+func (s *AccessPolicyService) CheckAccess(ctx context.Context, userRole, objectType, action string) model.AccessDecision {
 	policies, err := s.repo.GetAccessPoliciesByRole(ctx, s.pool, userRole)
 	if err != nil {
-		return dto.AccessDenied
+		return model.AccessDenied
 	}
 
 	if len(policies) == 0 {
 		// Fallback: load all policies and filter in-memory
 		allPolicies, err := s.repo.GetAccessPolicies(ctx, s.pool)
 		if err != nil {
-			return dto.AccessDenied
+			return model.AccessDenied
 		}
 		policies = filterByRole(allPolicies, userRole)
+	}
+
+	for _, p := range policies {
+		if p.Effect != "deny" {
+			continue
+		}
+		if !matchesResource(p, objectType) {
+			continue
+		}
+		if !matchesAction(p, action) {
+			continue
+		}
+		return model.AccessDenied
 	}
 
 	for _, p := range policies {
@@ -49,13 +63,16 @@ func (s *AccessPolicyService) CheckAccess(ctx context.Context, userRole, objectT
 		if !matchesAction(p, action) {
 			continue
 		}
-		if p.ConditionsJSONB != nil && len(p.ConditionsJSONB) > 4 {
-			return dto.AccessConditional
+		if p.ConditionsJSONB != nil {
+			var conditions map[string]interface{}
+			if err := json.Unmarshal(p.ConditionsJSONB, &conditions); err == nil && len(conditions) > 0 {
+				return model.AccessConditional
+			}
 		}
-		return dto.AccessAllowed
+		return model.AccessAllowed
 	}
 
-	return dto.AccessDenied
+	return model.AccessDenied
 }
 
 // GetAll returns all access policies from the database.

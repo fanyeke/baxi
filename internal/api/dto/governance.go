@@ -34,7 +34,7 @@ type CatalogDataset struct {
 // ──── Classification ──────────────────────────────────────────────────────────
 
 type ClassificationResponse struct {
-	Levels    []string               `json:"levels"`
+	Levels    []string                 `json:"levels"`
 	Resources []ClassificationResource `json:"resources"`
 }
 

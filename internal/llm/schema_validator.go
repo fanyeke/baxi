@@ -99,10 +99,11 @@ func ValidateDecision(output *DecisionOutput, allowedActions []string) *Validati
 		}
 		// 6. Each action has valid action_type
 		validActions := map[string]bool{
-			ActionTypeCreateFollowupTask: true,
-			ActionTypeNotifyOwner:        true,
-			ActionTypeExportReport:       true,
-			ActionTypeCreateOutboxMessage:    true,
+			ActionTypeCreateFollowupTask:  true,
+			ActionTypeNotifyOwner:         true,
+			ActionTypeExportReport:        true,
+			ActionTypeCreateOutboxMessage: true,
+			ActionTypeEscalateToHuman:     true,
 		}
 		if !validActions[action.ActionType] {
 			result.Errors = append(result.Errors, ValidationError{

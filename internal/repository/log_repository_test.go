@@ -308,7 +308,7 @@ func TestLogRepository_ListRecentLogs_LevelMapping(t *testing.T) {
 		levelCount[r.Level]++
 	}
 
-	assert.GreaterOrEqual(t, levelCount["info"], 2) // 200 + completed
-	assert.GreaterOrEqual(t, levelCount["warn"], 1) // 302
+	assert.GreaterOrEqual(t, levelCount["info"], 2)  // 200 + completed
+	assert.GreaterOrEqual(t, levelCount["warn"], 1)  // 302
 	assert.GreaterOrEqual(t, levelCount["error"], 1) // 500 + failed
 }

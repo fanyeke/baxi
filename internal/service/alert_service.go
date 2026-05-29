@@ -68,4 +68,3 @@ func (s *AlertService) ListAlerts(
 		Total: total,
 	}, nil
 }
-

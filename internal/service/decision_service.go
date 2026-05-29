@@ -121,31 +121,7 @@ func (s *DecisionService) Decide(ctx context.Context, caseID string) (*decision.
 
 	// Compute context hash for traceability: links this decision to its exact LLM context.
 	contextHash := ""
-	llmSafeCtx := llm.LLMSafeContext{
-		CaseID: decCtx.DecisionCaseID,
-		Trigger: llm.TriggerInfo{
-			AlertID:       decCtx.Trigger.AlertID,
-			RuleID:        decCtx.Trigger.RuleID,
-			Severity:      decCtx.Trigger.Severity,
-			MetricName:    decCtx.Trigger.MetricName,
-			CurrentValue:  decCtx.Trigger.CurrentValue,
-			BaselineValue: decCtx.Trigger.BaselineValue,
-			DeltaPct:      decCtx.Trigger.DeltaPct,
-		},
-		ObjectContext: llm.ObjectContext{
-			ObjectType: decCtx.ObjectContext.ObjectType,
-			ObjectID:   decCtx.ObjectContext.ObjectID,
-			Properties: decCtx.ObjectContext.Properties,
-		},
-		GovernanceInfo: llm.GovernanceInfo{
-			Classification:   decCtx.Governance.Classification,
-			RedactionApplied: decCtx.Governance.RedactionApplied,
-			RedactedFields:   decCtx.Governance.RedactedFields,
-			Role:             decCtx.Governance.Role,
-		},
-		AllowedActions:   decCtx.AllowedActions,
-		ForbiddenActions: decCtx.ForbiddenActions,
-	}
+	llmSafeCtx := decision.BuildLLMSafeContext(decCtx)
 	if hash, err := decision.ComputeContextHash(llmSafeCtx); err == nil {
 		contextHash = hash
 	}

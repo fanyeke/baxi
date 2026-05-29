@@ -32,7 +32,7 @@ func NewCSVLoader(opts ...Option) *CSVLoader {
 // LoadCSV opens a CSV file and loads it into the given PostgreSQL table
 // using COPY ... FROM STDIN with CSV format.
 //
-// NULL handling: COPY is invoked with NULL '' so that empty CSV fields
+// NULL handling: COPY is invoked with NULL ” so that empty CSV fields
 // (consecutive delimiters) become SQL NULL. This matches the behaviour of
 // Python's safe_int() / safe_float() which return None for empty input.
 //

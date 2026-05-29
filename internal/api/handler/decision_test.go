@@ -22,11 +22,11 @@ import (
 )
 
 type mockDecisionService struct {
-	createCaseFn   func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
-	getCaseFn      func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
-	listCasesFn    func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
-	buildContextFn func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
-	decideFn       func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	createCaseFn    func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
+	getCaseFn       func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
+	listCasesFn     func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
+	buildContextFn  func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
+	decideFn        func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
 	listProposalsFn func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
 }
 
@@ -128,10 +128,10 @@ func TestDecisionHandler_CreateCase_400_MissingFields(t *testing.T) {
 
 			require.Equal(t, http.StatusBadRequest, w.Code)
 
-			var body map[string]string
+			var body map[string]interface{}
 			err := json.NewDecoder(w.Body).Decode(&body)
 			require.NoError(t, err)
-			assert.Contains(t, body["error"], "required")
+			assert.Contains(t, body["message"].(string), "required")
 		})
 	}
 }
@@ -147,10 +147,10 @@ func TestDecisionHandler_CreateCase_400_InvalidJSON(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "invalid request body")
+	assert.Contains(t, body["message"].(string), "invalid request body")
 }
 
 func TestDecisionHandler_GetCase_200(t *testing.T) {
@@ -209,10 +209,10 @@ func TestDecisionHandler_GetCase_404(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "not found")
+	assert.Contains(t, body["message"].(string), "not found")
 }
 
 func TestDecisionHandler_ListCases_200(t *testing.T) {
@@ -225,15 +225,15 @@ func TestDecisionHandler_ListCases_200(t *testing.T) {
 				Cases: []decision.DecisionCase{
 					{
 						CaseID:     "dc_1",
-				SourceType: strPtr("alert"),
-				SourceID:   strPtr("a1"),
-				Status:     "created",
-				CreatedAt:  now,
-			},
-			{
-				CaseID:     "dc_2",
-				SourceType: strPtr("alert"),
-				SourceID:   strPtr("a2"),
+						SourceType: strPtr("alert"),
+						SourceID:   strPtr("a1"),
+						Status:     "created",
+						CreatedAt:  now,
+					},
+					{
+						CaseID:     "dc_2",
+						SourceType: strPtr("alert"),
+						SourceID:   strPtr("a2"),
 						Status:     "open",
 						CreatedAt:  now.Add(-1 * time.Hour),
 					},
@@ -313,10 +313,10 @@ func TestDecisionHandler_ListCases_BadPagination(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "invalid limit")
+	assert.Contains(t, body["message"].(string), "invalid limit")
 }
 
 func TestDecisionHandler_BuildContext_200(t *testing.T) {
@@ -394,10 +394,10 @@ func TestDecisionHandler_BuildContext_404(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "not found")
+	assert.Contains(t, body["message"].(string), "not found")
 }
 
 func TestDecisionHandler_Decide_200(t *testing.T) {
@@ -419,11 +419,11 @@ func TestDecisionHandler_Decide_200(t *testing.T) {
 					},
 					AllowedActions: []string{"notify_owner"},
 				}, &llm.DecisionOutput{
-					DecisionType:       "monitor_only",
-					Severity:           "high",
-					Summary:            "Monitor the situation",
-					Rationale:          []string{"Drop is within threshold"},
-					Confidence:         0.85,
+					DecisionType:        "monitor_only",
+					Severity:            "high",
+					Summary:             "Monitor the situation",
+					Rationale:           []string{"Drop is within threshold"},
+					Confidence:          0.85,
 					RequiresHumanReview: false,
 				}, []action.ActionProposal{
 					{
@@ -479,10 +479,10 @@ func TestDecisionHandler_Decide_404(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var body map[string]string
+	var body map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&body)
 	require.NoError(t, err)
-	assert.Contains(t, body["error"], "not found")
+	assert.Contains(t, body["message"].(string), "not found")
 }
 
 func TestDecisionHandler_ListProposals_200(t *testing.T) {

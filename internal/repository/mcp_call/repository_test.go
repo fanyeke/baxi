@@ -56,13 +56,13 @@ func TestCreate(t *testing.T) {
 	ctx := context.Background()
 
 	entry := &MCPCall{
-		RequestID:   strPtr("req-001"),
-		ServerName:  "my-server",
-		ToolName:    "get_weather",
-		InputArgs:   json.RawMessage(`{"city":"Beijing"}`),
+		RequestID:    strPtr("req-001"),
+		ServerName:   "my-server",
+		ToolName:     "get_weather",
+		InputArgs:    json.RawMessage(`{"city":"Beijing"}`),
 		OutputResult: json.RawMessage(`{"temp":22}`),
-		Status:      "success",
-		DurationMs:  int64Ptr(1200),
+		Status:       "success",
+		DurationMs:   int64Ptr(1200),
 	}
 
 	err := repo.Create(ctx, entry)

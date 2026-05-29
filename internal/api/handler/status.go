@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"baxi/internal/api/dto"
+	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/model"
 )
@@ -26,7 +27,7 @@ func NewStatusHandler(svc StatusGetter) *StatusHandler {
 func (h *StatusHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.svc.GetStatus(r.Context())
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 

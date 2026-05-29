@@ -110,7 +110,7 @@ func testDecisionOutput() *llm.DecisionOutput {
 		RecommendedActions: []llm.RecommendedAction{
 			{ActionType: "notify_owner", Priority: "high", OwnerRole: "admin"},
 		},
-		Confidence:         0.85,
+		Confidence:          0.85,
 		RequiresHumanReview: true,
 	}
 }

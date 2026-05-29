@@ -15,10 +15,10 @@ type mockClassification struct {
 }
 
 type classificationResult struct {
-	level     string
-	isPII     bool
+	level      string
+	isPII      bool
 	llmAllowed bool
-	err       error
+	err        error
 }
 
 func (m *mockClassification) GetFieldMarking(_ context.Context, objectType, property string) (string, bool, bool, error) {
@@ -30,7 +30,7 @@ func (m *mockClassification) GetFieldMarking(_ context.Context, objectType, prop
 }
 
 type mockRegistry struct {
-	properties map[string]map[string]ontology.ObjectProperty
+	properties  map[string]map[string]ontology.ObjectProperty
 	llmReadable map[string]bool
 }
 
@@ -234,8 +234,8 @@ func TestMarkingAdapter_IsLLMAllowed_L2ButNotLLMReadable(t *testing.T) {
 func TestMarkingAdapter_ClassifyField(t *testing.T) {
 	classification := &mockClassification{
 		results: map[string]classificationResult{
-			"customer.email":  {level: "L3", isPII: true, llmAllowed: false},
-			"product.name":    {level: "L1", isPII: false, llmAllowed: true},
+			"customer.email": {level: "L3", isPII: true, llmAllowed: false},
+			"product.name":   {level: "L1", isPII: false, llmAllowed: true},
 		},
 	}
 	registry := &mockRegistry{}
