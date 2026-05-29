@@ -24,6 +24,7 @@ make pipeline        # 运行数据管道
 
 | 命令 | 说明 |
 |------|------|
+| `make mcp` | 启动 MCP 服务器（stdio） |
 | `make build` | 编译所有二进制 |
 | `make test` | 运行 Go 测试（`go test ./...`） |
 | `make pipeline-ingest` | 仅数据摄入步骤 |

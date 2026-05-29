@@ -8,10 +8,13 @@
 
 Business orchestration layer between HTTP handlers and repositories. 17 files, 11 orchestrator services, flat package.
 
+Services exposed via MCP tools: Decision service (`decide`, `create_decision_case`), Pipeline service (`run_pipeline`, `get_pipeline_status`), Governance service (`check_access`, `get_classification`), Action service (`approve_proposal`, `reject_proposal`, `execute_proposal`). See `internal/mcp/` for tool-to-service mapping.
+
 ## WHERE TO LOOK
 
 | Service | File | Orchestrates |
 |---------|------|-------------|
+| Agent Log | `agent_log_service.go` | Agent execution log queries, MCP audit trail |
 | Feishu sync | `feishu_service.go` | REST calls to Feishu Open API, CSV export, YAML config sync |
 | Decision | `decision_service.go` | Case engine, context builder, proposals, LLM provider |
 | Pipeline | `pipeline_service.go` | Pipeline runner, step orchestration, outbox creation |

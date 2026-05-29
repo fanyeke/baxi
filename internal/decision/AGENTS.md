@@ -5,6 +5,8 @@
 ## OVERVIEW
 LLM-driven decision engine with rule-based fallback, case lifecycle, and lineage tracking. 15 files.
 
+Exposed via MCP tools: `create_decision_case`, `decide`, `list_cases`, `get_case`, `list_proposals`. See `internal/mcp/tools_decision.go` for handler implementations.
+
 ## WHERE TO LOOK
 
 | Task | File | Notes |

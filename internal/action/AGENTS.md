@@ -5,6 +5,8 @@
 ## OVERVIEW
 Action whitelist, proposal lifecycle, and execution dispatch. 13 files.
 
+Exposed via MCP tools: `approve_proposal`, `reject_proposal`, `execute_proposal`, `get_decision_context`. See `internal/mcp/tools_review.go` and `internal/mcp/tools_action.go` for handler implementations.
+
 ## WHERE TO LOOK
 
 | Task | File | Notes |

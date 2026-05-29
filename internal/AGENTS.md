@@ -6,11 +6,13 @@
 
 ## OVERVIEW
 
-Core Go backend: 28 packages, chi router, pgx/PostgreSQL, zap logger.
+Core Go backend: 29 packages, chi router, pgx/PostgreSQL, zap logger.
 
 ## STRUCTURE
 
 **API/HTTP**: `api/server.go` (chi routes, lifecycle), `api/handler/` (13 handlers), `api/middleware/` (auth/CORS/request-id/error), `api/dto/` (request/response types), `httputil/` (JSON response, pagination).
+
+**MCP Server**: `mcp/` (11 files, 17 tools over 8 domains), `cmd/baxi-mcp/` (server bootstrap)
 
 **Pipeline**: `pipeline/` (Step interface + Runner), `pipeline/steps/` (7 impls: ingest_raw → build_dwd → build_metrics → detect_alerts → generate_recommendations → generate_tasks → create_outbox), `ingest/` (CSV loader).
 
@@ -33,6 +35,7 @@ Core Go backend: 28 packages, chi router, pgx/PostgreSQL, zap logger.
 | Add DB query | `repository/` (interface + pgx impl) |
 | Add LLM provider | `llm/` (implement DecisionProvider) |
 | Fix integration test | `testutil/` (testcontainer + goose) |
+| Connect AI Agent (Pi) | `mcp/` + `cmd/baxi-mcp/main.go` | MCP server via stdio |
 
 ## KEY PATTERNS
 

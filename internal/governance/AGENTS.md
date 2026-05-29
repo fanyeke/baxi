@@ -5,6 +5,8 @@
 ## OVERVIEW
 Data governance enforcement: classification, lineage, access control, markings, and redaction. 10 files.
 
+Exposed via MCP tools: `check_access`, `get_classification`. See `internal/mcp/tools_governance.go` for handler implementations.
+
 ## WHERE TO LOOK
 
 | Task | File | Notes |

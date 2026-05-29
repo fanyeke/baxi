@@ -22,6 +22,11 @@ Strategy pattern implementations for dispatching actions to external channels. 1
 - **Channel independence**: Each adapter can be tested in isolation with mocks
 - **Test coverage**: 57 tests across adapter test files (near-complete coverage)
 
+## MCP INTEGRATION
+
+- **MCP action execution**: The MCP Server connects through adapters for action execution. When `execute_proposal` is called via MCP, it routes through `apply_service.go` which dispatches to the appropriate channel adapter (Feishu, GitHub, CLI, or Manual).
+- **Adapter independence preserved**: MCP does not bypass adapter logic — it goes through the same proposal → approval → execution → dispatch flow as the HTTP API.
+
 ## ANTI-PATTERNS
 
 - Feishu client.go has inline token caching with expiry — should use a proper token manager

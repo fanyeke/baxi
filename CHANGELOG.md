@@ -13,6 +13,9 @@
 - 治理层从 Python 规则引擎迁移到 Go 实现
 
 ### 新增功能
+- MCP Server (`cmd/baxi-mcp/` + `internal/mcp/`) — 17 个工具覆盖 8 个业务域
+- Pi Agent 集成（`pi-extension/`）— TypeScript 扩展支持状态查询和告警监控
+- 决策引擎通过 MCP 暴露 — Pi Agent 可直接调用决策和审批流程
 - Repository 子包结构（PoolProvider 注入）
 - 内部 model 包（消除 DTO 反向依赖）
 - server.go 拆分（691→69 行）

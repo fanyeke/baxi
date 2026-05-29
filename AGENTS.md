@@ -12,15 +12,16 @@ Multi-language governance + analytics platform (Go pipeline backend, Go chi API,
 
 ```
 baxi/
-├── cmd/            # Go entry points (baxi-api, baxi-cli, baxi-worker)
-├── internal/       # Go core: 28 packages (pipeline, decision, governance, etc.)
+├── cmd/            # Go entry points (baxi-api, baxi-cli, baxi-worker, baxi-mcp)
+├── internal/       # Go core: 29 packages (pipeline, decision, governance, mcp, etc.)
 ├── frontend/       # React 19 SPA (Vite, TanStack Query, Radix UI)
 ├── config/         # YAML governance configs (28 files)
 ├── migrations/     # Goose SQL migrations (Go → PostgreSQL)
 ├── test/           # Go integration + security E2E tests
 ├── scripts/        # Utility scripts (frozen analysis scripts)
 ├── docs/           # Governance docs + migration plans
-└── data/           # Raw CSVs + intermediate data
+├── data/           # Raw CSVs + intermediate data
+└── pi-extension/    # Pi Agent TypeScript extensions
 ```
 
 ## WHERE TO LOOK
@@ -39,6 +40,7 @@ baxi/
 | Action execution | `internal/action/` | Registry + proposal + apply |
 | Shared types | `internal/model/` | Domain types (service layer, not API DTOs) |
 | Background workers | `internal/worker/` | Dispatch worker |
+| MCP Server + Pi Agent | `internal/mcp/` + `pi-extension/` | Go MCP server (17 tools) + Pi Agent TypeScript extensions |
 
 ## CONVENTIONS
 
@@ -120,14 +122,14 @@ update the affected AGENTS.md files and README.md to match.
 - **README.md**: Update when project structure, counts, or commands change
 - **docs/**: Keep pipeline and config docs in sync with Go implementation
 
-### AGENTS.md Hierarchy (14 files)
+### AGENTS.md Hierarchy (15 files)
 
 ```
 ./AGENTS.md                     # Root project knowledge
 ├── config/AGENTS.md            # YAML governance configs
 ├── frontend/AGENTS.md          # React 19 SPA
 └── internal/
-    ├── AGENTS.md               # Go backend core (28+ packages)
+    ├── AGENTS.md               # Go backend core (29+ packages)
     ├── action/AGENTS.md        # Action registry + execution
     ├── adapter/AGENTS.md       # Channel adapters (Feishu/GitHub/CLI/Manual)
     ├── api/AGENTS.md           # chi HTTP API
@@ -137,7 +139,8 @@ update the affected AGENTS.md files and README.md to match.
     ├── model/AGENTS.md         # Shared domain types
     ├── pipeline/AGENTS.md      # Data pipeline (7 steps)
     ├── repository/AGENTS.md    # Repository layer (10 subpackages)
-    └── service/AGENTS.md       # Business orchestration services
+    ├── service/AGENTS.md       # Business orchestration services
+    └── mcp/AGENTS.md           # MCP Server (17 tools)
 ```
 
 ## COMMANDS

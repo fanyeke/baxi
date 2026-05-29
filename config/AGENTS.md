@@ -8,6 +8,8 @@
 
 28 flat YAML files governing data policies, alert rules, metrics, actions, adapters, and Feishu integrations. Parsed at startup by `internal/configloader/` with type-specific deserialization and whitelist enforcement via `internal/action/`.
 
+MCP configuration: `action_registry.yml` controls the MCP tool whitelist — only actions explicitly listed and enabled in the YAML are surfaced as MCP tools. The MCP server (`cmd/baxi-mcp/`) reads these same configs alongside the API server for consistent enforcement.
+
 ## WHERE TO LOOK
 
 | Task | File | Notes |

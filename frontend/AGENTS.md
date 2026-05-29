@@ -10,7 +10,7 @@ React 19 SPA, Vite 6, TanStack Query 5, Tailwind CSS v4, Radix UI.
 ## STRUCTURE
 ```
 frontend/
-├── src/pages/        # 11 route pages
+├── src/pages/        # 13 route pages
 ├── src/components/   # 5 shared UI elements (Layout, ErrorPanel...)
 ├── src/api/          # apiClient, typed endpoints, types
 ├── src/hooks/        # empty
@@ -20,7 +20,8 @@ frontend/
 ## WHERE TO LOOK
 | Concern | Location | Notes |
 |---------|----------|-------|
-| Routes | `src/pages/` | 11 pages, one per route |
+| Routes | `src/pages/` | 13 pages, one per route |
+| Agent Logs | `src/pages/AgentLogs/` | Agent execution logs viewer, MCP activity feed |
 | API calls | `src/api/` | `client.ts`, `governance.ts`, `types.ts` |
 | Shared UI | `src/components/` | Barrel export via `index.ts` |
 | Layout | `src/components/Layout.tsx` | Nav shell, wraps all routes |

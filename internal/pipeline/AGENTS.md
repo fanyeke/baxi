@@ -7,6 +7,8 @@
 ## OVERVIEW
 Go data pipeline: 7 sequential steps, Step interface, per-step pgx transactions, audit logging.
 
+Exposed via MCP tools: `run_pipeline`, `get_pipeline_status`. See `internal/mcp/tools_pipeline.go` and `internal/mcp/tools_outbox.go` for handler implementations.
+
 ## STEPS (execution order)
 1. `ingest_raw` — CSV → raw tables
 2. `build_dwd` — DWD order-level + item-level

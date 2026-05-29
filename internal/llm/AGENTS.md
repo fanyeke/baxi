@@ -5,6 +5,8 @@
 ## OVERVIEW
 Provider abstraction layer for LLM-based decision making. Supports OpenAI-compatible APIs and rule-based fallback. 17 files.
 
+Decision engine is exposed via MCP tools (`decide`, `create_decision_case`, etc.) — Pi Agent invokes LLM decisions through the MCP stdio transport. The LLM provider chain (OpenAI → validation → repair → rule fallback) runs inside the MCP handler's call path.
+
 ## WHERE TO LOOK
 
 | Task | File | Notes |

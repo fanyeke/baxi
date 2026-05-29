@@ -5,7 +5,7 @@
 
 ## OVERVIEW
 
-Domain-organized repository layer with PoolProvider injection. 10 subpackages within `internal/repository/`:
+Domain-organized repository layer with PoolProvider injection. 12 subpackages within `internal/repository/`:
 - `common/` — PoolProvider base infrastructure
 - `governance/` — Governance config snapshots, object schemas
 - `decision/` — Decision cases, LLM decisions, proposals
@@ -16,6 +16,8 @@ Domain-organized repository layer with PoolProvider injection. 10 subpackages wi
 - `context/` — Qoder context data
 - `status/` — System status (table counts, pipeline runs)
 - `ontology/` — Object queries across dwd/mart/ops tables
+- `agent_execution/` — Agent execution log persistence (used by MCP tool handlers)
+- `mcp_call/` — MCP call record persistence (audit trail for agent interactions)
 
 Flat compatibility files (`*_repository.go`) still exist in the parent package and delegate to the new subpackages.
 
@@ -26,6 +28,8 @@ Flat compatibility files (`*_repository.go`) still exist in the parent package a
 | Add a governance query | `repository/governance/` | Implement interface from `interfaces.go` |
 | Add a decision query | `repository/decision/` | PoolProvider injected via constructor |
 | Add a task query | `repository/task/` | Same pattern |
+| Query agent execution logs | `repository/agent_execution/` | Used by MCP tool handlers for audit trail |
+| Record MCP calls | `repository/mcp_call/` | Persists agent interaction records |
 | Define shared interfaces | `repository/interfaces.go` | May still use old pool-as-param pattern |
 
 ## KEY PATTERNS

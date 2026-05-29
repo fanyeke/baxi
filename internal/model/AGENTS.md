@@ -5,6 +5,8 @@
 ## OVERVIEW
 Shared domain types used by Service layer (NOT by API DTOs). Eliminates the reverse dependency from service → api/dto. 10 files, 549 lines.
 
+MCP-related model types include `LogItem` and `LogListResponse` (in `logs.go`) used by the agent logs query path, alongside `Alert`, `Decision`, and `OutboxEvent` types consumed by MCP tool handlers in `internal/mcp/`.
+
 ## WHERE TO LOOK
 
 | File | Types | Used By |
