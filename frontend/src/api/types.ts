@@ -218,3 +218,77 @@ export interface GovernanceStatusResponse {
   version: string
   configs: Record<string, string>
 }
+
+// --- Decision Review types ---
+
+export interface ActionProposal {
+  proposal_id: string
+  case_id: string
+  decision_id: string
+  action_type: string
+  title: string
+  description: string
+  risk_level: string
+  requires_human_review: boolean
+  apply_status: string
+  payload: Record<string, unknown>
+  created_at: string
+}
+
+export interface ProposalListResponse {
+  case_id: string
+  proposals: ActionProposal[]
+  count: number
+}
+
+export interface ReviewRecord {
+  record_id: string
+  proposal_id: string
+  verdict: string
+  feedback: string
+  reviewer_id: string
+  created_at: string
+}
+
+export interface ReviewResponse {
+  record_id: string
+  proposal_id: string
+  verdict: string
+  reviewer_id: string
+  feedback: string
+  created_at: string
+}
+
+// --- Sandbox types ---
+
+export interface Sandbox {
+  sandbox_id: string
+  case_id: string
+  proposal_id?: string
+  data: Record<string, unknown>
+  status: string
+  compared_with: string[]
+  created_at: string
+}
+
+export interface ComparisonResult {
+  sandbox_1_id: string
+  sandbox_2_id: string
+  differences: Array<{
+    field: string
+    value_1: unknown
+    value_2: unknown
+  }>
+}
+
+export interface CaseListResponse {
+  cases: Array<{
+    case_id: string
+    status: string
+    object_type: string
+    object_id: string
+    severity: string
+    created_at: string
+  }>
+  total: number
+}

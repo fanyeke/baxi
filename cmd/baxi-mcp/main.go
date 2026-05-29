@@ -70,7 +70,36 @@ func main() {
 		zapLog.Warn("failed to load action registry, using empty fallback", zap.Error(err))
 		reg = action.NewEmptyRegistry()
 	}
-	ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, pool.Pool, action.NewActionTypeProviderAdapter(reg))
+	v1Builder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, pool.Pool, action.NewActionTypeProviderAdapter(reg))
+
+	// Build v2 builder (ontology-aware).
+	var v2Builder *decision.ContextBuilderV2
+	objRegistry, regErr := ontology.NewObjectRegistry(ctx, nil, pool.Pool, "config/aip_object_schema.yml")
+	if regErr != nil {
+		zapLog.Warn("failed to load object registry for v2 builder, v2/v3 unavailable", zap.Error(regErr))
+	} else {
+		ontologyAwareRepo := ontology.NewOntologyAwareAdapter(ontologyRepo, objRegistry)
+		markingSvc := governance.NewMarkingAdapter(classSvc, objRegistry)
+		govRepoLocal := repository.NewGovernanceRepository()
+		lineageSvc := governance.NewLineageService(pool.Pool, govRepoLocal)
+		eventRepo := decision.NewPgxLineageEventRepository()
+		lineageAdapter := decision.NewDecisionLineageAdapter(lineageSvc, decisionRepo, eventRepo, pool.Pool)
+		v2Builder = decision.NewContextBuilderV2(decisionRepo, ontologyAwareRepo, markingSvc, lineageAdapter, pool.Pool, action.NewActionTypeProviderAdapter(reg))
+	}
+
+	var ctxBuilder decision.ObjectContextBuilder
+	if v2Builder != nil {
+		switcher := decision.NewSwitchableContextBuilder(v1Builder, v2Builder, nil)
+		// Only build v3 if we have the registry (needed for link traversal).
+		if objRegistry != nil {
+			v3Builder := decision.NewContextBuilderV3(v2Builder, objRegistry, objectSvc)
+			switcher.WithV3Builder(v3Builder)
+			switcher.SwitchTo("v3")
+		}
+		ctxBuilder = switcher
+	} else {
+		ctxBuilder = v1Builder
+	}
 
 	decisionProvider := llm.NewRuleBasedProvider()
 	engine := decision.NewDecisionEngine(decisionProvider, decisionRepo, pool.Pool, llm.NewDBAuditLogger(pool.Pool))
@@ -104,10 +133,13 @@ func main() {
 	statusSvc := &statusServiceAdapter{pool: pool.Pool}
 	searchSvc := &searchServiceAdapter{svc: objectSvc}
 
-	// Wire ontology service for ontology MCP tools
-	objRegistry, regErr := ontology.NewObjectRegistry(ctx, nil, pool.Pool, "config/aip_object_schema.yml")
-	if regErr != nil {
-		zapLog.Warn("failed to load object registry, ontology tools will be unavailable", zap.Error(regErr))
+	// Wire ontology service for ontology MCP tools.
+	// objRegistry may already be loaded above for the v2/v3 builder.
+	if objRegistry == nil {
+		objRegistry, regErr = ontology.NewObjectRegistry(ctx, nil, pool.Pool, "config/aip_object_schema.yml")
+		if regErr != nil {
+			zapLog.Warn("failed to load object registry, ontology tools will be unavailable", zap.Error(regErr))
+		}
 	}
 	ontologySvc := &ontologyServiceAdapter{
 		registry:  objRegistry,

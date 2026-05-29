@@ -12,6 +12,8 @@ import AgentLogs from "./pages/AgentLogs"
 import CaseDetail from "./pages/CaseDetail"
 import AuditTimeline from "./pages/AuditTimeline"
 import PolicyInspector from "./pages/PolicyInspector"
+import DecisionReview from "./pages/DecisionReview"
+import SandboxCompare from "./pages/SandboxCompare"
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
         <Route path="/cases/:id" element={<CaseDetail />} />
         <Route path="/audit-timeline" element={<AuditTimeline />} />
         <Route path="/policy-inspector" element={<PolicyInspector />} />
+        <Route path="/decision-review" element={<DecisionReview />} />
+        <Route path="/sandbox" element={<SandboxCompare />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
