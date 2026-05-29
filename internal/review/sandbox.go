@@ -33,6 +33,61 @@ func NewSandboxService(pool *pgxpool.Pool) *SandboxService {
 	return &SandboxService{pool: pool}
 }
 
+// ListSandboxes retrieves all sandboxes.
+func (s *SandboxService) ListSandboxes(ctx context.Context) ([]Sandbox, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT sandbox_id, case_id, proposal_id, sandbox_data, status, compared_with, created_at, updated_at
+		FROM ai.proposal_sandbox
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query sandboxes: %w", err)
+	}
+	defer rows.Close()
+
+	var sandboxes []Sandbox
+	for rows.Next() {
+		var sb Sandbox
+		var dataJSON []byte
+		var proposalID *string
+		var updatedAt *time.Time
+
+		if err := rows.Scan(
+			&sb.SandboxID,
+			&sb.CaseID,
+			&proposalID,
+			&dataJSON,
+			&sb.Status,
+			&sb.ComparedWith,
+			&sb.CreatedAt,
+			&updatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan sandbox row: %w", err)
+		}
+
+		sb.ProposalID = proposalID
+		sb.UpdatedAt = updatedAt
+		if len(dataJSON) > 0 {
+			if err := json.Unmarshal(dataJSON, &sb.SandboxData); err != nil {
+				sb.SandboxData = make(map[string]interface{})
+			}
+		} else {
+			sb.SandboxData = make(map[string]interface{})
+		}
+		if sb.ComparedWith == nil {
+			sb.ComparedWith = []string{}
+		}
+
+		sandboxes = append(sandboxes, sb)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate sandbox rows: %w", err)
+	}
+
+	return sandboxes, nil
+}
+
 // CreateSandbox creates a new sandbox with the given case ID and initial data.
 func (s *SandboxService) CreateSandbox(ctx context.Context, caseID string, data map[string]interface{}) (string, error) {
 	sandboxID := "sbx_" + uuid.NewString()

@@ -26,13 +26,13 @@ export default function SandboxCompare() {
 
   const sandboxes = useQuery({
     queryKey: ["sandboxes"],
-    queryFn: () => apiClient.get<{ items: Sandbox[] }>("/mcp/list_sandboxes"),
+    queryFn: () => apiClient.get<{ items: Sandbox[] }>("/sandboxes"),
   })
 
   const comparison = useQuery({
     queryKey: ["sandbox-comparison", selectedIds[0], selectedIds[1]],
     queryKeyHashFn: () => `sandbox-comparison-${selectedIds[0]}-${selectedIds[1]}`,
-    queryFn: () => apiClient.get<ComparisonResult>("/mcp/compare_sandboxes", {
+    queryFn: () => apiClient.get<ComparisonResult>("/sandboxes/compare", {
       sandbox1_id: selectedIds[0],
       sandbox2_id: selectedIds[1],
     }),
@@ -47,7 +47,7 @@ export default function SandboxCompare() {
 
   const createMutation = useMutation({
     mutationFn: (caseId: string) =>
-      apiClient.post("/mcp/create_sandbox", { case_id: caseId, data: {} }),
+      apiClient.post("/sandboxes", { case_id: caseId, data: {} }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sandboxes"] })
       setShowCreate(false)
@@ -57,7 +57,7 @@ export default function SandboxCompare() {
 
   const addProposalMutation = useMutation({
     mutationFn: (args: { sandboxId: string; proposalId: string }) =>
-      apiClient.post("/mcp/add_to_sandbox", { sandbox_id: args.sandboxId, proposal_id: args.proposalId }),
+      apiClient.post(`/sandboxes/${args.sandboxId}/proposals`, { proposal_id: args.proposalId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sandboxes"] })
       setAddProposalSandboxId(null)

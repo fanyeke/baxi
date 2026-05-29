@@ -42,6 +42,7 @@ type Server struct {
 	alertHandlerVal      *handler.AlertHandler
 	reviewHandlerVal     *handler.ReviewHandler
 	pipelineHandlerVal   *handler.PipelineHandler
+	sandboxHandlerVal    *handler.SandboxHandler
 }
 
 // New creates a new API server instance.

@@ -291,6 +291,15 @@ func (s *Server) pipelineHandler() *handler.PipelineHandler {
 	return s.pipelineHandlerVal
 }
 
+// sandboxHandler lazily initializes the sandbox handler.
+func (s *Server) sandboxHandler() *handler.SandboxHandler {
+	if s.sandboxHandlerVal == nil {
+		svc := review.NewSandboxService(s.pool)
+		s.sandboxHandlerVal = handler.NewSandboxHandler(svc)
+	}
+	return s.sandboxHandlerVal
+}
+
 // actionHandler lazily initializes the action handler.
 func (s *Server) actionHandler() *handler.ActionHandler {
 	if s.actionHandlerVal == nil {

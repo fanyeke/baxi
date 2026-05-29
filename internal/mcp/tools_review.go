@@ -71,6 +71,11 @@ func (s *Server) handleApproveProposal(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError("reviewer_id is required"), nil
 	}
 
+	// Validate reviewer_id format to prevent identity spoofing
+	if !isValidReviewerID(reviewerID) {
+		return mcp.NewToolResultError("reviewer_id must be non-empty and contain only alphanumeric characters, hyphens, and underscores"), nil
+	}
+
 	feedback := ""
 	if v, ok := args["feedback"].(string); ok {
 		feedback = v
@@ -104,6 +109,11 @@ func (s *Server) handleRejectProposal(ctx context.Context, req mcp.CallToolReque
 	reviewerID, ok := args["reviewer_id"].(string)
 	if !ok || reviewerID == "" {
 		return mcp.NewToolResultError("reviewer_id is required"), nil
+	}
+
+	// Validate reviewer_id format to prevent identity spoofing
+	if !isValidReviewerID(reviewerID) {
+		return mcp.NewToolResultError("reviewer_id must be non-empty and contain only alphanumeric characters, hyphens, and underscores"), nil
 	}
 
 	feedback := ""
@@ -231,4 +241,18 @@ func (s *Server) handleListReviewRecords(ctx context.Context, req mcp.CallToolRe
 		"limit": limit,
 		"offset": offset,
 	})
+}
+
+// isValidReviewerID validates that a reviewer ID contains only alphanumeric
+// characters, hyphens, and underscores, and is non-empty.
+func isValidReviewerID(id string) bool {
+	if id == "" {
+		return false
+	}
+	for _, r := range id {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_') {
+			return false
+		}
+	}
+	return true
 }

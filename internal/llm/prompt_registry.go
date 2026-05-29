@@ -28,6 +28,7 @@ type UserPromptData struct {
 	ContextJSON      string
 	AllowedActions   []string
 	ForbiddenActions []string
+	EnrichedObjects  []EnrichedObjectData
 }
 
 // PromptRegistry provides access to embedded prompt templates.

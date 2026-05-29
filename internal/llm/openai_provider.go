@@ -88,6 +88,7 @@ func (p *OpenAICompatibleProvider) GenerateDecision(ctx context.Context, input L
 		ContextJSON:      string(contextJSON),
 		AllowedActions:   input.AllowedActions,
 		ForbiddenActions: input.ForbiddenActions,
+		EnrichedObjects:  input.EnrichedObjects,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("render user prompt: %w", err)
@@ -176,6 +177,7 @@ func (p *OpenAICompatibleProvider) GenerateDecisionRaw(ctx context.Context, inpu
 		ContextJSON:      string(contextJSON),
 		AllowedActions:   input.AllowedActions,
 		ForbiddenActions: input.ForbiddenActions,
+		EnrichedObjects:  input.EnrichedObjects,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("render user prompt: %w", err)

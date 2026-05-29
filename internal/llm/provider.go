@@ -7,14 +7,25 @@ type DecisionProvider interface {
 	GenerateDecision(ctx context.Context, input LLMSafeContext) (*DecisionOutput, error)
 }
 
+// EnrichedObjectData holds the context of a linked object discovered via
+// OAG (Object-Action-Governance) link traversal.
+type EnrichedObjectData struct {
+	LinkName   string                 `json:"link_name"`
+	Depth      int                    `json:"depth"`
+	ObjectType string                 `json:"object_type"`
+	ObjectID   string                 `json:"object_id"`
+	Properties map[string]interface{} `json:"properties"`
+}
+
 // LLMSafeContext is the governance-redacted context fed to decision providers.
 type LLMSafeContext struct {
-	CaseID           string         `json:"case_id"`
-	Trigger          TriggerInfo    `json:"trigger"`
-	ObjectContext    ObjectContext  `json:"object_context"`
-	GovernanceInfo   GovernanceInfo `json:"governance"`
-	AllowedActions   []string       `json:"allowed_actions"`
-	ForbiddenActions []string       `json:"forbidden_actions"`
+	CaseID           string               `json:"case_id"`
+	Trigger          TriggerInfo          `json:"trigger"`
+	ObjectContext    ObjectContext        `json:"object_context"`
+	GovernanceInfo   GovernanceInfo       `json:"governance"`
+	AllowedActions   []string             `json:"allowed_actions"`
+	ForbiddenActions []string             `json:"forbidden_actions"`
+	EnrichedObjects  []EnrichedObjectData `json:"enriched_objects,omitempty"`
 }
 
 // TriggerInfo describes the event that triggered a decision request.

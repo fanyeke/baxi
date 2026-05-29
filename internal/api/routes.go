@@ -72,6 +72,12 @@ func (s *Server) setupRoutes() {
 			r.Get("/proposals/{id}/status", s.actionHandler().HandleStatus)
 
 			r.Post("/pipeline/run", s.pipelineHandler().HandleRun)
+
+			r.Post("/sandboxes", s.sandboxHandler().HandleCreate)
+			r.Get("/sandboxes", s.sandboxHandler().HandleList)
+			r.Get("/sandboxes/compare", s.sandboxHandler().HandleCompare)
+			r.Get("/sandboxes/{id}", s.sandboxHandler().HandleGet)
+			r.Post("/sandboxes/{id}/proposals", s.sandboxHandler().HandleAddProposal)
 		})
 	})
 }

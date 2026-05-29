@@ -288,7 +288,7 @@ func (e *DecisionEngine) updateCaseStatus(ctx context.Context, caseID string, st
 
 // BuildLLMSafeContext maps a DecisionContext to an LLMSafeContext.
 func BuildLLMSafeContext(dc *DecisionContext) llm.LLMSafeContext {
-	return llm.LLMSafeContext{
+	llmCtx := llm.LLMSafeContext{
 		CaseID: dc.DecisionCaseID,
 		Trigger: llm.TriggerInfo{
 			AlertID:       dc.Trigger.AlertID,
@@ -313,6 +313,23 @@ func BuildLLMSafeContext(dc *DecisionContext) llm.LLMSafeContext {
 		AllowedActions:   dc.AllowedActions,
 		ForbiddenActions: dc.ForbiddenActions,
 	}
+
+	// Map enriched objects from OAG link traversal
+	if len(dc.EnrichedObjects) > 0 {
+		enriched := make([]llm.EnrichedObjectData, 0, len(dc.EnrichedObjects))
+		for _, eo := range dc.EnrichedObjects {
+			enriched = append(enriched, llm.EnrichedObjectData{
+				LinkName:   eo.LinkName,
+				Depth:      eo.Depth,
+				ObjectType: eo.ObjectType,
+				ObjectID:   eo.ObjectID,
+				Properties: eo.Properties,
+			})
+		}
+		llmCtx.EnrichedObjects = enriched
+	}
+
+	return llmCtx
 }
 
 // persistContextSnapshot saves the LLMSafeContext as a snapshot (best-effort).

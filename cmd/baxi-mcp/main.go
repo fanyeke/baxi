@@ -147,6 +147,7 @@ func main() {
 		ontRepo:   ontologyRepo,
 		pool:      pool.Pool,
 		actionReg: reg,
+		applySvc:  executeSvc,
 	}
 
 	// Create adapters to satisfy extended MCP interfaces
@@ -212,13 +213,20 @@ func (a *decisionServiceAdapter) Decide(ctx context.Context, caseID string) ([]a
 }
 
 func (a *decisionServiceAdapter) ResolveCase(ctx context.Context, caseID, resolution, comment string) error {
-	_, err := a.pool.Exec(ctx, `
+	result, err := a.pool.Exec(ctx, `
 		UPDATE ai.decision_case
-		SET status = 'resolved', resolved_at = NOW()
+		SET status = 'resolved',
+		    resolved_at = NOW(),
+		    resolution = $2,
+		    case_resolution_comment = $3
 		WHERE case_id = $1
-	`, caseID)
+	`, caseID, resolution, comment)
 	if err != nil {
 		return fmt.Errorf("resolve case %s: %w", caseID, err)
+	}
+	rows := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("case %s not found", caseID)
 	}
 	return nil
 }
@@ -577,6 +585,7 @@ type ontologyServiceAdapter struct {
 	ontRepo   *repository.OntologyRepo
 	pool      *pgxpool.Pool
 	actionReg *action.ActionRegistry
+	applySvc  *action.ApplyService
 }
 
 func (a *ontologyServiceAdapter) DescribeOntology(ctx context.Context) (*mcp.OntologyDescriptor, error) {
@@ -844,28 +853,97 @@ func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, 
 		}
 	}
 	if !allowed {
-		return nil, fmt.Errorf("action %q not allowed for object type %q", actionType, objectType)
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("action %q not allowed on %s", actionType, objectType)},
+		}, nil
 	}
 
 	// Check if the action is allowed by the global action registry.
 	if a.actionReg != nil && !a.actionReg.IsAllowed(actionType) {
-		return nil, fmt.Errorf("action %q is not allowed by the action registry", actionType)
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("action %q is not allowed by the action registry", actionType)},
+		}, nil
 	}
 
 	// Validate payload against action registry schema.
 	if a.actionReg != nil && len(params) > 0 {
 		if errs := a.actionReg.ValidatePayload(actionType, params); len(errs) > 0 {
-			return nil, fmt.Errorf("invalid action payload: %v", errs)
+			return &mcp.ActionResult{
+				Success:    false,
+				ActionType: actionType,
+				ObjectType: objectType,
+				ObjectID:   objectID,
+				Result:     map[string]interface{}{"error": fmt.Sprintf("invalid action payload: %v", errs)},
+			}, nil
 		}
 	}
 
+	caseID := fmt.Sprintf("mcp-%d", time.Now().UnixNano())
+	proposalID := fmt.Sprintf("mcp-proposal-%d", time.Now().UnixNano())
+
+	payloadJSON, _ := json.Marshal(params)
+
+	_, err := a.pool.Exec(ctx,
+		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'closed', NOW())`, caseID)
+	if err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("create decision case: %v", err)},
+		}, nil
+	}
+
+	title := fmt.Sprintf("MCP execute_action: %s on %s %s", actionType, objectType, objectID)
+	_, err = a.pool.Exec(ctx,
+		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, risk_level, requires_human_review, payload, created_at)
+		 VALUES ($1, $2, $3, 'approved', $4, 'low', true, $5, NOW())`,
+		proposalID, caseID, actionType, title, payloadJSON)
+	if err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("create action proposal: %v", err)},
+		}, nil
+	}
+
+	result, err := a.applySvc.ExecuteProposal(ctx, a.pool, proposalID, "mcp_system", action.WithDryRun(false))
+	if err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("execute proposal: %v", err)},
+		}, nil
+	}
+
+	res := map[string]interface{}{
+		"proposal_id": proposalID,
+		"case_id":     caseID,
+		"message":     fmt.Sprintf("Action %q executed on %s %s", actionType, objectType, objectID),
+	}
+	if !result.Success {
+		res["message"] = fmt.Sprintf("Action %q execution failed on %s %s", actionType, objectType, objectID)
+		res["execution_error"] = result.Error
+	}
+
 	return &mcp.ActionResult{
-		Success:    true,
+		Success:    result.Success,
 		ActionType: actionType,
 		ObjectType: objectType,
 		ObjectID:   objectID,
-		Result: map[string]interface{}{
-			"message": fmt.Sprintf("Action %q validated and ready for execution on %s %s", actionType, objectType, objectID),
-		},
+		Result:     res,
 	}, nil
 }

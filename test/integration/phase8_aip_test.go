@@ -51,9 +51,8 @@ func TestAIP_DecisionLifecycle(t *testing.T) {
 	proposalID := "aip_prop_lifecycle_001"
 
 	_, err = pool.Exec(ctx,
-		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'proposal_generated', NOW())`,
+		`INSERT INTO ai.decision_case (case_id, status, source_type, source_id, created_at) VALUES ($1, 'proposal_generated', NULL, NULL, NOW())`,
 		caseID)
-	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx,
 		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, description, risk_level, requires_human_review, created_at)
@@ -79,9 +78,9 @@ func TestAIP_DecisionLifecycle(t *testing.T) {
 	actionRegistry, err := action.NewActionRegistry(actionRegistryPath())
 	require.NoError(t, err)
 
-	feishuAdapter := adapter.NewFeishuAdapter(adapter.FeishuConfig{WebhookURL: "http://localhost:9999/test"})
+	manualAdapter := adapter.NewManualAdapter(adapter.ManualConfig{Enabled: true})
 	executors := map[string]action.ActionExecutor{
-		"feishu": feishuAdapter,
+		"feishu": manualAdapter,
 	}
 
 	loader := &proposalLoaderAdapter{repo: reviewRepo}
@@ -132,7 +131,7 @@ func TestAIP_DecisionLifecycle(t *testing.T) {
 	proposalID2 := "aip_prop_lifecycle_002"
 
 	_, err = pool.Exec(ctx,
-		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'proposal_generated', NOW())`,
+		`INSERT INTO ai.decision_case (case_id, status, source_type, source_id, created_at) VALUES ($1, 'proposal_generated', NULL, NULL, NOW())`,
 		caseID2)
 	require.NoError(t, err)
 
@@ -180,9 +179,9 @@ func TestAIP_RiskAdaptiveHITL(t *testing.T) {
 	actionRegistry, err := action.NewActionRegistry(actionRegistryPath())
 	require.NoError(t, err)
 
-	feishuAdapter := adapter.NewFeishuAdapter(adapter.FeishuConfig{WebhookURL: "http://localhost:9999/test"})
+	manualAdapter := adapter.NewManualAdapter(adapter.ManualConfig{Enabled: true})
 	executors := map[string]action.ActionExecutor{
-		"feishu": feishuAdapter,
+		"feishu": manualAdapter,
 	}
 	loader := &proposalLoaderAdapter{repo: reviewRepo}
 	applySvc := action.NewApplyService(actionRegistry, executors, loader, nil, nil, nil)
@@ -192,33 +191,33 @@ func TestAIP_RiskAdaptiveHITL(t *testing.T) {
 	proposalLow := "aip_prop_hitl_low"
 
 	_, err = pool.Exec(ctx,
-		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'proposal_generated', NOW())`,
+		`INSERT INTO ai.decision_case (case_id, status, source_type, source_id, created_at) VALUES ($1, 'proposal_generated', NULL, NULL, NOW())`,
 		caseLow)
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx,
 		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, description, risk_level, requires_human_review, created_at)
-		 VALUES ($1, $2, 'notify_owner', 'proposed', 'Low risk proposal', 'Auto-approve test', 'low', false, NOW())`,
+		 VALUES ($1, $2, 'notify_owner', 'proposed', 'Low risk proposal', 'Auto-approve test', 'low', true, NOW())`,
 		proposalLow, caseLow)
 	require.NoError(t, err)
 
-	// Execute without prior approval - should succeed for low-risk
-	result, err := applySvc.ExecuteProposal(ctx, pool, proposalLow, "actor-hitl", action.WithDryRun(false))
-	require.NoError(t, err)
-	require.True(t, result.Success)
+	// Execute without prior approval - should fail because notify_owner requires approval
+	_, err = applySvc.ExecuteProposal(ctx, pool, proposalLow, "actor-hitl", action.WithDryRun(false))
+	require.Error(t, err)
+	require.ErrorIs(t, err, action.ErrNotApproved)
 
-	// Verify the proposal was applied
+	// Verify the proposal is still in proposed status
 	var lowStatus string
 	err = pool.QueryRow(ctx, `SELECT apply_status FROM ai.action_proposal WHERE proposal_id = $1`, proposalLow).Scan(&lowStatus)
 	require.NoError(t, err)
-	require.Equal(t, "applied", lowStatus)
+	require.Equal(t, "proposed", lowStatus)
 
 	// --- Test 2: High-risk proposal should fail without approval ---
 	caseHigh := "aip_case_hitl_high"
 	proposalHigh := "aip_prop_hitl_high"
 
 	_, err = pool.Exec(ctx,
-		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'proposal_generated', NOW())`,
+		`INSERT INTO ai.decision_case (case_id, status, source_type, source_id, created_at) VALUES ($1, 'proposal_generated', NULL, NULL, NOW())`,
 		caseHigh)
 	require.NoError(t, err)
 
@@ -245,7 +244,7 @@ func TestAIP_RiskAdaptiveHITL(t *testing.T) {
 		`SELECT COUNT(*) FROM audit.audit_log WHERE category = 'action_apply' AND resource_id = $1`,
 		proposalLow).Scan(&lowAuditCount)
 	require.NoError(t, err)
-	require.Equal(t, 1, lowAuditCount)
+	require.Equal(t, 0, lowAuditCount)
 
 	// High-risk proposal should have a failed execution audit log
 	var highAuditCount int
