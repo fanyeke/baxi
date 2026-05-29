@@ -52,6 +52,7 @@ type ReviewService interface {
 	RejectProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
 	CancelProposal(ctx context.Context, proposalID, reason string) error
 	GetProposalByID(ctx context.Context, proposalID string) (*action.ActionProposal, error)
+	ListReviewRecords(ctx context.Context, proposalID string, limit, offset int) ([]review.ReviewRecord, int, error)
 }
 
 // ExecuteService defines the interface for executing action proposals.
@@ -156,6 +157,55 @@ type OntologyService interface {
 	GetObject(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
 	GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
 	ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+}
+
+// ActionSchemaService defines the interface for action schema operations.
+type ActionSchemaService interface {
+	ListActionSchemas(ctx context.Context) ([]ActionDefinition, error)
+	GetActionSchema(ctx context.Context, actionType string) (*ActionDefinition, error)
+}
+
+// ActionDefinition describes the structured schema for a single action type.
+type ActionDefinition struct {
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	RiskLevel     string                 `json:"risk_level"`
+	PayloadSchema map[string]interface{} `json:"payload_schema"`
+	AllowedBy     []string               `json:"allowed_by"`
+	Adapter       string                 `json:"adapter"`
+}
+
+// SandboxService defines the interface for proposal sandbox operations.
+type SandboxService interface {
+	CreateSandbox(ctx context.Context, caseID string, data map[string]interface{}) (string, error)
+	AddProposalToSandbox(ctx context.Context, sandboxID, proposalID string) error
+	CompareSandbox(ctx context.Context, sandboxID1, sandboxID2 string) (*ComparisonResult, error)
+	GetSandbox(ctx context.Context, sandboxID string) (*Sandbox, error)
+}
+
+// Sandbox represents a persistent proposal sandbox.
+type Sandbox struct {
+	SandboxID    string                 `json:"sandbox_id"`
+	CaseID       string                 `json:"case_id"`
+	ProposalID   string                 `json:"proposal_id,omitempty"`
+	Data         map[string]interface{} `json:"data"`
+	Status       string                 `json:"status"`
+	ComparedWith []string               `json:"compared_with,omitempty"`
+	CreatedAt    string                 `json:"created_at"`
+}
+
+// ComparisonResult holds the result of comparing two sandboxes.
+type ComparisonResult struct {
+	Sandbox1ID  string       `json:"sandbox_1_id"`
+	Sandbox2ID  string       `json:"sandbox_2_id"`
+	Differences []Difference `json:"differences"`
+}
+
+// Difference represents a single field difference between two sandboxes.
+type Difference struct {
+	Field  string      `json:"field"`
+	Value1 interface{} `json:"value_1"`
+	Value2 interface{} `json:"value_2"`
 }
 
 // PipelineInfoService defines the interface for pipeline status information.

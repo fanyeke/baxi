@@ -45,6 +45,16 @@ func (s *Server) registerReviewTools() {
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to retrieve")),
 	)
 	s.server.AddTool(getProposalTool, s.handleGetProposalByID)
+
+	// Tool: list_review_records
+	listReviewTool := mcp.NewTool(
+		"list_review_records",
+		mcp.WithDescription("List review records for a proposal with pagination"),
+		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of records to return (default 50)")),
+		mcp.WithNumber("offset", mcp.Description("Number of records to skip (default 0)")),
+	)
+	s.server.AddTool(listReviewTool, s.handleListReviewRecords)
 }
 
 // handleApproveProposal handles the approve_proposal tool.
@@ -177,4 +187,48 @@ func (s *Server) handleGetProposalByID(ctx context.Context, req mcp.CallToolRequ
 	}
 
 	return mcp.NewToolResultJSON(result)
+}
+
+// handleListReviewRecords handles the list_review_records tool.
+func (s *Server) handleListReviewRecords(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := req.GetArguments()
+
+	proposalID, ok := args["proposal_id"].(string)
+	if !ok || proposalID == "" {
+		return mcp.NewToolResultError("proposal_id is required"), nil
+	}
+
+	limit := 50
+	if v, ok := args["limit"].(float64); ok {
+		limit = int(v)
+	}
+
+	offset := 0
+	if v, ok := args["offset"].(float64); ok {
+		offset = int(v)
+	}
+
+	records, total, err := s.reviewSvc.ListReviewRecords(ctx, proposalID, limit, offset)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to list review records: %v", err)), nil
+	}
+
+	items := make([]map[string]interface{}, 0, len(records))
+	for _, r := range records {
+		items = append(items, map[string]interface{}{
+			"record_id":   r.RecordID,
+			"proposal_id": r.ProposalID,
+			"verdict":     string(r.Verdict),
+			"feedback":    r.Feedback,
+			"reviewer_id": r.ReviewerID,
+			"created_at":  r.CreatedAt,
+		})
+	}
+
+	return mcp.NewToolResultJSON(map[string]interface{}{
+		"items": items,
+		"total": total,
+		"limit": limit,
+		"offset": offset,
+	})
 }

@@ -131,6 +131,57 @@ func (r *ReviewRepository) GetReviewsByProposal(ctx context.Context, pool *pgxpo
 	return results, nil
 }
 
+// ListReviewRecords retrieves review records for a given proposal_id with pagination.
+func (r *ReviewRepository) ListReviewRecords(ctx context.Context, pool *pgxpool.Pool, proposalID string, limit, offset int) ([]ReviewRecord, int, error) {
+	// Count query
+	var total int
+	err := pool.QueryRow(ctx, `SELECT COUNT(*) FROM ai.review_record WHERE proposal_id = $1`, proposalID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count ai.review_record: %w", err)
+	}
+
+	// Data query with LIMIT/OFFSET
+	query := `
+		SELECT review_id, proposal_id, reviewer_id, verdict, feedback, reviewed_at
+		FROM ai.review_record
+		WHERE proposal_id = $1
+		ORDER BY reviewed_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := pool.Query(ctx, query, proposalID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query ai.review_record: %w", err)
+	}
+	defer rows.Close()
+
+	var results []ReviewRecord
+	for rows.Next() {
+		var record ReviewRecord
+		if err := rows.Scan(
+			&record.RecordID,
+			&record.ProposalID,
+			&record.ReviewerID,
+			&record.Verdict,
+			&record.Feedback,
+			&record.CreatedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan ai.review_record row: %w", err)
+		}
+		results = append(results, record)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate ai.review_record rows: %w", err)
+	}
+
+	if results == nil {
+		results = []ReviewRecord{}
+	}
+
+	return results, total, nil
+}
+
 // UpdateProposalApplyStatus updates the apply_status of an action proposal.
 func (r *ReviewRepository) UpdateProposalApplyStatus(ctx context.Context, tx pgx.Tx, proposalID string, status string) error {
 	query := `

@@ -80,6 +80,11 @@ func (s *ReviewService) GetProposalByID(ctx context.Context, proposalID string) 
 	return s.repo.GetProposalByID(ctx, s.pool, proposalID)
 }
 
+// ListReviewRecords retrieves review records for a proposal with pagination.
+func (s *ReviewService) ListReviewRecords(ctx context.Context, proposalID string, limit, offset int) ([]ReviewRecord, int, error) {
+	return s.repo.ListReviewRecords(ctx, s.pool, proposalID, limit, offset)
+}
+
 // transitionProposal executes the common transaction pattern for approve/reject/cancel.
 func (s *ReviewService) transitionProposal(ctx context.Context, proposalID, reviewerID, feedback string, verdict Verdict, newStatus, auditAction string) (*ReviewRecord, error) {
 	tx, err := s.pool.Begin(ctx)

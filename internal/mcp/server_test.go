@@ -131,10 +131,11 @@ func (m *MockPipelineRunner) Run(ctx context.Context, config string) (string, er
 }
 
 type MockReviewService struct {
-	ApproveProposalFunc func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
-	RejectProposalFunc  func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
-	CancelProposalFunc  func(ctx context.Context, proposalID, reason string) error
-	GetProposalByIDFunc func(ctx context.Context, proposalID string) (*action.ActionProposal, error)
+	ApproveProposalFunc  func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	RejectProposalFunc   func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	CancelProposalFunc   func(ctx context.Context, proposalID, reason string) error
+	GetProposalByIDFunc  func(ctx context.Context, proposalID string) (*action.ActionProposal, error)
+	ListReviewRecordsFunc func(ctx context.Context, proposalID string, limit, offset int) ([]review.ReviewRecord, int, error)
 }
 
 func (m *MockReviewService) ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
@@ -163,6 +164,13 @@ func (m *MockReviewService) GetProposalByID(ctx context.Context, proposalID stri
 		return m.GetProposalByIDFunc(ctx, proposalID)
 	}
 	return nil, nil
+}
+
+func (m *MockReviewService) ListReviewRecords(ctx context.Context, proposalID string, limit, offset int) ([]review.ReviewRecord, int, error) {
+	if m.ListReviewRecordsFunc != nil {
+		return m.ListReviewRecordsFunc(ctx, proposalID, limit, offset)
+	}
+	return []review.ReviewRecord{}, 0, nil
 }
 
 type MockOutboxService struct {
@@ -235,6 +243,60 @@ type MockOntologyService struct {
 	ExecuteActionFunc       func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
 }
 
+type MockActionSchemaService struct {
+	ListActionSchemasFunc func(ctx context.Context) ([]ActionDefinition, error)
+	GetActionSchemaFunc   func(ctx context.Context, actionType string) (*ActionDefinition, error)
+}
+
+func (m *MockActionSchemaService) ListActionSchemas(ctx context.Context) ([]ActionDefinition, error) {
+	if m.ListActionSchemasFunc != nil {
+		return m.ListActionSchemasFunc(ctx)
+	}
+	return []ActionDefinition{}, nil
+}
+
+func (m *MockActionSchemaService) GetActionSchema(ctx context.Context, actionType string) (*ActionDefinition, error) {
+	if m.GetActionSchemaFunc != nil {
+		return m.GetActionSchemaFunc(ctx, actionType)
+	}
+	return nil, nil
+}
+
+type MockSandboxService struct {
+	CreateSandboxFunc       func(ctx context.Context, caseID string, data map[string]interface{}) (string, error)
+	AddProposalToSandboxFunc func(ctx context.Context, sandboxID, proposalID string) error
+	CompareSandboxFunc      func(ctx context.Context, sandboxID1, sandboxID2 string) (*ComparisonResult, error)
+	GetSandboxFunc          func(ctx context.Context, sandboxID string) (*Sandbox, error)
+}
+
+func (m *MockSandboxService) CreateSandbox(ctx context.Context, caseID string, data map[string]interface{}) (string, error) {
+	if m.CreateSandboxFunc != nil {
+		return m.CreateSandboxFunc(ctx, caseID, data)
+	}
+	return "sbx_mock", nil
+}
+
+func (m *MockSandboxService) AddProposalToSandbox(ctx context.Context, sandboxID, proposalID string) error {
+	if m.AddProposalToSandboxFunc != nil {
+		return m.AddProposalToSandboxFunc(ctx, sandboxID, proposalID)
+	}
+	return nil
+}
+
+func (m *MockSandboxService) CompareSandbox(ctx context.Context, sandboxID1, sandboxID2 string) (*ComparisonResult, error) {
+	if m.CompareSandboxFunc != nil {
+		return m.CompareSandboxFunc(ctx, sandboxID1, sandboxID2)
+	}
+	return &ComparisonResult{Sandbox1ID: sandboxID1, Sandbox2ID: sandboxID2, Differences: []Difference{}}, nil
+}
+
+func (m *MockSandboxService) GetSandbox(ctx context.Context, sandboxID string) (*Sandbox, error) {
+	if m.GetSandboxFunc != nil {
+		return m.GetSandboxFunc(ctx, sandboxID)
+	}
+	return nil, nil
+}
+
 func (m *MockOntologyService) DescribeOntology(ctx context.Context) (*OntologyDescriptor, error) {
 	if m.DescribeOntologyFunc != nil {
 		return m.DescribeOntologyFunc(ctx)
@@ -280,6 +342,8 @@ func TestNewServer(t *testing.T) {
 		&MockSystemStatusService{},
 		&MockObjectSearchService{},
 		&MockOntologyService{},
+		&MockActionSchemaService{},
+		&MockSandboxService{},
 	)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
@@ -311,6 +375,8 @@ func TestServerToolRegistration(t *testing.T) {
 		&MockSystemStatusService{},
 		&MockObjectSearchService{},
 		&MockOntologyService{},
+		&MockActionSchemaService{},
+		&MockSandboxService{},
 	)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
@@ -346,6 +412,13 @@ func TestServerToolRegistration(t *testing.T) {
 		"resolve_case",
 		"cancel_proposal",
 		"get_proposal_by_id",
+		"list_review_records",
+		"list_action_schemas",
+		"get_action_schema",
+		"create_sandbox",
+		"add_to_sandbox",
+		"compare_sandboxes",
+		"get_sandbox",
 	}
 
 	toolNames := make(map[string]bool)

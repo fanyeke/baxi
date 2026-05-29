@@ -121,12 +121,21 @@ func main() {
 	decisionSvcAdapter := &decisionServiceAdapter{svc: decisionSvc, pool: pool.Pool}
 	reviewSvcAdapter := &reviewServiceAdapter{svc: reviewSvc}
 
+	// Wire schema service for action schema MCP tools
+	schemaCatalog := action.NewActionSchemaCatalog(reg)
+	schemaSvc := &schemaServiceAdapter{catalog: schemaCatalog}
+
+	// Wire sandbox service for proposal sandbox MCP tools
+	sandboxService := review.NewSandboxService(pool.Pool)
+	sandboxSvc := &sandboxServiceAdapter{svc: sandboxService}
+
 	// Create MCP server with stdio transport
 	mcpSrv, err := mcp.NewServer(
 		decisionSvcAdapter, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc,
 		reviewSvcAdapter, outboxSvc, pipelineInfoSvc,
 		executeSvc, pool.Pool,
 		statusSvc, searchSvc, ontologySvc,
+		schemaSvc, sandboxSvc,
 	)
 	if err != nil {
 		zapLog.Fatal("failed to create MCP server", zap.Error(err))
@@ -202,6 +211,10 @@ func (a *reviewServiceAdapter) CancelProposal(ctx context.Context, proposalID, r
 		return err
 	}
 	return nil
+}
+
+func (a *reviewServiceAdapter) ListReviewRecords(ctx context.Context, proposalID string, limit, offset int) ([]review.ReviewRecord, int, error) {
+	return a.svc.ListReviewRecords(ctx, proposalID, limit, offset)
 }
 
 func (a *reviewServiceAdapter) GetProposalByID(ctx context.Context, proposalID string) (*action.ActionProposal, error) {
@@ -680,6 +693,108 @@ func (a *ontologyServiceAdapter) GetLinkedObjects(ctx context.Context, objectTyp
 	}
 
 	return result, nil
+}
+
+// schemaServiceAdapter wraps action.ActionSchemaCatalog to implement mcp.ActionSchemaService.
+type schemaServiceAdapter struct {
+	catalog *action.ActionSchemaCatalog
+}
+
+func (a *schemaServiceAdapter) ListActionSchemas(ctx context.Context) ([]mcp.ActionDefinition, error) {
+	defs, err := a.catalog.ListActionSchemas()
+	if err != nil {
+		return nil, err
+	}
+	items := make([]mcp.ActionDefinition, 0, len(defs))
+	for _, d := range defs {
+		items = append(items, mcp.ActionDefinition{
+			Name:          d.Name,
+			Description:   d.Description,
+			RiskLevel:     d.RiskLevel,
+			PayloadSchema: d.PayloadSchema,
+			AllowedBy:     d.AllowedBy,
+			Adapter:       d.Adapter,
+		})
+	}
+	return items, nil
+}
+
+func (a *schemaServiceAdapter) GetActionSchema(ctx context.Context, actionType string) (*mcp.ActionDefinition, error) {
+	def, err := a.catalog.GetActionSchema(actionType)
+	if err != nil {
+		return nil, err
+	}
+	if def == nil {
+		return nil, nil
+	}
+	return &mcp.ActionDefinition{
+		Name:          def.Name,
+		Description:   def.Description,
+		RiskLevel:     def.RiskLevel,
+		PayloadSchema: def.PayloadSchema,
+		AllowedBy:     def.AllowedBy,
+		Adapter:       def.Adapter,
+	}, nil
+}
+
+// sandboxServiceAdapter wraps review.SandboxService to implement mcp.SandboxService.
+type sandboxServiceAdapter struct {
+	svc *review.SandboxService
+}
+
+func (a *sandboxServiceAdapter) CreateSandbox(ctx context.Context, caseID string, data map[string]interface{}) (string, error) {
+	return a.svc.CreateSandbox(ctx, caseID, data)
+}
+
+func (a *sandboxServiceAdapter) AddProposalToSandbox(ctx context.Context, sandboxID, proposalID string) error {
+	return a.svc.AddProposalToSandbox(ctx, sandboxID, proposalID)
+}
+
+func (a *sandboxServiceAdapter) CompareSandbox(ctx context.Context, sandboxID1, sandboxID2 string) (*mcp.ComparisonResult, error) {
+	result, err := a.svc.CompareSandbox(ctx, sandboxID1, sandboxID2)
+	if err != nil {
+		return nil, err
+	}
+	diffs := make([]mcp.Difference, 0, len(result.Differences))
+	for _, d := range result.Differences {
+		diffs = append(diffs, mcp.Difference{
+			Field:  d.Field,
+			Value1: d.Value1,
+			Value2: d.Value2,
+		})
+	}
+	return &mcp.ComparisonResult{
+		Sandbox1ID:  result.Sandbox1ID,
+		Sandbox2ID:  result.Sandbox2ID,
+		Differences: diffs,
+	}, nil
+}
+
+func (a *sandboxServiceAdapter) GetSandbox(ctx context.Context, sandboxID string) (*mcp.Sandbox, error) {
+	sb, err := a.svc.GetSandbox(ctx, sandboxID)
+	if err != nil {
+		return nil, err
+	}
+	if sb == nil {
+		return nil, nil
+	}
+	return &mcp.Sandbox{
+		SandboxID:    sb.SandboxID,
+		CaseID:       sb.CaseID,
+		ProposalID:   stringPtrOrEmpty(sb.ProposalID),
+		Data:         sb.SandboxData,
+		Status:       sb.Status,
+		ComparedWith: sb.ComparedWith,
+		CreatedAt:    sb.CreatedAt.Format(time.RFC3339),
+	}, nil
+}
+
+// stringPtrOrEmpty returns an empty string if the pointer is nil, or the dereferenced value.
+func stringPtrOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*mcp.ActionResult, error) {
