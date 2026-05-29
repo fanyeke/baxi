@@ -2,10 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
 	"baxi/internal/action"
@@ -21,6 +26,7 @@ import (
 	"baxi/internal/pipeline"
 	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
+	"baxi/internal/review"
 	"baxi/internal/service"
 )
 
@@ -83,8 +89,26 @@ func main() {
 	pipelineRunner := &pipeline.Runner{DB: pool.Pool, Steps: pipelineSteps, Log: zapLog}
 	pipelineSvc := &pipelineRunService{runner: pipelineRunner}
 
+	// Wire review service
+	reviewRepo := review.NewReviewRepository()
+	reviewSvc := review.NewReviewService(reviewRepo, pool.Pool)
+
+	// Wire outbox and pipeline info services
+	outboxSvc := &outboxServiceAdapter{pool: pool.Pool}
+	pipelineInfoSvc := &pipelineInfoAdapter{pool: pool.Pool}
+
+	// Minimal stubs for services not yet implemented
+	executeSvc := &executeServiceAdapter{}
+	statusSvc := &statusServiceAdapter{}
+	searchSvc := &searchServiceAdapter{}
+
 	// Create MCP server with stdio transport
-	mcpSrv, err := mcp.NewServer(decisionSvc, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc)
+	mcpSrv, err := mcp.NewServer(
+		decisionSvc, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc,
+		reviewSvc, outboxSvc, pipelineInfoSvc,
+		executeSvc, pool.Pool,
+		statusSvc, searchSvc,
+	)
 	if err != nil {
 		zapLog.Fatal("failed to create MCP server", zap.Error(err))
 	}
@@ -118,5 +142,147 @@ type pipelineRunService struct {
 }
 
 func (s *pipelineRunService) Run(ctx context.Context, config string) (string, error) {
-	return "run-id", nil
+	input := pipeline.RunInput{
+		RunType: "full",
+		Mode:    "mcp",
+		DataDir: "./data/raw",
+	}
+	if config != "" {
+		input.RunType = config
+	}
+	err := s.runner.Run(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	return "pipeline-run-" + input.RunType, nil
+}
+
+// outboxServiceAdapter queries ops.outbox_event for the MCP tools.
+type outboxServiceAdapter struct {
+	pool *pgxpool.Pool
+}
+
+func (a *outboxServiceAdapter) ListOutboxEvents(ctx context.Context, status string, limit, offset int) ([]model.OutboxEvent, int, error) {
+	var total int
+	err := a.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM ops.outbox_event
+		WHERE ($1 = '' OR status = $1)
+	`, status).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count outbox events: %w", err)
+	}
+
+	rows, err := a.pool.Query(ctx, `
+		SELECT event_id, source_type, event_type, status, created_at, dispatch_attempts
+		FROM ops.outbox_event
+		WHERE ($1 = '' OR status = $1)
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`, status, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query outbox events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []model.OutboxEvent
+	for rows.Next() {
+		var e model.OutboxEvent
+		if err := rows.Scan(&e.OutboxID, &e.SourceType, &e.EventType, &e.Status, &e.CreatedAt, &e.DispatchAttempts); err != nil {
+			return nil, 0, fmt.Errorf("scan outbox event: %w", err)
+		}
+		events = append(events, e)
+	}
+	return events, total, nil
+}
+
+// pipelineInfoAdapter queries audit.pipeline_run for the MCP tools.
+type pipelineInfoAdapter struct {
+	pool *pgxpool.Pool
+}
+
+func (a *pipelineInfoAdapter) GetLastRunStatus(ctx context.Context) (*model.PipelineRun, error) {
+	var r model.PipelineRun
+	var startedAt time.Time
+	var finishedAt *time.Time
+	var errMsg *string
+
+	err := a.pool.QueryRow(ctx, `
+		SELECT run_id, run_type, mode, status, started_at, finished_at, input_count, output_count, error_message
+		FROM audit.pipeline_run
+		ORDER BY started_at DESC
+		LIMIT 1
+	`).Scan(&r.RunID, &r.RunType, &r.Mode, &r.Status, &startedAt, &finishedAt, &r.InputCount, &r.OutputCount, &errMsg)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get last run: %w", err)
+	}
+
+	r.StartedAt = startedAt.Format(time.RFC3339)
+	if finishedAt != nil {
+		s := finishedAt.Format(time.RFC3339)
+		r.FinishedAt = &s
+	}
+	if errMsg != nil && *errMsg != "" {
+		r.ErrorMessage = errMsg
+	}
+	return &r, nil
+}
+
+func (a *pipelineInfoAdapter) ListRuns(ctx context.Context, limit int) ([]model.PipelineRun, error) {
+	rows, err := a.pool.Query(ctx, `
+		SELECT run_id, run_type, mode, status, started_at, finished_at, input_count, output_count, error_message
+		FROM audit.pipeline_run
+		ORDER BY started_at DESC
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list runs: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []model.PipelineRun
+	for rows.Next() {
+		var r model.PipelineRun
+		var startedAt time.Time
+		var finishedAt *time.Time
+		var errMsg *string
+
+		if err := rows.Scan(&r.RunID, &r.RunType, &r.Mode, &r.Status, &startedAt, &finishedAt, &r.InputCount, &r.OutputCount, &errMsg); err != nil {
+			return nil, fmt.Errorf("scan run: %w", err)
+		}
+
+		r.StartedAt = startedAt.Format(time.RFC3339)
+		if finishedAt != nil {
+			s := finishedAt.Format(time.RFC3339)
+			r.FinishedAt = &s
+		}
+		if errMsg != nil && *errMsg != "" {
+			r.ErrorMessage = errMsg
+		}
+		runs = append(runs, r)
+	}
+	return runs, nil
+}
+
+// executeServiceAdapter is a minimal stub for executing action proposals.
+type executeServiceAdapter struct{}
+
+func (a *executeServiceAdapter) ExecuteProposal(ctx context.Context, pool *pgxpool.Pool, proposalID string, actorID string, opts ...action.ExecuteOption) (*action.ExecutionResult, error) {
+	return &action.ExecutionResult{Success: true, DryRun: true}, nil
+}
+
+// statusServiceAdapter is a minimal stub for system status.
+type statusServiceAdapter struct{}
+
+func (a *statusServiceAdapter) GetStatus(ctx context.Context) (*model.SystemStatus, error) {
+	return &model.SystemStatus{}, nil
+}
+
+// searchServiceAdapter is a minimal stub for object search.
+type searchServiceAdapter struct{}
+
+func (a *searchServiceAdapter) SearchObjects(ctx context.Context, objectType, query string, limit, offset int) (*model.SearchResult, error) {
+	return &model.SearchResult{Items: []map[string]interface{}{}, Total: 0}, nil
 }

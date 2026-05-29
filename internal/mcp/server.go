@@ -1,19 +1,27 @@
 package mcp
 
 import (
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 // Server wraps the MCP server with service dependencies.
 type Server struct {
-	server         *server.MCPServer
-	decisionSvc    DecisionService
-	decisionEngine DecisionEngine
-	contextBuilder   ContextBuilder
-	proposalSvc    ProposalService
-	alertSvc       AlertService
-	govSvc         GovernanceService
-	pipelineRunner PipelineRunner
+	server          *server.MCPServer
+	decisionSvc     DecisionService
+	decisionEngine  DecisionEngine
+	contextBuilder  ContextBuilder
+	proposalSvc     ProposalService
+	alertSvc        AlertService
+	govSvc          GovernanceService
+	pipelineRunner  PipelineRunner
+	reviewSvc       ReviewService
+	outboxSvc       OutboxService
+	pipelineInfoSvc PipelineInfoService
+	statusSvc       SystemStatusService
+	searchSvc       ObjectSearchService
+	executeSvc      ExecuteService
+	pool            *pgxpool.Pool
 }
 
 // NewServer creates a new MCP server with the given service dependencies.
@@ -25,6 +33,13 @@ func NewServer(
 	alertSvc AlertService,
 	govSvc GovernanceService,
 	pipelineRunner PipelineRunner,
+	reviewSvc ReviewService,
+	outboxSvc OutboxService,
+	pipelineInfoSvc PipelineInfoService,
+	executeSvc ExecuteService,
+	pool *pgxpool.Pool,
+	statusSvc SystemStatusService,
+	searchSvc ObjectSearchService,
 ) (*Server, error) {
 	s := server.NewMCPServer(
 		"Baxi MCP Server",
@@ -34,20 +49,31 @@ func NewServer(
 	)
 
 	srv := &Server{
-		server:         s,
-		decisionSvc:    decisionSvc,
-		decisionEngine: decisionEngine,
-		contextBuilder: contextBuilder,
-		proposalSvc:    proposalSvc,
-		alertSvc:       alertSvc,
-		govSvc:         govSvc,
-		pipelineRunner: pipelineRunner,
+		server:          s,
+		decisionSvc:     decisionSvc,
+		decisionEngine:  decisionEngine,
+		contextBuilder:  contextBuilder,
+		proposalSvc:     proposalSvc,
+		alertSvc:        alertSvc,
+		govSvc:          govSvc,
+		pipelineRunner:  pipelineRunner,
+		reviewSvc:       reviewSvc,
+		outboxSvc:       outboxSvc,
+		pipelineInfoSvc: pipelineInfoSvc,
+		statusSvc:       statusSvc,
+		searchSvc:       searchSvc,
+		executeSvc:      executeSvc,
+		pool:            pool,
 	}
 
 	srv.registerDecisionTools()
 	srv.registerAlertTools()
 	srv.registerGovernanceTools()
 	srv.registerPipelineTools()
+	srv.registerOutboxTools()
+	srv.registerReviewTools()
+	srv.registerStatusTools()
+	srv.registerActionTools()
 
 	return srv, nil
 }

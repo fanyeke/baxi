@@ -27,3 +27,23 @@ type PipelineRun struct {
 	OutputCount  int64
 	ErrorMessage *string
 }
+
+// SystemStatus represents the overall system health and operational status.
+type SystemStatus struct {
+	PipelineRun  *PipelineRun
+	AlertCount   int
+	TableCounts  []TableCount
+	RecentErrors []string
+}
+
+// TableCount maps a table name to its row count.
+type TableCount struct {
+	TableName string
+	RowCount  int
+}
+
+// SearchResult holds the result of a paginated object search.
+type SearchResult struct {
+	Items []map[string]interface{}
+	Total int
+}

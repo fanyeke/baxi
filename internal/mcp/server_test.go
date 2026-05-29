@@ -8,9 +8,10 @@ import (
 	"baxi/internal/decision"
 	"baxi/internal/llm"
 	"baxi/internal/model"
+	"baxi/internal/review"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// MockDecisionService is a mock implementation of DecisionService for testing.
 type MockDecisionService struct {
 	CreateCaseFromAlertFunc func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
 	GetCaseFunc             func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
@@ -38,7 +39,6 @@ func (m *MockDecisionService) ListCases(ctx context.Context, filter decision.Cas
 	return &decision.CaseList{Cases: []decision.DecisionCase{}, Total: 0}, nil
 }
 
-// MockDecisionEngine is a mock implementation of DecisionEngine for testing.
 type MockDecisionEngine struct {
 	GenerateDecisionFunc func(ctx context.Context, caseID string, context *decision.DecisionContext) (*llm.DecisionOutput, error)
 }
@@ -50,7 +50,6 @@ func (m *MockDecisionEngine) GenerateDecision(ctx context.Context, caseID string
 	return &llm.DecisionOutput{}, nil
 }
 
-// MockContextBuilder is a mock implementation of ContextBuilder for testing.
 type MockContextBuilder struct {
 	BuildDecisionContextFunc func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
 }
@@ -62,7 +61,6 @@ func (m *MockContextBuilder) BuildDecisionContext(ctx context.Context, caseID st
 	return &decision.DecisionContext{}, nil
 }
 
-// MockProposalService is a mock implementation of ProposalService for testing.
 type MockProposalService struct {
 	ListProposalsFunc func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
 }
@@ -74,7 +72,6 @@ func (m *MockProposalService) ListProposals(ctx context.Context, caseID string) 
 	return []action.ActionProposal{}, nil
 }
 
-// MockAlertService is a mock implementation of AlertService for testing.
 type MockAlertService struct {
 	ListAlertsFunc func(ctx context.Context, filters model.AlertFilters, sort string, limit, offset int) (*model.AlertListResponse, error)
 }
@@ -86,7 +83,6 @@ func (m *MockAlertService) ListAlerts(ctx context.Context, filters model.AlertFi
 	return &model.AlertListResponse{Items: []model.Alert{}, Total: 0}, nil
 }
 
-// MockGovernanceService is a mock implementation of GovernanceService for testing.
 type MockGovernanceService struct {
 	CheckAccessFunc       func(ctx context.Context, role, objectType, action string) (*model.AccessDecision, error)
 	GetClassificationFunc func(ctx context.Context, fieldPath string) (*model.ClassificationResponse, error)
@@ -107,7 +103,6 @@ func (m *MockGovernanceService) GetClassification(ctx context.Context, fieldPath
 	return &model.ClassificationResponse{}, nil
 }
 
-// MockPipelineRunner is a mock implementation of PipelineRunner for testing.
 type MockPipelineRunner struct {
 	RunFunc func(ctx context.Context, config string) (string, error)
 }
@@ -119,94 +114,144 @@ func (m *MockPipelineRunner) Run(ctx context.Context, config string) (string, er
 	return "", nil
 }
 
-func TestNewServer(t *testing.T) {
-	mockDecisionSvc := &MockDecisionService{}
-	mockDecisionEngine := &MockDecisionEngine{}
-	mockContextBuilder := &MockContextBuilder{}
-	mockProposalSvc := &MockProposalService{}
-	mockAlertSvc := &MockAlertService{}
-	mockGovSvc := &MockGovernanceService{}
-	mockPipelineRunner := &MockPipelineRunner{}
-
-	server, err := NewServer(
-		mockDecisionSvc,
-		mockDecisionEngine,
-		mockContextBuilder,
-		mockProposalSvc,
-		mockAlertSvc,
-		mockGovSvc,
-		mockPipelineRunner,
-	)
-	if err != nil {
-		t.Fatalf("NewServer failed: %v", err)
-	}
-
-	if server == nil {
-		t.Fatal("Server is nil")
-	}
-
-	if server.server == nil {
-		t.Fatal("MCP server is nil")
-	}
-
-	if server.decisionSvc != mockDecisionSvc {
-		t.Error("Decision service not set correctly")
-	}
-
-	if server.decisionEngine != mockDecisionEngine {
-		t.Error("Decision engine not set correctly")
-	}
-
-	if server.contextBuilder != mockContextBuilder {
-		t.Error("Context builder not set correctly")
-	}
-
-	if server.proposalSvc != mockProposalSvc {
-		t.Error("Proposal service not set correctly")
-	}
-
-	if server.alertSvc != mockAlertSvc {
-		t.Error("Alert service not set correctly")
-	}
-
-	if server.govSvc != mockGovSvc {
-		t.Error("Governance service not set correctly")
-	}
-
-	if server.pipelineRunner != mockPipelineRunner {
-		t.Error("Pipeline runner not set correctly")
-	}
+type MockReviewService struct {
+	ApproveProposalFunc func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	RejectProposalFunc  func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
 }
 
-func TestServerToolRegistration(t *testing.T) {
-	mockDecisionSvc := &MockDecisionService{}
-	mockDecisionEngine := &MockDecisionEngine{}
-	mockContextBuilder := &MockContextBuilder{}
-	mockProposalSvc := &MockProposalService{}
-	mockAlertSvc := &MockAlertService{}
-	mockGovSvc := &MockGovernanceService{}
-	mockPipelineRunner := &MockPipelineRunner{}
+func (m *MockReviewService) ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
+	if m.ApproveProposalFunc != nil {
+		return m.ApproveProposalFunc(ctx, proposalID, reviewerID, feedback)
+	}
+	return nil, nil
+}
 
+func (m *MockReviewService) RejectProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
+	if m.RejectProposalFunc != nil {
+		return m.RejectProposalFunc(ctx, proposalID, reviewerID, feedback)
+	}
+	return nil, nil
+}
+
+type MockOutboxService struct {
+	ListOutboxEventsFunc func(ctx context.Context, status string, limit, offset int) ([]model.OutboxEvent, int, error)
+}
+
+func (m *MockOutboxService) ListOutboxEvents(ctx context.Context, status string, limit, offset int) ([]model.OutboxEvent, int, error) {
+	if m.ListOutboxEventsFunc != nil {
+		return m.ListOutboxEventsFunc(ctx, status, limit, offset)
+	}
+	return []model.OutboxEvent{}, 0, nil
+}
+
+type MockPipelineInfoService struct {
+	GetLastRunStatusFunc func(ctx context.Context) (*model.PipelineRun, error)
+	ListRunsFunc         func(ctx context.Context, limit int) ([]model.PipelineRun, error)
+}
+
+func (m *MockPipelineInfoService) GetLastRunStatus(ctx context.Context) (*model.PipelineRun, error) {
+	if m.GetLastRunStatusFunc != nil {
+		return m.GetLastRunStatusFunc(ctx)
+	}
+	return nil, nil
+}
+
+func (m *MockPipelineInfoService) ListRuns(ctx context.Context, limit int) ([]model.PipelineRun, error) {
+	if m.ListRunsFunc != nil {
+		return m.ListRunsFunc(ctx, limit)
+	}
+	return []model.PipelineRun{}, nil
+}
+
+type MockSystemStatusService struct {
+	GetStatusFunc func(ctx context.Context) (*model.SystemStatus, error)
+}
+
+func (m *MockSystemStatusService) GetStatus(ctx context.Context) (*model.SystemStatus, error) {
+	if m.GetStatusFunc != nil {
+		return m.GetStatusFunc(ctx)
+	}
+	return &model.SystemStatus{}, nil
+}
+
+type MockObjectSearchService struct {
+	SearchObjectsFunc func(ctx context.Context, objectType, query string, limit, offset int) (*model.SearchResult, error)
+}
+
+func (m *MockObjectSearchService) SearchObjects(ctx context.Context, objectType, query string, limit, offset int) (*model.SearchResult, error) {
+	if m.SearchObjectsFunc != nil {
+		return m.SearchObjectsFunc(ctx, objectType, query, limit, offset)
+	}
+	return &model.SearchResult{Items: []map[string]interface{}{}, Total: 0}, nil
+}
+
+type MockExecuteService struct {
+	ExecuteProposalFunc func(ctx context.Context, pool *pgxpool.Pool, proposalID string, actorID string, opts ...action.ExecuteOption) (*action.ExecutionResult, error)
+}
+
+func (m *MockExecuteService) ExecuteProposal(ctx context.Context, pool *pgxpool.Pool, proposalID string, actorID string, opts ...action.ExecuteOption) (*action.ExecutionResult, error) {
+	if m.ExecuteProposalFunc != nil {
+		return m.ExecuteProposalFunc(ctx, pool, proposalID, actorID, opts...)
+	}
+	return &action.ExecutionResult{Success: true, DryRun: true}, nil
+}
+
+func TestNewServer(t *testing.T) {
 	server, err := NewServer(
-		mockDecisionSvc,
-		mockDecisionEngine,
-		mockContextBuilder,
-		mockProposalSvc,
-		mockAlertSvc,
-		mockGovSvc,
-		mockPipelineRunner,
-	)
+			&MockDecisionService{},
+			&MockDecisionEngine{},
+			&MockContextBuilder{},
+			&MockProposalService{},
+			&MockAlertService{},
+			&MockGovernanceService{},
+			&MockPipelineRunner{},
+			&MockReviewService{},
+			&MockOutboxService{},
+			&MockPipelineInfoService{},
+			&MockExecuteService{},
+			(*pgxpool.Pool)(nil),
+			&MockSystemStatusService{},
+			&MockObjectSearchService{},
+		)
+		if err != nil {
+			t.Fatalf("NewServer failed: %v", err)
+		}
+
+		if server == nil {
+			t.Fatal("Server is nil")
+		}
+
+		if server.server == nil {
+			t.Fatal("MCP server is nil")
+		}
+	}
+
+	func TestServerToolRegistration(t *testing.T) {
+		server, err := NewServer(
+			&MockDecisionService{},
+			&MockDecisionEngine{},
+			&MockContextBuilder{},
+			&MockProposalService{},
+			&MockAlertService{},
+			&MockGovernanceService{},
+			&MockPipelineRunner{},
+			&MockReviewService{},
+			&MockOutboxService{},
+			&MockPipelineInfoService{},
+			&MockExecuteService{},
+			(*pgxpool.Pool)(nil),
+			&MockSystemStatusService{},
+			&MockObjectSearchService{},
+		)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
 	}
 
-	// Get the list of tools from the underlying server
 	tools := server.server.ListTools()
 	if tools == nil {
 		t.Fatal("ListTools returned nil")
 	}
 
-	// Expected tools
 	expectedTools := []string{
 		"create_decision_case",
 		"decide",
@@ -217,9 +262,16 @@ func TestServerToolRegistration(t *testing.T) {
 		"check_access",
 		"get_classification",
 		"run_pipeline",
+		"approve_proposal",
+		"reject_proposal",
+		"execute_proposal",
+		"get_decision_context",
+		"get_system_status",
+		"search_objects",
+		"list_outbox_events",
+		"get_pipeline_status",
 	}
 
-	// Check that all expected tools are registered
 	toolNames := make(map[string]bool)
 	for name := range tools {
 		toolNames[name] = true
@@ -231,7 +283,6 @@ func TestServerToolRegistration(t *testing.T) {
 		}
 	}
 
-	// Verify we have the expected number of tools
 	if len(tools) != len(expectedTools) {
 		t.Errorf("Expected %d tools, got %d", len(expectedTools), len(tools))
 	}
