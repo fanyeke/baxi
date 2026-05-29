@@ -217,3 +217,20 @@ func TestNewActionRegistry_FailsOnMissingFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, reg)
 }
+
+func TestNewActionRegistry_EmptyConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTestRegistryYAML(t, dir, "actions: {}\n")
+
+	reg, err := NewActionRegistry(path)
+	require.NoError(t, err)
+	require.NotNil(t, reg)
+
+	assert.Empty(t, reg.AllowedActions())
+
+	for _, action := range CanonicalActions {
+		t.Run(action, func(t *testing.T) {
+			assert.False(t, reg.IsAllowed(action), "expected %s to be denied with empty config", action)
+		})
+	}
+}

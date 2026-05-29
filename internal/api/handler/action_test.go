@@ -96,10 +96,10 @@ func TestActionHandler_HandleExecute_403_NotApproved(t *testing.T) {
 
 	require.Equal(t, http.StatusForbidden, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "not approved")
+	assert.Contains(t, resp["message"].(string), "not approved")
 }
 
 func TestActionHandler_HandleExecute_403_ActionNotAllowed(t *testing.T) {
@@ -117,10 +117,10 @@ func TestActionHandler_HandleExecute_403_ActionNotAllowed(t *testing.T) {
 
 	require.Equal(t, http.StatusForbidden, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "not allowed")
+	assert.Contains(t, resp["message"].(string), "not allowed")
 }
 
 func TestActionHandler_HandleExecute_404_ProposalNotFound(t *testing.T) {
@@ -138,10 +138,10 @@ func TestActionHandler_HandleExecute_404_ProposalNotFound(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "proposal not found")
+	assert.Contains(t, resp["message"].(string), "proposal not found")
 }
 
 func TestActionHandler_HandleStatus_200(t *testing.T) {
@@ -181,10 +181,10 @@ func TestActionHandler_HandleExecute_400_MissingProposalID(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "proposal ID is required")
+	assert.Contains(t, resp["message"].(string), "proposal ID is required")
 }
 
 func TestActionHandler_HandleStatus_404(t *testing.T) {
@@ -202,10 +202,10 @@ func TestActionHandler_HandleStatus_404(t *testing.T) {
 
 	require.Equal(t, http.StatusNotFound, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "proposal not found")
+	assert.Contains(t, resp["message"].(string), "proposal not found")
 }
 
 func TestActionHandler_HandleExecute_200_DryRunDefault(t *testing.T) {
@@ -242,7 +242,7 @@ func TestActionHandler_HandleExecute_200_RealExecution(t *testing.T) {
 				opt(options)
 			}
 			assert.False(t, options.DryRun, "dry run should be false when explicitly set")
-			return &action.ExecutionResult{Success: true, DryRun: false}, nil
+			return &action.ExecutionResult{Success: true, DryRun: false, OutboxEventID: "evt-abc-123"}, nil
 		},
 	}
 	h := NewActionHandler(svc, nil)
@@ -260,6 +260,7 @@ func TestActionHandler_HandleExecute_200_RealExecution(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "applied", resp.ApplyStatus)
 	assert.False(t, resp.DryRun)
+	assert.Equal(t, "evt-abc-123", resp.OutboxEventID)
 }
 
 func TestActionHandler_HandleExecute_200_FailedExecution(t *testing.T) {
@@ -295,10 +296,10 @@ func TestActionHandler_HandleStatus_400_MissingProposalID(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "proposal ID is required")
+	assert.Contains(t, resp["message"].(string), "proposal ID is required")
 }
 
 func TestActionHandler_HandleStatus_500_InternalError(t *testing.T) {
@@ -316,10 +317,10 @@ func TestActionHandler_HandleStatus_500_InternalError(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "internal server error")
+	assert.Contains(t, resp["message"].(string), "internal server error")
 }
 
 func TestActionHandler_HandleExecute_500_InternalError(t *testing.T) {
@@ -337,8 +338,63 @@ func TestActionHandler_HandleExecute_500_InternalError(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var resp map[string]string
+	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["error"], "internal server error")
+	assert.Contains(t, resp["message"].(string), "internal server error")
+}
+
+func TestActionHandler_HandleExecute_200_OutboxEventIDPropagation(t *testing.T) {
+	svc := &mockActionService{
+		executeFn: func(ctx context.Context, pool *pgxpool.Pool, proposalID, actorID string, opts ...action.ExecuteOption) (*action.ExecutionResult, error) {
+			return &action.ExecutionResult{
+				Success:       true,
+				DryRun:        false,
+				OutboxEventID: "evt-xyz-789",
+			}, nil
+		},
+	}
+	h := NewActionHandler(svc, nil)
+
+	body := `{"dry_run": false}`
+	r := newTestRequest(http.MethodPost, "/api/v1/proposals/prop-42/execute", body)
+	setURLParam(r, "id", "prop-42")
+	r = withActor(r, "test-actor")
+	w := httptest.NewRecorder()
+	h.HandleExecute(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp executeResponse
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err)
+	assert.Equal(t, "prop-42", resp.ProposalID)
+	assert.Equal(t, "applied", resp.ApplyStatus)
+	assert.Equal(t, "evt-xyz-789", resp.OutboxEventID)
+}
+
+func TestActionHandler_HandleExecute_200_EmptyOutboxEventID(t *testing.T) {
+	svc := &mockActionService{
+		executeFn: func(ctx context.Context, pool *pgxpool.Pool, proposalID, actorID string, opts ...action.ExecuteOption) (*action.ExecutionResult, error) {
+			return &action.ExecutionResult{
+				Success: true,
+				DryRun:  true,
+			}, nil
+		},
+	}
+	h := NewActionHandler(svc, nil)
+
+	body := `{"dry_run": true}`
+	r := newTestRequest(http.MethodPost, "/api/v1/proposals/prop-1/execute", body)
+	setURLParam(r, "id", "prop-1")
+	w := httptest.NewRecorder()
+	h.HandleExecute(w, r)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp executeResponse
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err)
+	assert.Equal(t, "approved", resp.ApplyStatus)
+	assert.Empty(t, resp.OutboxEventID, "dry-run should not produce an outbox event ID")
 }

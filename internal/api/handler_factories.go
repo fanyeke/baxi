@@ -15,6 +15,7 @@ import (
 	"baxi/internal/api/handler"
 	"baxi/internal/decision"
 	"baxi/internal/eval"
+	"baxi/internal/feature"
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/model"
@@ -32,72 +33,115 @@ import (
 
 // outboxHandler lazily initializes the outbox handler.
 func (s *Server) outboxHandler() *handler.OutboxHandler {
-	repo := repository.NewOutboxRepository()
-	writeRepo := outbox.NewOutboxRepository()
-	svc := service.NewOutboxService(repo, s.pool)
-	adapter := &outboxServiceAdapter{
-		readSvc:   svc,
-		readRepo:  repo,
-		writeRepo: writeRepo,
-		pool:      s.pool,
-		executors: s.actionExecutors(),
+	if s.outboxHandlerVal == nil {
+		repo := repository.NewOutboxRepository()
+		writeRepo := outbox.NewOutboxRepository()
+		svc := service.NewOutboxService(repo, s.pool)
+		adapter := &outboxServiceAdapter{
+			readSvc:   svc,
+			readRepo:  repo,
+			writeRepo: writeRepo,
+			pool:      s.pool,
+			executors: s.actionExecutors(),
+		}
+		s.outboxHandlerVal = handler.NewOutboxHandler(adapter)
 	}
-	return handler.NewOutboxHandler(adapter)
+	return s.outboxHandlerVal
 }
 
-// actionExecutors lazily initializes the action executors.
+// actionExecutors lazily initializes the action executors for outbox dispatch.
 func (s *Server) actionExecutors() map[string]action.ActionExecutor {
-	executors := make(map[string]action.ActionExecutor)
-	executors["noop"] = action.NewNoOpExecutor()
+	feishuWebhookURL := ""
+	githubToken := ""
+	if s.cfg != nil {
+		feishuWebhookURL = s.cfg.FeishuWebhookURL
+		githubToken = s.cfg.GitHubToken
+	}
+	executors := map[string]action.ActionExecutor{
+		"feishu": adapter.NewFeishuAdapter(adapter.FeishuConfig{
+			WebhookURL: feishuWebhookURL,
+			Enabled:    feishuWebhookURL != "",
+		}),
+		"github": adapter.NewGitHubAdapter(adapter.GitHubConfig{
+			Token:   githubToken,
+			Enabled: githubToken != "",
+		}),
+		"cli": adapter.NewCLIAdapter(adapter.CLIConfig{
+			LogPath: "logs/cli_audit.csv",
+			Enabled: true,
+		}),
+		"manual": adapter.NewManualAdapter(adapter.ManualConfig{
+			Enabled: true,
+		}),
+		"noop": action.NewNoOpExecutor(),
+	}
 	return executors
 }
 
 // governanceHandler lazily initializes the governance handler.
 func (s *Server) governanceHandler() *handler.GovernanceHandler {
-	repo := repository.NewGovernanceRepository()
-	svc := service.NewGovernanceService(repo, s.pool)
-	return handler.NewGovernanceHandler(svc, svc)
+	if s.governanceHandlerVal == nil {
+		repo := repository.NewGovernanceRepository()
+		svc := service.NewGovernanceService(repo, s.pool)
+		s.governanceHandlerVal = handler.NewGovernanceHandler(svc, svc)
+	}
+	return s.governanceHandlerVal
 }
 
 // qoderHandler lazily initializes the Qoder handler.
 func (s *Server) qoderHandler() *handler.QoderHandler {
-	ctxRepo := repository.NewContextRepository()
-	svc := service.NewQoderService(ctxRepo, s.pool)
-	return handler.NewQoderHandler(svc)
+	if s.qoderHandlerVal == nil {
+		ctxRepo := repository.NewContextRepository()
+		svc := service.NewQoderService(ctxRepo, s.pool)
+		s.qoderHandlerVal = handler.NewQoderHandler(svc)
+	}
+	return s.qoderHandlerVal
 }
 
 // statusHandler lazily initializes the status handler.
 func (s *Server) statusHandler() *handler.StatusHandler {
-	repo := repository.NewStatusRepository()
-	dbURL := ""
-	if s.pool != nil {
-		dbURL = s.pool.Config().ConnString()
+	if s.statusHandlerVal == nil {
+		repo := repository.NewStatusRepository()
+		dbURL := ""
+		if s.pool != nil {
+			dbURL = s.pool.Config().ConnString()
+		}
+		svc := service.NewStatusService(repo, s.pool, dbURL)
+		s.statusHandlerVal = handler.NewStatusHandler(svc)
 	}
-	svc := service.NewStatusService(repo, s.pool, dbURL)
-	return handler.NewStatusHandler(svc)
+	return s.statusHandlerVal
 }
 
 // logHandler lazily initializes the logs handler.
 func (s *Server) logHandler() *handler.LogHandler {
-	repo := repository.NewLogRepository()
-	svc := service.NewLogService(repo, s.pool)
-	return handler.NewLogHandler(svc)
+	if s.logHandlerVal == nil {
+		repo := repository.NewLogRepository()
+		svc := service.NewLogService(repo, s.pool)
+		s.logHandlerVal = handler.NewLogHandler(svc)
+	}
+	return s.logHandlerVal
 }
 
 // agentLogHandler lazily initializes the agent execution logs handler.
 func (s *Server) agentLogHandler() *handler.AgentLogHandler {
-	provider := common.NewPoolProvider(s.pool)
-	agentExecRepo := agent_execution.NewRepository(provider)
-	mcpCallRepo := mcp_call.NewRepository(provider)
-	svc := service.NewAgentLogService(agentExecRepo, mcpCallRepo)
-	return handler.NewAgentLogHandler(svc)
+	if s.agentLogHandlerVal == nil {
+		provider := common.NewPoolProvider(s.pool)
+		agentExecRepo := agent_execution.NewRepository(provider)
+		mcpCallRepo := mcp_call.NewRepository(provider)
+		svc := service.NewAgentLogService(agentExecRepo, mcpCallRepo)
+		s.agentLogHandlerVal = handler.NewAgentLogHandler(svc)
+	}
+	return s.agentLogHandlerVal
 }
 
 // alertHandler lazily initializes the alerts handler.
 func (s *Server) alertHandler() *handler.AlertHandler {
-	repo := repository.NewAlertRepository()
-	svc := service.NewAlertService(repo, s.pool)
-	return handler.NewAlertHandler(svc)
+	if s.alertHandlerVal == nil {
+		repo := repository.NewAlertRepository()
+		svc := service.NewAlertService(repo, s.pool)
+		s.alertHandlerVal = handler.NewAlertHandler(svc)
+	}
+	return s.alertHandlerVal
 }
 
 // llmHandler lazily initializes the LLM handler.
@@ -154,7 +198,28 @@ func (s *Server) decisionHandler() *handler.DecisionHandler {
 			log.Printf("WARNING: failed to load action registry: %v, using empty fallback", err)
 			reg = action.NewEmptyRegistry()
 		}
-		ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool, action.NewActionTypeProviderAdapter(reg))
+		var ctxBuilder service.ContextBuilder = decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool, action.NewActionTypeProviderAdapter(reg))
+
+		// Wire up V2 ContextBuilder when feature flag is enabled.
+		flags := feature.LoadFlags()
+		if flags.IsEnabled(feature.FlagNewContextBuilder) {
+			objRegistry, regErr := ontology.NewObjectRegistry(context.Background(), nil, s.pool, "config/aip_object_schema.yml")
+			if regErr != nil {
+				log.Printf("WARNING: failed to create ObjectRegistry for V2 context builder: %v, falling back to V1", regErr)
+			} else {
+				ontologyAwareRepo := ontology.NewOntologyAwareAdapter(ontologyRepo, objRegistry)
+				markingSvc := governance.NewMarkingAdapter(classSvc, objRegistry)
+				lineageSvc := governance.NewLineageService(s.pool, govRepo)
+				eventRepo := decision.NewPgxLineageEventRepository()
+				lineageAdapter := decision.NewDecisionLineageAdapter(lineageSvc, decisionRepo, eventRepo, s.pool)
+				v2Builder := decision.NewContextBuilderV2(decisionRepo, ontologyAwareRepo, markingSvc, lineageAdapter, s.pool, action.NewActionTypeProviderAdapter(reg))
+				ctxBuilder = decision.NewSwitchableContextBuilder(
+					decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool, action.NewActionTypeProviderAdapter(reg)),
+					v2Builder,
+					flags,
+				)
+			}
+		}
 
 		var decisionProvider llm.DecisionProvider
 		decisionProvider = llm.NewRuleBasedProvider()
@@ -188,36 +253,42 @@ func (s *Server) decisionHandler() *handler.DecisionHandler {
 
 // reviewHandler lazily initializes the review handler.
 func (s *Server) reviewHandler() *handler.ReviewHandler {
-	repo := review.NewReviewRepository()
-	svc := review.NewReviewService(repo, s.pool)
-	adapter := &reviewHandlerSvc{
-		svc:  svc,
-		repo: repo,
-		pool: s.pool,
+	if s.reviewHandlerVal == nil {
+		repo := review.NewReviewRepository()
+		svc := review.NewReviewService(repo, s.pool)
+		adapter := &reviewHandlerSvc{
+			svc:  svc,
+			repo: repo,
+			pool: s.pool,
+		}
+		s.reviewHandlerVal = handler.NewReviewHandler(adapter)
 	}
-	return handler.NewReviewHandler(adapter)
+	return s.reviewHandlerVal
 }
 
 // pipelineHandler lazily initializes the pipeline handler.
 func (s *Server) pipelineHandler() *handler.PipelineHandler {
-	pipelineSteps := []pipeline.Step{
-		steps.NewIngestRawStep(),
-		steps.NewBuildDWDSOrderLevelStep(),
-		steps.NewBuildDWDItemLevelStep(),
-		steps.NewBuildMetricDailyStep(),
-		steps.NewBuildMetricDimensionDailyStep(),
-		steps.NewDetectAlertsStep(),
-		steps.NewGenerateRecommendationsStep(),
-		steps.NewGenerateTasksStep(),
-		steps.NewCreateOutboxStep(),
+	if s.pipelineHandlerVal == nil {
+		pipelineSteps := []pipeline.Step{
+			steps.NewIngestRawStep(),
+			steps.NewBuildDWDSOrderLevelStep(),
+			steps.NewBuildDWDItemLevelStep(),
+			steps.NewBuildMetricDailyStep(),
+			steps.NewBuildMetricDimensionDailyStep(),
+			steps.NewDetectAlertsStep(),
+			steps.NewGenerateRecommendationsStep(),
+			steps.NewGenerateTasksStep(),
+			steps.NewCreateOutboxStep(),
+		}
+		runner := &pipeline.Runner{
+			DB:    s.pool,
+			Steps: pipelineSteps,
+			Log:   s.logger,
+		}
+		svc := &pipelineRunService{ctx: s.ctx, runner: runner, log: s.logger}
+		s.pipelineHandlerVal = handler.NewPipelineHandler(svc)
 	}
-	runner := &pipeline.Runner{
-		DB:    s.pool,
-		Steps: pipelineSteps,
-		Log:   s.logger,
-	}
-	svc := &pipelineRunService{ctx: s.ctx, runner: runner, log: s.logger}
-	return handler.NewPipelineHandler(svc)
+	return s.pipelineHandlerVal
 }
 
 // actionHandler lazily initializes the action handler.

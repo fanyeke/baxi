@@ -71,35 +71,35 @@ type tableMapping struct {
 var objectTableMap = map[string]tableMapping{
 	"customer": {
 		Schema: "dwd", Table: "order_level", PrimaryKey: "customer_unique_id",
-		Columns: []string{"customer_unique_id", "customer_state", "customer_city", "order_id", "total_payment_value", "review_score", "order_purchase_timestamp"},
+		Columns: []string{"customer_unique_id", "customer_state", "order_id", "payment_value", "review_score", "order_purchase_timestamp"},
 	},
 	"order": {
 		Schema: "dwd", Table: "order_level", PrimaryKey: "order_id",
-		Columns: []string{"order_id", "order_status", "order_purchase_timestamp", "total_payment_value", "payment_type", "review_score", "delivery_status"},
+		Columns: []string{"order_id", "order_status", "order_purchase_timestamp", "payment_value", "payment_type", "review_score", "CASE WHEN is_late THEN 'late' WHEN is_cancelled THEN 'cancelled' ELSE 'on_time' END as delivery_status"},
 	},
 	"seller": {
 		Schema: "dwd", Table: "item_level", PrimaryKey: "seller_id",
-		Columns: []string{"seller_id", "seller_state", "seller_city", "price", "order_id", "review_score"},
+		Columns: []string{"seller_id", "seller_state", "price", "order_id", "(SELECT ol.review_score FROM dwd.order_level ol WHERE ol.order_id = dwd.item_level.order_id) as review_score"},
 	},
 	"product": {
 		Schema: "dwd", Table: "item_level", PrimaryKey: "product_id",
-		Columns: []string{"product_id", "product_category_name", "product_category_name_english", "price", "freight_value", "product_weight_g", "review_score"},
+		Columns: []string{"product_id", "product_category_name", "product_category_name_english", "price", "freight_value", "(SELECT p.product_weight_g FROM raw.olist_products p WHERE p.product_id = dwd.item_level.product_id) as product_weight_g", "(SELECT ol.review_score FROM dwd.order_level ol WHERE ol.order_id = dwd.item_level.order_id) as review_score"},
 	},
 	"category": {
 		Schema: "dwd", Table: "item_level", PrimaryKey: "product_category_name",
-		Columns: []string{"product_category_name", "product_category_name_english", "price", "order_id", "review_score"},
+		Columns: []string{"product_category_name", "product_category_name_english", "price", "order_id", "(SELECT ol.review_score FROM dwd.order_level ol WHERE ol.order_id = dwd.item_level.order_id) as review_score"},
 	},
 	"region": {
 		Schema: "dwd", Table: "order_level", PrimaryKey: "customer_state",
-		Columns: []string{"customer_state", "customer_unique_id", "seller_state", "total_payment_value", "review_score", "order_purchase_timestamp"},
+		Columns: []string{"customer_state", "customer_unique_id", "payment_value", "review_score", "order_purchase_timestamp"},
 	},
 	"marketing_lead": {
 		Schema: "raw", Table: "marketing_qualified_leads", PrimaryKey: "mql_id",
-		Columns: []string{"mql_id", "first_contact_date", "landing_page", "origin"},
+		Columns: []string{"mql_id", "first_contact_date", "landing_page_id", "origin"},
 	},
 	"metric_alert": {
 		Schema: "ops", Table: "metric_alert", PrimaryKey: "alert_id",
-		Columns: []string{"alert_id", "rule_id", "metric", "severity", "current_value", "baseline_value", "status"},
+		Columns: []string{"alert_id", "rule_id", "metric_name", "severity", "current_value", "baseline_value", "status"},
 	},
 }
 
@@ -148,13 +148,13 @@ var metricColumns = map[string][]struct {
 	"seller": {
 		{Name: "total_sales", Expression: "COALESCE(SUM(price), 0)"},
 		{Name: "total_items", Expression: "COUNT(*)"},
-		{Name: "avg_review_score", Expression: "COALESCE(AVG(review_score), 0)"},
+		{Name: "avg_review_score", Expression: "COALESCE(AVG((SELECT ol.review_score FROM dwd.order_level ol WHERE ol.order_id = dwd.item_level.order_id)), 0)"},
 	},
 	"product": {
 		{Name: "total_sold", Expression: "COUNT(*)"},
 		{Name: "avg_price", Expression: "COALESCE(AVG(price), 0)"},
 		{Name: "avg_freight", Expression: "COALESCE(AVG(freight_value), 0)"},
-		{Name: "avg_review_score", Expression: "COALESCE(AVG(review_score), 0)"},
+		{Name: "avg_review_score", Expression: "COALESCE(AVG((SELECT ol.review_score FROM dwd.order_level ol WHERE ol.order_id = dwd.item_level.order_id)), 0)"},
 	},
 	"category": {
 		{Name: "total_products", Expression: "COUNT(DISTINCT product_id)"},
@@ -170,14 +170,14 @@ var metricColumns = map[string][]struct {
 
 // searchableColumns defines columns searched via ILIKE per object type.
 var searchableColumns = map[string][]string{
-	"customer":       {"customer_unique_id", "customer_state", "customer_city"},
+	"customer":       {"customer_unique_id", "customer_state"},
 	"order":          {"order_id", "order_status", "payment_type"},
-	"seller":         {"seller_id", "seller_state", "seller_city"},
+	"seller":         {"seller_id", "seller_state"},
 	"product":        {"product_id", "product_category_name", "product_category_name_english"},
 	"category":       {"product_category_name", "product_category_name_english"},
-	"region":         {"customer_state", "seller_state"},
-	"marketing_lead": {"mql_id", "landing_page", "origin"},
-	"metric_alert":   {"alert_id", "rule_id", "metric", "severity", "status"},
+	"region":         {"customer_state"},
+	"marketing_lead": {"mql_id", "landing_page_id", "origin"},
+	"metric_alert":   {"alert_id", "rule_id", "metric_name", "severity", "status"},
 }
 
 // ──── RBAC helpers ───────────────────────────────────────────────────────────
@@ -504,10 +504,7 @@ func (r *Repository) SearchObjects(ctx context.Context, objectType string, filte
 // ──── Utility functions ──────────────────────────────────────────────────────
 
 func sanitizeIdent(ident string) string {
-	if strings.HasPrefix(ident, `"`) && strings.HasSuffix(ident, `"`) {
-		return ident
-	}
-	return `"` + ident + `"`
+	return pgx.Identifier{ident}.Sanitize()
 }
 
 func formatID(pk string, props map[string]interface{}) string {

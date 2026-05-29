@@ -56,7 +56,7 @@ type statusResponse struct {
 func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 	proposalID := chi.URLParam(r, "id")
 	if proposalID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "proposal ID is required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal ID is required")
 		return
 	}
 
@@ -75,20 +75,21 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 	result, err := h.svc.ExecuteProposal(r.Context(), h.pool, proposalID, actorID, action.WithDryRun(dryRun))
 	if err != nil {
 		if errors.Is(err, action.ErrProposalNotFound) {
-			httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "proposal not found"})
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "proposal not found")
 			return
 		}
 		if errors.Is(err, action.ErrNotApproved) || errors.Is(err, action.ErrActionNotAllowed) {
-			httputil.JSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
+			writeError(w, r, http.StatusForbidden, middleware.FORBIDDEN, err.Error())
 			return
 		}
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 
 	resp := executeResponse{
-		ProposalID: proposalID,
-		DryRun:     result.DryRun,
+		ProposalID:    proposalID,
+		DryRun:        result.DryRun,
+		OutboxEventID: result.OutboxEventID,
 	}
 	if !result.Success {
 		resp.ApplyStatus = "failed"
@@ -105,17 +106,17 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 func (h *ActionHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	proposalID := chi.URLParam(r, "id")
 	if proposalID == "" {
-		httputil.JSON(w, http.StatusBadRequest, map[string]string{"error": "proposal ID is required"})
+		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal ID is required")
 		return
 	}
 
 	proposal, err := h.svc.GetProposalByID(r.Context(), h.pool, proposalID)
 	if err != nil {
-		httputil.JSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}
 	if proposal == nil {
-		httputil.JSON(w, http.StatusNotFound, map[string]string{"error": "proposal not found"})
+		writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "proposal not found")
 		return
 	}
 
