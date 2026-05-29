@@ -21,6 +21,7 @@ type Server struct {
 	statusSvc       SystemStatusService
 	searchSvc       ObjectSearchService
 	executeSvc      ExecuteService
+	ontologySvc     OntologyService
 	pool            *pgxpool.Pool
 }
 
@@ -40,6 +41,7 @@ func NewServer(
 	pool *pgxpool.Pool,
 	statusSvc SystemStatusService,
 	searchSvc ObjectSearchService,
+	ontologySvc OntologyService,
 ) (*Server, error) {
 	s := server.NewMCPServer(
 		"Baxi MCP Server",
@@ -63,6 +65,7 @@ func NewServer(
 		statusSvc:       statusSvc,
 		searchSvc:       searchSvc,
 		executeSvc:      executeSvc,
+		ontologySvc:     ontologySvc,
 		pool:            pool,
 	}
 
@@ -74,6 +77,7 @@ func NewServer(
 	srv.registerReviewTools()
 	srv.registerStatusTools()
 	srv.registerActionTools()
+	srv.registerOntologyTools()
 
 	return srv, nil
 }

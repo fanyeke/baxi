@@ -196,6 +196,41 @@ func (m *MockExecuteService) ExecuteProposal(ctx context.Context, pool *pgxpool.
 	return &action.ExecutionResult{Success: true, DryRun: true}, nil
 }
 
+type MockOntologyService struct {
+	DescribeOntologyFunc    func(ctx context.Context) (*OntologyDescriptor, error)
+	GetObjectFunc           func(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
+	GetLinkedObjectsFunc    func(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
+	ExecuteActionFunc       func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+}
+
+func (m *MockOntologyService) DescribeOntology(ctx context.Context) (*OntologyDescriptor, error) {
+	if m.DescribeOntologyFunc != nil {
+		return m.DescribeOntologyFunc(ctx)
+	}
+	return &OntologyDescriptor{ObjectTypes: []ObjectTypeDescriptor{}}, nil
+}
+
+func (m *MockOntologyService) GetObject(ctx context.Context, objectType, objectID string) (*ObjectContext, error) {
+	if m.GetObjectFunc != nil {
+		return m.GetObjectFunc(ctx, objectType, objectID)
+	}
+	return &ObjectContext{ObjectType: objectType, ObjectID: objectID, Properties: map[string]interface{}{}}, nil
+}
+
+func (m *MockOntologyService) GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error) {
+	if m.GetLinkedObjectsFunc != nil {
+		return m.GetLinkedObjectsFunc(ctx, objectType, objectID, linkName, maxDepth)
+	}
+	return &LinkedObjectsResult{ObjectType: objectType, ObjectID: objectID, Links: []LinkResult{}}, nil
+}
+
+func (m *MockOntologyService) ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error) {
+	if m.ExecuteActionFunc != nil {
+		return m.ExecuteActionFunc(ctx, objectType, objectID, actionType, params)
+	}
+	return &ActionResult{Success: true, ActionType: actionType, ObjectType: objectType, ObjectID: objectID, Result: map[string]interface{}{}}, nil
+}
+
 func TestNewServer(t *testing.T) {
 	server, err := NewServer(
 		&MockDecisionService{},
@@ -212,6 +247,7 @@ func TestNewServer(t *testing.T) {
 		(*pgxpool.Pool)(nil),
 		&MockSystemStatusService{},
 		&MockObjectSearchService{},
+		&MockOntologyService{},
 	)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
@@ -242,6 +278,7 @@ func TestServerToolRegistration(t *testing.T) {
 		(*pgxpool.Pool)(nil),
 		&MockSystemStatusService{},
 		&MockObjectSearchService{},
+		&MockOntologyService{},
 	)
 	if err != nil {
 		t.Fatalf("NewServer failed: %v", err)
@@ -270,6 +307,10 @@ func TestServerToolRegistration(t *testing.T) {
 		"search_objects",
 		"list_outbox_events",
 		"get_pipeline_status",
+		"describe_ontology",
+		"get_object",
+		"get_linked_objects",
+		"execute_action",
 	}
 
 	toolNames := make(map[string]bool)

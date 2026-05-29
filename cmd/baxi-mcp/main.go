@@ -104,12 +104,25 @@ func main() {
 	statusSvc := &statusServiceAdapter{pool: pool.Pool}
 	searchSvc := &searchServiceAdapter{svc: objectSvc}
 
+	// Wire ontology service for ontology MCP tools
+	objRegistry, regErr := ontology.NewObjectRegistry(ctx, nil, pool.Pool, "config/aip_object_schema.yml")
+	if regErr != nil {
+		zapLog.Warn("failed to load object registry, ontology tools will be unavailable", zap.Error(regErr))
+	}
+	ontologySvc := &ontologyServiceAdapter{
+		registry:  objRegistry,
+		querySvc:  objectSvc,
+		ontRepo:   ontologyRepo,
+		pool:      pool.Pool,
+		actionReg: reg,
+	}
+
 	// Create MCP server with stdio transport
 	mcpSrv, err := mcp.NewServer(
 		decisionSvc, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc,
 		reviewSvc, outboxSvc, pipelineInfoSvc,
 		executeSvc, pool.Pool,
-		statusSvc, searchSvc,
+		statusSvc, searchSvc, ontologySvc,
 	)
 	if err != nil {
 		zapLog.Fatal("failed to create MCP server", zap.Error(err))
@@ -409,4 +422,202 @@ func (a *searchServiceAdapter) SearchObjects(ctx context.Context, objectType, qu
 		return &model.SearchResult{Items: []map[string]interface{}{}, Total: 0}, nil
 	}
 	return result, nil
+}
+
+// ontologyServiceAdapter wraps ontology and action services for MCP ontology tools.
+type ontologyServiceAdapter struct {
+	registry  *ontology.ObjectRegistry
+	querySvc  *ontology.ObjectQueryService
+	ontRepo   *repository.OntologyRepo
+	pool      *pgxpool.Pool
+	actionReg *action.ActionRegistry
+}
+
+func (a *ontologyServiceAdapter) DescribeOntology(ctx context.Context) (*mcp.OntologyDescriptor, error) {
+	if a.registry == nil {
+		return &mcp.OntologyDescriptor{ObjectTypes: []mcp.ObjectTypeDescriptor{}}, nil
+	}
+
+	names := a.registry.ListObjectTypes()
+	desc := &mcp.OntologyDescriptor{
+		ObjectTypes: make([]mcp.ObjectTypeDescriptor, 0, len(names)),
+	}
+	for _, name := range names {
+		ot, err := a.registry.GetObjectType(name)
+		if err != nil {
+			continue
+		}
+
+		otDesc := mcp.ObjectTypeDescriptor{
+			Name:           ot.Name,
+			DisplayName:    ot.DisplayName,
+			Grain:          ot.Grain,
+			AllowedActions: ot.AllowedActions,
+			LLMAccess: mcp.LLMAccessDescriptor{
+				CanRead:  ot.LLMAccess.CanRead,
+				CanWrite: ot.LLMAccess.CanWrite,
+				ReadOnly: ot.LLMAccess.ReadOnly,
+			},
+		}
+
+		for _, prop := range ot.Properties {
+			if !prop.LLMReadable {
+				continue
+			}
+			otDesc.Properties = append(otDesc.Properties, mcp.PropertyDescriptor{
+				Name:        prop.Name,
+				Type:        prop.Type,
+				Sensitivity: prop.Sensitivity,
+				LLMReadable: prop.LLMReadable,
+				IsPK:        prop.IsPK,
+			})
+		}
+
+		for _, link := range ot.Links {
+			otDesc.Links = append(otDesc.Links, mcp.LinkDescriptor{
+				Name:       link.Name,
+				TargetType: link.TargetType,
+				Via:        link.Via,
+			})
+		}
+
+		if otDesc.Properties == nil {
+			otDesc.Properties = []mcp.PropertyDescriptor{}
+		}
+		if otDesc.Links == nil {
+			otDesc.Links = []mcp.LinkDescriptor{}
+		}
+
+		desc.ObjectTypes = append(desc.ObjectTypes, otDesc)
+	}
+	return desc, nil
+}
+
+func (a *ontologyServiceAdapter) GetObject(ctx context.Context, objectType, objectID string) (*mcp.ObjectContext, error) {
+	if a.querySvc == nil {
+		return nil, fmt.Errorf("ontology query service is not available")
+	}
+
+	obj, err := a.querySvc.BuildObjectContext(ctx, objectType, objectID)
+	if err != nil {
+		return nil, fmt.Errorf("get object %s %s: %w", objectType, objectID, err)
+	}
+
+	return &mcp.ObjectContext{
+		ObjectType: obj.ObjectType,
+		ObjectID:   obj.ObjectID,
+		Properties: obj.Properties,
+	}, nil
+}
+
+func (a *ontologyServiceAdapter) GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*mcp.LinkedObjectsResult, error) {
+	if a.registry == nil || a.querySvc == nil {
+		return nil, fmt.Errorf("ontology services are not available")
+	}
+
+	links, err := a.registry.GetLinks(objectType)
+	if err != nil {
+		return nil, fmt.Errorf("get links for %s: %w", objectType, err)
+	}
+
+	if len(links) == 0 {
+		return &mcp.LinkedObjectsResult{
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Links:      []mcp.LinkResult{},
+		}, nil
+	}
+
+	if linkName != "" {
+		filtered := make([]ontology.ObjectLink, 0)
+		for _, l := range links {
+			if l.Name == linkName {
+				filtered = append(filtered, l)
+				break
+			}
+		}
+		if len(filtered) == 0 {
+			return nil, fmt.Errorf("link %q not found for object type %q", linkName, objectType)
+		}
+		links = filtered
+	}
+
+	result := &mcp.LinkedObjectsResult{
+		ObjectType: objectType,
+		ObjectID:   objectID,
+		Links:      make([]mcp.LinkResult, 0, len(links)),
+	}
+
+	// Get the source object to extract Via field values from its properties.
+	sourceObj, err := a.querySvc.BuildObjectContext(ctx, objectType, objectID)
+	if err != nil {
+		return nil, fmt.Errorf("get source object: %w", err)
+	}
+
+	for _, link := range links {
+		linkResult := mcp.LinkResult{
+			LinkName:   link.Name,
+			TargetType: link.TargetType,
+			Objects:    make([]mcp.ObjectContext, 0),
+		}
+
+		if viaVal, ok := sourceObj.Properties[link.Via]; ok && viaVal != nil {
+			viaStr := fmt.Sprintf("%v", viaVal)
+			if viaStr != "" {
+				targetObj, err := a.querySvc.BuildObjectContext(ctx, link.TargetType, viaStr)
+				if err == nil {
+					linkResult.Objects = append(linkResult.Objects, mcp.ObjectContext{
+						ObjectType: targetObj.ObjectType,
+						ObjectID:   targetObj.ObjectID,
+						Properties: targetObj.Properties,
+					})
+				}
+			}
+		}
+
+		result.Links = append(result.Links, linkResult)
+	}
+
+	return result, nil
+}
+
+func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*mcp.ActionResult, error) {
+	if a.registry == nil {
+		return nil, fmt.Errorf("ontology registry is not available")
+	}
+
+	// Check if the action is in the object type's AllowedActions list.
+	allowedActions := a.registry.GetAllowedActions(objectType)
+	allowed := false
+	for _, aa := range allowedActions {
+		if aa == actionType {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return nil, fmt.Errorf("action %q not allowed for object type %q", actionType, objectType)
+	}
+
+	// Check if the action is allowed by the global action registry.
+	if a.actionReg != nil && !a.actionReg.IsAllowed(actionType) {
+		return nil, fmt.Errorf("action %q is not allowed by the action registry", actionType)
+	}
+
+	// Validate payload against action registry schema.
+	if a.actionReg != nil && len(params) > 0 {
+		if errs := a.actionReg.ValidatePayload(actionType, params); len(errs) > 0 {
+			return nil, fmt.Errorf("invalid action payload: %v", errs)
+		}
+	}
+
+	return &mcp.ActionResult{
+		Success:    true,
+		ActionType: actionType,
+		ObjectType: objectType,
+		ObjectID:   objectID,
+		Result: map[string]interface{}{
+			"message": fmt.Sprintf("Action %q validated and ready for execution on %s %s", actionType, objectType, objectID),
+		},
+	}, nil
 }

@@ -75,6 +75,85 @@ type OutboxService interface {
 	ListOutboxEvents(ctx context.Context, status string, limit, offset int) ([]model.OutboxEvent, int, error)
 }
 
+// ──── Ontology types ──────────────────────────────────────────────────────────
+
+// OntologyDescriptor is the top-level response for describe_ontology.
+type OntologyDescriptor struct {
+	ObjectTypes []ObjectTypeDescriptor `json:"object_types"`
+}
+
+// ObjectTypeDescriptor describes a single AIP object type.
+type ObjectTypeDescriptor struct {
+	Name           string              `json:"name"`
+	DisplayName    string              `json:"display_name"`
+	Grain          string              `json:"grain"`
+	Properties     []PropertyDescriptor `json:"properties"`
+	Links          []LinkDescriptor     `json:"links"`
+	AllowedActions []string             `json:"allowed_actions"`
+	LLMAccess      LLMAccessDescriptor  `json:"llm_access"`
+}
+
+// PropertyDescriptor describes a single property of an object type.
+type PropertyDescriptor struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Sensitivity string `json:"sensitivity,omitempty"`
+	LLMReadable bool   `json:"llm_readable"`
+	IsPK        bool   `json:"is_pk"`
+}
+
+// LinkDescriptor describes a named relationship to another object type.
+type LinkDescriptor struct {
+	Name       string `json:"name"`
+	TargetType string `json:"target_type"`
+	Via        string `json:"via"`
+}
+
+// LLMAccessDescriptor describes LLM access constraints for an object type.
+type LLMAccessDescriptor struct {
+	CanRead  bool `json:"can_read"`
+	CanWrite bool `json:"can_write"`
+	ReadOnly bool `json:"read_only"`
+}
+
+// ObjectContext is a lightweight representation of an object.
+type ObjectContext struct {
+	ObjectType string                 `json:"object_type"`
+	ObjectID   string                 `json:"object_id"`
+	Properties map[string]interface{} `json:"properties"`
+}
+
+// LinkedObjectsResult holds linked objects grouped by relationship.
+type LinkedObjectsResult struct {
+	ObjectType string       `json:"object_type"`
+	ObjectID   string       `json:"object_id"`
+	Links      []LinkResult `json:"links"`
+}
+
+// LinkResult holds the linked objects for a single relationship.
+type LinkResult struct {
+	LinkName   string          `json:"link_name"`
+	TargetType string          `json:"target_type"`
+	Objects    []ObjectContext `json:"objects"`
+}
+
+// ActionResult holds the result of executing an action on an object.
+type ActionResult struct {
+	Success    bool                   `json:"success"`
+	ActionType string                 `json:"action_type"`
+	ObjectType string                 `json:"object_type"`
+	ObjectID   string                 `json:"object_id"`
+	Result     map[string]interface{} `json:"result,omitempty"`
+}
+
+// OntologyService defines the interface for ontology-related MCP operations.
+type OntologyService interface {
+	DescribeOntology(ctx context.Context) (*OntologyDescriptor, error)
+	GetObject(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
+	GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
+	ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+}
+
 // PipelineInfoService defines the interface for pipeline status information.
 type PipelineInfoService interface {
 	GetLastRunStatus(ctx context.Context) (*model.PipelineRun, error)
