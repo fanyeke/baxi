@@ -134,3 +134,16 @@ objects:
       baseline_value: { type: float }
       owner_role: { type: string }
       status: { type: string }
+
+  - object_type_id: global
+    display_name: "全局"
+    source_tables: [metric_daily]
+    grain: metric_name
+    allow_sync_to_feishu: true
+    properties:
+      metric_name: { type: string, is_pk: true }
+      current_value: { type: float }
+      baseline_value: { type: float }
+      change_pct: { type: float }
+    alert_fields:
+      - current_value

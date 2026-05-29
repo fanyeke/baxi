@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -97,10 +98,11 @@ func main() {
 	outboxSvc := &outboxServiceAdapter{pool: pool.Pool}
 	pipelineInfoSvc := &pipelineInfoAdapter{pool: pool.Pool}
 
-	// Minimal stubs for services not yet implemented
-	executeSvc := &executeServiceAdapter{}
-	statusSvc := &statusServiceAdapter{}
-	searchSvc := &searchServiceAdapter{}
+	// Wire real ApplyService for execute_proposal
+	proposalLoader := &proposalLoaderAdapter{repo: reviewRepo}
+	executeSvc := action.NewApplyService(reg, nil, proposalLoader, nil, nil, pool.Pool)
+	statusSvc := &statusServiceAdapter{pool: pool.Pool}
+	searchSvc := &searchServiceAdapter{svc: objectSvc}
 
 	// Create MCP server with stdio transport
 	mcpSrv, err := mcp.NewServer(
@@ -266,23 +268,145 @@ func (a *pipelineInfoAdapter) ListRuns(ctx context.Context, limit int) ([]model.
 	return runs, nil
 }
 
-// executeServiceAdapter is a minimal stub for executing action proposals.
-type executeServiceAdapter struct{}
-
-func (a *executeServiceAdapter) ExecuteProposal(ctx context.Context, pool *pgxpool.Pool, proposalID string, actorID string, opts ...action.ExecuteOption) (*action.ExecutionResult, error) {
-	return &action.ExecutionResult{Success: true, DryRun: true}, nil
+// proposalLoaderAdapter wraps *review.ReviewRepository to implement action.ProposalLoader.
+type proposalLoaderAdapter struct {
+	repo *review.ReviewRepository
 }
 
-// statusServiceAdapter is a minimal stub for system status.
-type statusServiceAdapter struct{}
+func (a *proposalLoaderAdapter) GetProposalByID(ctx context.Context, pool *pgxpool.Pool, proposalID string) (*action.ActionProposal, error) {
+	row, err := a.repo.GetProposalByID(ctx, pool, proposalID)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, nil
+	}
+
+	p := &action.ActionProposal{
+		ProposalID:          row.ProposalID,
+		CaseID:              row.CaseID,
+		ActionType:          row.ActionType,
+		Title:               row.Title,
+		ApplyStatus:         row.ApplyStatus,
+		CreatedAt:           row.CreatedAt,
+		RequiresHumanReview: row.RequiresHumanReview,
+	}
+
+	if row.DecisionID != nil {
+		p.DecisionID = *row.DecisionID
+	}
+	if row.Description != nil {
+		p.Description = *row.Description
+	}
+	if row.RiskLevel != nil {
+		p.RiskLevel = *row.RiskLevel
+	} else {
+		p.RiskLevel = "medium"
+	}
+	if row.Payload != nil {
+		var payload map[string]interface{}
+		if err := json.Unmarshal(*row.Payload, &payload); err == nil {
+			p.Payload = payload
+		}
+	}
+
+	return p, nil
+}
+
+// statusServiceAdapter queries the database for system status.
+type statusServiceAdapter struct {
+	pool *pgxpool.Pool
+}
 
 func (a *statusServiceAdapter) GetStatus(ctx context.Context) (*model.SystemStatus, error) {
-	return &model.SystemStatus{}, nil
+	status := &model.SystemStatus{
+		RecentErrors: []string{},
+		TableCounts:  []model.TableCount{},
+	}
+
+	// 1. AlertCount from ops.metric_alert
+	_ = a.pool.QueryRow(ctx, `SELECT COUNT(*) FROM ops.metric_alert`).Scan(&status.AlertCount)
+
+	// 2. PipelineRun from audit.pipeline_run (same pattern as pipelineInfoAdapter)
+	var r model.PipelineRun
+	var startedAt time.Time
+	var finishedAt *time.Time
+	var errMsg *string
+
+	err := a.pool.QueryRow(ctx, `
+		SELECT run_id, run_type, mode, status, started_at, finished_at, input_count, output_count, error_message
+		FROM audit.pipeline_run
+		ORDER BY started_at DESC
+		LIMIT 1
+	`).Scan(&r.RunID, &r.RunType, &r.Mode, &r.Status, &startedAt, &finishedAt, &r.InputCount, &r.OutputCount, &errMsg)
+	if err == nil {
+		r.StartedAt = startedAt.Format(time.RFC3339)
+		if finishedAt != nil {
+			s := finishedAt.Format(time.RFC3339)
+			r.FinishedAt = &s
+		}
+		if errMsg != nil && *errMsg != "" {
+			r.ErrorMessage = errMsg
+		}
+		status.PipelineRun = &r
+	}
+
+	// 3. TableCounts for key tables
+	rows, err := a.pool.Query(ctx, `
+		SELECT table_name, row_count FROM (
+			SELECT 'raw.orders' as table_name, (SELECT COUNT(*) FROM raw.orders) as row_count
+			UNION ALL SELECT 'raw.sellers', (SELECT COUNT(*) FROM raw.sellers)
+			UNION ALL SELECT 'raw.products', (SELECT COUNT(*) FROM raw.products)
+			UNION ALL SELECT 'dwd.dwd_order_level', (SELECT COUNT(*) FROM dwd.dwd_order_level)
+			UNION ALL SELECT 'dwd.dwd_item_level', (SELECT COUNT(*) FROM dwd.dwd_item_level)
+			UNION ALL SELECT 'metric.metric_daily', (SELECT COUNT(*) FROM metric.metric_daily)
+			UNION ALL SELECT 'ops.metric_alert', (SELECT COUNT(*) FROM ops.metric_alert)
+			UNION ALL SELECT 'ai.decision_case', (SELECT COUNT(*) FROM ai.decision_case)
+			UNION ALL SELECT 'ai.action_proposal', (SELECT COUNT(*) FROM ai.action_proposal)
+		) t
+	`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var tc model.TableCount
+			if err := rows.Scan(&tc.TableName, &tc.RowCount); err == nil {
+				status.TableCounts = append(status.TableCounts, tc)
+			}
+		}
+	}
+
+	// 4. RecentErrors from audit.audit_log
+	errRows, err := a.pool.Query(ctx, `
+		SELECT action || ': ' || COALESCE(resource_id, '') || ' | ' || COALESCE(metadata::text, '')
+		FROM audit.audit_log
+		ORDER BY created_at DESC
+		LIMIT 10
+	`)
+	if err == nil {
+		defer errRows.Close()
+		for errRows.Next() {
+			var msg string
+			if err := errRows.Scan(&msg); err == nil {
+				status.RecentErrors = append(status.RecentErrors, msg)
+			}
+		}
+	}
+
+	return status, nil
 }
 
-// searchServiceAdapter is a minimal stub for object search.
-type searchServiceAdapter struct{}
+// searchServiceAdapter wraps ontology.ObjectQueryService for MCP object search.
+type searchServiceAdapter struct {
+	svc *ontology.ObjectQueryService
+}
 
 func (a *searchServiceAdapter) SearchObjects(ctx context.Context, objectType, query string, limit, offset int) (*model.SearchResult, error) {
-	return &model.SearchResult{Items: []map[string]interface{}{}, Total: 0}, nil
+	if a.svc == nil {
+		return &model.SearchResult{Items: []map[string]interface{}{}, Total: 0}, nil
+	}
+	result, err := a.svc.SearchObjects(ctx, objectType, query, limit, offset)
+	if err != nil {
+		return &model.SearchResult{Items: []map[string]interface{}{}, Total: 0}, nil
+	}
+	return result, nil
 }

@@ -27,11 +27,15 @@ access_policy:
         - notify_owner
         - create_followup_task
         - recommend_business_strategy
+        - decide
+        - decide_llm
       data_access:
+        - dwd_order_level
         - dwd_item_level
         - metric_daily
         - metric_dimension_daily
         - alert_events
+        - strategy_recommendations
     - role: viewer
       allowed_actions:
         - view_dashboard
@@ -45,4 +49,21 @@ access_policy:
       data_access:
         - metric_daily
         - dwd_order_level
+    - role: decision_agent
+      allowed_actions:
+        - decide
+        - decide_llm
+        - create_decision_case
+        - build_context
+        - list_alerts
+        - read_case
+        - read_context
+      data_access:
+        - dwd_order_level
+        - dwd_item_level
+        - metric_daily
+        - metric_dimension_daily
+        - alert_events
+        - strategy_recommendations
+        - action_tasks
   default_policy: "deny_all"

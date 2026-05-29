@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"baxi/internal/model"
 	"baxi/internal/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -129,6 +130,34 @@ func (s *ObjectQueryService) GetSellerMetrics(ctx context.Context, sellerID stri
 // GetCategoryMetrics retrieves metrics for a specific category.
 func (s *ObjectQueryService) GetCategoryMetrics(ctx context.Context, categoryName string) (*repository.ObjectMetrics, error) {
 	return s.repo.GetObjectMetrics(withRole(ctx), s.pool, TypeCategory, categoryName)
+}
+
+// SearchObjects performs a generic search across object types.
+// Delegates to OntologyRepo.SearchObjects for the actual query.
+func (s *ObjectQueryService) SearchObjects(ctx context.Context, objectType string, query string, limit, offset int) (*model.SearchResult, error) {
+	result, err := s.repo.SearchObjects(withRole(ctx), s.pool, objectType, repository.SearchFilters{
+		ObjectType: objectType,
+		Query:      query,
+		Limit:      resolveLimit(limit),
+		Offset:     offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("search objects: %w", err)
+	}
+
+	items := make([]map[string]interface{}, len(result.Rows))
+	for i, item := range result.Rows {
+		items[i] = map[string]interface{}{
+			"object_type": item.ObjectType,
+			"object_id":   item.ID,
+			"properties":  item.Properties,
+		}
+	}
+
+	return &model.SearchResult{
+		Items: items,
+		Total: result.Total,
+	}, nil
 }
 
 // BuildObjectContext fetches an object by type and ID and returns a lightweight
