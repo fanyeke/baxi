@@ -1,0 +1,207 @@
+[
+  {
+    "id": "T1",
+    "name": "低风险老客订单",
+    "expected": "APPROVE",
+    "input": {
+      "customer_id": "C-001",
+      "order_id": "ORD-001",
+      "value": 100,
+      "currency": "USD",
+      "account_age_days": 365,
+      "past_orders": 50,
+      "chargeback_rate": 0,
+      "category": "Clothing",
+      "payment_method": "stored_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 14,
+      "is_weekend": false
+    }
+  },
+  {
+    "id": "T2",
+    "name": "低风险新客订单",
+    "expected": "APPROVE",
+    "input": {
+      "customer_id": "C-002",
+      "order_id": "ORD-002",
+      "value": 50,
+      "currency": "USD",
+      "account_age_days": 3,
+      "past_orders": 0,
+      "chargeback_rate": 0,
+      "category": "Home",
+      "payment_method": "new_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 10,
+      "is_weekend": false
+    }
+  },
+  {
+    "id": "T3",
+    "name": "中风险订单",
+    "expected": "REVIEW",
+    "input": {
+      "customer_id": "C-003",
+      "order_id": "ORD-003",
+      "value": 300,
+      "currency": "USD",
+      "account_age_days": 30,
+      "past_orders": 5,
+      "chargeback_rate": 0,
+      "category": "Electronics",
+      "payment_method": "new_card",
+      "shipping_address_match": false,
+      "ip_country_match": true,
+      "hour": 15,
+      "is_weekend": false
+    }
+  },
+  {
+    "id": "T4",
+    "name": "高风险订单",
+    "expected": "DECLINE",
+    "input": {
+      "customer_id": "C-004",
+      "order_id": "ORD-004",
+      "value": 800,
+      "currency": "USD",
+      "account_age_days": 1,
+      "past_orders": 0,
+      "chargeback_rate": 0,
+      "category": "Electronics",
+      "payment_method": "new_card",
+      "shipping_address_match": false,
+      "ip_country_match": false,
+      "hour": 2,
+      "is_weekend": true,
+      "velocity": 5
+    }
+  },
+  {
+    "id": "T5",
+    "name": "边界值测试 (score≈30)",
+    "expected": "APPROVE",
+    "input": {
+      "customer_id": "C-005",
+      "order_id": "ORD-005",
+      "value": 200,
+      "currency": "USD",
+      "account_age_days": 60,
+      "past_orders": 10,
+      "chargeback_rate": 0,
+      "category": "Clothing",
+      "payment_method": "stored_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 14,
+      "is_weekend": false
+    }
+  },
+  {
+    "id": "T6",
+    "name": "边界值测试 (score≈60)",
+    "expected": "REVIEW",
+    "input": {
+      "customer_id": "C-006",
+      "order_id": "ORD-006",
+      "value": 400,
+      "currency": "USD",
+      "account_age_days": 14,
+      "past_orders": 2,
+      "chargeback_rate": 0,
+      "category": "Electronics",
+      "payment_method": "new_card",
+      "shipping_address_match": false,
+      "ip_country_match": true,
+      "hour": 22,
+      "is_weekend": true
+    }
+  },
+  {
+    "id": "T7",
+    "name": "硬规则触发 (已知欺诈)",
+    "expected": "DECLINE",
+    "input": {
+      "customer_id": "C-007",
+      "order_id": "ORD-007",
+      "value": 150,
+      "currency": "USD",
+      "account_age_days": 30,
+      "past_orders": 5,
+      "chargeback_rate": 0,
+      "category": "Electronics",
+      "payment_method": "new_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 14,
+      "is_weekend": false,
+      "known_fraud_pattern": true,
+      "email_domain": "tempail.com"
+    }
+  },
+  {
+    "id": "T8",
+    "name": "硬规则触发 (VIP 客户)",
+    "expected": "APPROVE",
+    "input": {
+      "customer_id": "C-008",
+      "order_id": "ORD-008",
+      "value": 200,
+      "currency": "USD",
+      "account_age_days": 730,
+      "past_orders": 100,
+      "chargeback_rate": 0,
+      "category": "Luxury",
+      "payment_method": "stored_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 14,
+      "is_weekend": false,
+      "customer_tier": "VIP"
+    }
+  },
+  {
+    "id": "T9",
+    "name": "深夜高价值订单",
+    "expected": "REVIEW",
+    "input": {
+      "customer_id": "C-009",
+      "order_id": "ORD-009",
+      "value": 600,
+      "currency": "USD",
+      "account_age_days": 90,
+      "past_orders": 15,
+      "chargeback_rate": 0,
+      "category": "Electronics",
+      "payment_method": "stored_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 2,
+      "is_weekend": false
+    }
+  },
+  {
+    "id": "T10",
+    "name": "速度攻击",
+    "expected": "DECLINE",
+    "input": {
+      "customer_id": "C-010",
+      "order_id": "ORD-010",
+      "value": 100,
+      "currency": "USD",
+      "account_age_days": 1,
+      "past_orders": 0,
+      "chargeback_rate": 0,
+      "category": "Electronics",
+      "payment_method": "new_card",
+      "shipping_address_match": true,
+      "ip_country_match": true,
+      "hour": 1,
+      "is_weekend": true,
+      "same_ip_orders_last_hour": 5
+    }
+  }
+]
