@@ -117,10 +117,14 @@ func main() {
 		actionReg: reg,
 	}
 
+	// Create adapters to satisfy extended MCP interfaces
+	decisionSvcAdapter := &decisionServiceAdapter{svc: decisionSvc, pool: pool.Pool}
+	reviewSvcAdapter := &reviewServiceAdapter{svc: reviewSvc}
+
 	// Create MCP server with stdio transport
 	mcpSrv, err := mcp.NewServer(
-		decisionSvc, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc,
-		reviewSvc, outboxSvc, pipelineInfoSvc,
+		decisionSvcAdapter, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc,
+		reviewSvcAdapter, outboxSvc, pipelineInfoSvc,
 		executeSvc, pool.Pool,
 		statusSvc, searchSvc, ontologySvc,
 	)
@@ -137,6 +141,103 @@ func main() {
 
 	<-sigCh
 	zapLog.Info("shutting down")
+}
+
+// decisionServiceAdapter wraps service.DecisionService to implement mcp.DecisionService,
+// including the additional Decide and ResolveCase methods.
+type decisionServiceAdapter struct {
+	svc  *service.DecisionService
+	pool *pgxpool.Pool
+}
+
+func (a *decisionServiceAdapter) CreateCaseFromAlert(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error) {
+	return a.svc.CreateCaseFromAlert(ctx, alertID, createdBy)
+}
+
+func (a *decisionServiceAdapter) GetCase(ctx context.Context, caseID string) (*decision.DecisionCase, error) {
+	return a.svc.GetCase(ctx, caseID)
+}
+
+func (a *decisionServiceAdapter) ListCases(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error) {
+	return a.svc.ListCases(ctx, filter)
+}
+
+func (a *decisionServiceAdapter) Decide(ctx context.Context, caseID string) ([]action.ActionProposal, error) {
+	_, _, proposals, err := a.svc.Decide(ctx, caseID)
+	if err != nil {
+		return nil, err
+	}
+	return proposals, nil
+}
+
+func (a *decisionServiceAdapter) ResolveCase(ctx context.Context, caseID, resolution, comment string) error {
+	_, err := a.pool.Exec(ctx, `
+		UPDATE ai.decision_case
+		SET status = 'resolved', resolved_at = NOW()
+		WHERE case_id = $1
+	`, caseID)
+	if err != nil {
+		return fmt.Errorf("resolve case %s: %w", caseID, err)
+	}
+	return nil
+}
+
+// reviewServiceAdapter wraps review.ReviewService to implement mcp.ReviewService,
+// including the additional CancelProposal and GetProposalByID methods.
+type reviewServiceAdapter struct {
+	svc *review.ReviewService
+}
+
+func (a *reviewServiceAdapter) ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
+	return a.svc.ApproveProposal(ctx, proposalID, reviewerID, feedback)
+}
+
+func (a *reviewServiceAdapter) RejectProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
+	return a.svc.RejectProposal(ctx, proposalID, reviewerID, feedback)
+}
+
+func (a *reviewServiceAdapter) CancelProposal(ctx context.Context, proposalID, reason string) error {
+	_, err := a.svc.CancelProposal(ctx, proposalID, "mcp_system", reason)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *reviewServiceAdapter) GetProposalByID(ctx context.Context, proposalID string) (*action.ActionProposal, error) {
+	row, err := a.svc.GetProposalByID(ctx, proposalID)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, nil
+	}
+
+	p := &action.ActionProposal{
+		ProposalID:          row.ProposalID,
+		CaseID:              row.CaseID,
+		ActionType:          row.ActionType,
+		Title:               row.Title,
+		ApplyStatus:         row.ApplyStatus,
+		CreatedAt:           row.CreatedAt,
+		RequiresHumanReview: row.RequiresHumanReview,
+	}
+	if row.DecisionID != nil {
+		p.DecisionID = *row.DecisionID
+	}
+	if row.Description != nil {
+		p.Description = *row.Description
+	}
+	if row.RiskLevel != nil {
+		p.RiskLevel = *row.RiskLevel
+	}
+	if row.Payload != nil {
+		var payload map[string]interface{}
+		if err := json.Unmarshal(*row.Payload, &payload); err == nil {
+			p.Payload = payload
+		}
+	}
+	return p, nil
 }
 
 type governanceServiceAdapter struct {

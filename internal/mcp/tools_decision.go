@@ -22,10 +22,20 @@ func (s *Server) registerDecisionTools() {
 	// Tool: decide
 	decideTool := mcp.NewTool(
 		"decide",
-		mcp.WithDescription("Generate a decision for a case using the decision engine"),
+		mcp.WithDescription("Generate a decision for a case, persisting action proposals"),
 		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to generate a decision for")),
 	)
 	s.server.AddTool(decideTool, s.handleDecide)
+
+	// Tool: resolve_case
+	resolveCaseTool := mcp.NewTool(
+		"resolve_case",
+		mcp.WithDescription("Resolve a decision case with a resolution and optional comment"),
+		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to resolve")),
+		mcp.WithString("resolution", mcp.Required(), mcp.Description("Resolution type: approved, rejected, escalated")),
+		mcp.WithString("comment", mcp.Description("Optional comment about the resolution")),
+	)
+	s.server.AddTool(resolveCaseTool, s.handleResolveCase)
 
 	// Tool: list_cases
 	listCasesTool := mcp.NewTool(
@@ -96,27 +106,35 @@ func (s *Server) handleDecide(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return mcp.NewToolResultError("case_id is required"), nil
 	}
 
-	// Build the decision context
-	decisionCtx, err := s.contextBuilder.BuildDecisionContext(ctx, caseID)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to build decision context: %v", err)), nil
-	}
-
-	// Generate the decision
-	output, err := s.decisionEngine.GenerateDecision(ctx, caseID, decisionCtx)
+	// Generate the decision and persist proposals via DecisionService.Decide
+	proposals, err := s.decisionSvc.Decide(ctx, caseID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to generate decision: %v", err)), nil
 	}
 
+	proposalList := make([]map[string]interface{}, len(proposals))
+	for i, p := range proposals {
+		proposalList[i] = map[string]interface{}{
+			"proposal_id":           p.ProposalID,
+			"case_id":               p.CaseID,
+			"decision_id":           p.DecisionID,
+			"action_type":           p.ActionType,
+			"title":                 p.Title,
+			"description":           p.Description,
+			"risk_level":            p.RiskLevel,
+			"requires_human_review": p.RequiresHumanReview,
+			"apply_status":          p.ApplyStatus,
+			"created_at":            p.CreatedAt,
+		}
+		if p.Payload != nil {
+			proposalList[i]["payload"] = p.Payload
+		}
+	}
+
 	result := map[string]interface{}{
-		"case_id":               caseID,
-		"decision_type":         output.DecisionType,
-		"severity":              output.Severity,
-		"summary":               output.Summary,
-		"rationale":             output.Rationale,
-		"recommended_actions":   output.RecommendedActions,
-		"confidence":            output.Confidence,
-		"requires_human_review": output.RequiresHumanReview,
+		"case_id":   caseID,
+		"proposals": proposalList,
+		"count":     len(proposals),
 	}
 
 	return mcp.NewToolResultJSON(result)
@@ -196,6 +214,38 @@ func (s *Server) handleGetCase(ctx context.Context, req mcp.CallToolRequest) (*m
 		"severity":    decisionCase.Severity,
 		"created_at":  decisionCase.CreatedAt,
 		"created_by":  decisionCase.CreatedBy,
+	}
+
+	return mcp.NewToolResultJSON(result)
+}
+
+// handleResolveCase handles the resolve_case tool.
+func (s *Server) handleResolveCase(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := req.GetArguments()
+
+	caseID, ok := args["case_id"].(string)
+	if !ok || caseID == "" {
+		return mcp.NewToolResultError("case_id is required"), nil
+	}
+
+	resolution, ok := args["resolution"].(string)
+	if !ok || resolution == "" {
+		return mcp.NewToolResultError("resolution is required"), nil
+	}
+
+	comment := ""
+	if v, ok := args["comment"].(string); ok {
+		comment = v
+	}
+
+	if err := s.decisionSvc.ResolveCase(ctx, caseID, resolution, comment); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to resolve case: %v", err)), nil
+	}
+
+	result := map[string]interface{}{
+		"case_id":    caseID,
+		"status":     "resolved",
+		"resolution": resolution,
 	}
 
 	return mcp.NewToolResultJSON(result)

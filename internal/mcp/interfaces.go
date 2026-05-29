@@ -16,6 +16,8 @@ type DecisionService interface {
 	CreateCaseFromAlert(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
 	GetCase(ctx context.Context, caseID string) (*decision.DecisionCase, error)
 	ListCases(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
+	Decide(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	ResolveCase(ctx context.Context, caseID, resolution string, comment string) error
 }
 
 // DecisionEngine defines the interface for generating decisions.
@@ -48,6 +50,8 @@ type GovernanceService interface {
 type ReviewService interface {
 	ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
 	RejectProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	CancelProposal(ctx context.Context, proposalID, reason string) error
+	GetProposalByID(ctx context.Context, proposalID string) (*action.ActionProposal, error)
 }
 
 // ExecuteService defines the interface for executing action proposals.

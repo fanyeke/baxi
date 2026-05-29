@@ -16,6 +16,8 @@ type MockDecisionService struct {
 	CreateCaseFromAlertFunc func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
 	GetCaseFunc             func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
 	ListCasesFunc           func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
+	DecideFunc              func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	ResolveCaseFunc         func(ctx context.Context, caseID, resolution string, comment string) error
 }
 
 func (m *MockDecisionService) CreateCaseFromAlert(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error) {
@@ -37,6 +39,20 @@ func (m *MockDecisionService) ListCases(ctx context.Context, filter decision.Cas
 		return m.ListCasesFunc(ctx, filter)
 	}
 	return &decision.CaseList{Cases: []decision.DecisionCase{}, Total: 0}, nil
+}
+
+func (m *MockDecisionService) Decide(ctx context.Context, caseID string) ([]action.ActionProposal, error) {
+	if m.DecideFunc != nil {
+		return m.DecideFunc(ctx, caseID)
+	}
+	return []action.ActionProposal{}, nil
+}
+
+func (m *MockDecisionService) ResolveCase(ctx context.Context, caseID, resolution string, comment string) error {
+	if m.ResolveCaseFunc != nil {
+		return m.ResolveCaseFunc(ctx, caseID, resolution, comment)
+	}
+	return nil
 }
 
 type MockDecisionEngine struct {
@@ -117,6 +133,8 @@ func (m *MockPipelineRunner) Run(ctx context.Context, config string) (string, er
 type MockReviewService struct {
 	ApproveProposalFunc func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
 	RejectProposalFunc  func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	CancelProposalFunc  func(ctx context.Context, proposalID, reason string) error
+	GetProposalByIDFunc func(ctx context.Context, proposalID string) (*action.ActionProposal, error)
 }
 
 func (m *MockReviewService) ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
@@ -129,6 +147,20 @@ func (m *MockReviewService) ApproveProposal(ctx context.Context, proposalID, rev
 func (m *MockReviewService) RejectProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
 	if m.RejectProposalFunc != nil {
 		return m.RejectProposalFunc(ctx, proposalID, reviewerID, feedback)
+	}
+	return nil, nil
+}
+
+func (m *MockReviewService) CancelProposal(ctx context.Context, proposalID, reason string) error {
+	if m.CancelProposalFunc != nil {
+		return m.CancelProposalFunc(ctx, proposalID, reason)
+	}
+	return nil
+}
+
+func (m *MockReviewService) GetProposalByID(ctx context.Context, proposalID string) (*action.ActionProposal, error) {
+	if m.GetProposalByIDFunc != nil {
+		return m.GetProposalByIDFunc(ctx, proposalID)
 	}
 	return nil, nil
 }
@@ -311,6 +343,9 @@ func TestServerToolRegistration(t *testing.T) {
 		"get_object",
 		"get_linked_objects",
 		"execute_action",
+		"resolve_case",
+		"cancel_proposal",
+		"get_proposal_by_id",
 	}
 
 	toolNames := make(map[string]bool)
