@@ -1,8 +1,33 @@
 # Order Governance Skill Comparison Report
 
-**Generated:** 2026-05-29 23:54:05
+**Generated:** 2026-05-30 (updated with Pi Agent real tests)
 **Test cases:** 10
 **Versions compared:** V1 (Basic Rules), V2 (Context-Aware), V3 (Ontology-Aware)
+
+## 0. Pi Agent Real Test Results
+
+Pi Agent (v0.77.0) tested against key scenarios. Skills auto-discover correctly.
+
+| Test | Scenario | Expected | V1 | V2 | V3 |
+|------|----------|----------|----|----|----|
+| T1 | Low risk old customer ($100, 1yr) | APPROVE | — | ✅ APPROVE | — |
+| T2 | Low risk new customer ($50, 3d) | APPROVE | — | — | ❌ REVIEW (overly cautious) |
+| T4 | High risk ($800, 1d, Electronics) | DECLINE | ✅ DECLINE | — | — |
+| T6 | Borderline (score≈60) | REVIEW | ❌ DECLINE | ✅ REVIEW | ✅ REVIEW |
+| T10 | Velocity attack (5 orders/hr) | DECLINE | ✅ DECLINE | — | — |
+
+**Notes:**
+- V2 correctly handles borderline T6 case that V1 misses (improvement from simulation confirmed)
+- V3 is overly cautious on new accounts (T2) — SKILL.md could tune thresholds
+- Pi Agent auto-discovers skills from `.pi/skills/` directory (no config needed)
+- Pi Agent loads skills when prompt context matches skill description
+
+**Pi Agent Skill Loading Verification:**
+- ✅ `pi --skill .pi/skills/order-governance/v1` — loads correctly
+- ✅ `pi --skill .pi/skills/order-governance/v2` — loads correctly, returns structured analysis
+- ✅ `pi --skill .pi/skills/order-governance/v3` — loads correctly, returns JSON output
+- ✅ Skills in `.pi/skills/` auto-discovered at Pi startup
+- ⚠️ Some timeouts may occur with V3 (longer SKILL.md)
 
 ## 1. Accuracy Summary
 
