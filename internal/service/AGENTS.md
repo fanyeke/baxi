@@ -6,9 +6,9 @@
 
 ## OVERVIEW
 
-Business orchestration layer between HTTP handlers and repositories. 17 files, 11 orchestrator services, flat package.
+Business orchestration layer between HTTP handlers and repositories. 11 files, 11 orchestrator services, flat package.
 
-Services exposed via MCP tools: Decision service (`decide`, `create_decision_case`), Pipeline service (`run_pipeline`, `get_pipeline_status`), Governance service (`check_access`, `get_classification`), Action service (`approve_proposal`, `reject_proposal`, `execute_proposal`). See `internal/mcp/` for tool-to-service mapping.
+Services exposed via 31 MCP tools across 11 domains. See `internal/mcp/` for the full tool-to-service mapping (tools_decision.go: 6 tools, tools_review.go: 5, tools_alert.go: 1, tools_governance.go: 2, tools_pipeline.go: 1, tools_action.go: 2, tools_outbox.go: 2, tools_status.go: 2, tools_ontology.go: 4, tools_sandbox.go: 4, tools_schema.go: 2).
 
 ## WHERE TO LOOK
 
@@ -35,7 +35,7 @@ Each service typically has a `*_test.go` counterpart using the local interface p
 ## ANTI-PATTERNS
 
 - **Feishu service is 621 lines**: The largest file in `internal/`. Mixes HTTP client logic, CSV parsing, data sync, and YAML config reading. Should be split into client + sync + export sub-packages.
-- **No `_test.go` for alert, governance, qoder, status, task services**: 5 of 11 production files lack test coverage.
+- **Only `qoder_service.go` lacks a dedicated `_test.go`**: 10 of 11 production files have test coverage; qoder_service.go (385 lines) has no unit tests despite substantial logic.
 
 ### ✅ Resolved Anti-Patterns
 

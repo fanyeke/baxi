@@ -1,3 +1,7 @@
+// Deprecated: This worker implementation is a placeholder.
+// All dispatch logic has moved to dispatch_worker.go.
+// This file exists for backward compatibility only.
+// New implementations should use dispatch_worker.DispatchWorker instead.
 package worker
 
 import (
@@ -22,8 +26,7 @@ func New(logger *zap.Logger, pool *pgxpool.Pool) *Worker {
 	}
 }
 
-// Run starts the worker and blocks until the context is cancelled.
-// Phase 1: just verifies DB connectivity and blocks. No business logic.
+// Run is deprecated. Use dispatch_worker.DispatchWorker instead.
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("baxi-worker started",
 		zap.String("service", "baxi-worker"),
