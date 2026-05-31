@@ -1,5 +1,14 @@
 # Baxi — 电商治理与决策平台
 
+[![Go](https://img.shields.io/badge/Go-1.23-00ADD8?logo=go)](https://go.dev)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)](https://postgresql.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+> **English**: Baxi is a multilingual governance + analytics platform built on the Olist Brazilian e-commerce public dataset. Migrated from Python/SQLite to Go/PostgreSQL.
+>
+> **中文**: Baxi 是一个多语言治理 + 分析平台，原始数据源为 Olist 巴西电商公开数据集。项目已完成从 Python/SQLite 到 Go/PostgreSQL 的全面迁移。
+
 ## 项目概述
 
 Baxi 是一个多语言治理 + 分析平台，原始数据源为 Olist 巴西电商公开数据集。项目已完成从 Python/SQLite 到 Go/PostgreSQL 的全面迁移。
@@ -140,8 +149,12 @@ make test-pipeline            # 管道测试
 - [Brazilian E-Commerce Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — 主数据集
 - [Olist 官方文档](https://olist.com/)
 
+## License
+
+[MIT](LICENSE)
+
 ---
 
-**最后更新**: 2026-05-28
+**最后更新**: 2026-05-31
 **当前版本**: v1.0（Go/PostgreSQL）
 **活跃维护**: Go API 服务、数据管道、React 控制台
