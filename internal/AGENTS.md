@@ -6,19 +6,19 @@
 
 ## OVERVIEW
 
-Core Go backend: 29 packages, chi router, pgx/PostgreSQL, zap logger.
+Core Go backend: 44 packages, chi router, pgx/PostgreSQL, zap logger.
 
 ## STRUCTURE
 
 **API/HTTP**: `api/server.go` (chi routes, lifecycle), `api/handler/` (13 handlers), `api/middleware/` (auth/CORS/request-id/error), `api/dto/` (request/response types), `httputil/` (JSON response, pagination).
 
-**MCP Server**: `mcp/` (11 files, 17 tools over 8 domains), `cmd/baxi-mcp/` (server bootstrap)
+**MCP Server**: `mcp/` (14 files, 31 tools over 11 domains), `cmd/baxi-mcp/` (server bootstrap)
 
 **Pipeline**: `pipeline/` (Step interface + Runner), `pipeline/steps/` (7 impls: ingest_raw → build_dwd → build_metrics → detect_alerts → generate_recommendations → generate_tasks → create_outbox), `ingest/` (CSV loader).
 
 **Business services**: `service/` (8 orchestrators), `decision/` (case engine + context builder), `action/` (registry + proposal + apply + executor), `review/` (domain + approval flow), `recommendation/` (generator), `alert/` (dimensional engine + rules), `governance/` (policy/classification/lineage/redaction), `worker/` (dispatch).
 
-**Data access**: `repository/` (interfaces + pgx impls, 8 repos), `outbox/` (write repo), `db/` (pool creation).
+**Data access**: `repository/` (interfaces + pgx impls, 12 repository subpackages), `outbox/` (write repo), `db/` (pool creation).
 
 **Shared types**: `model/` (domain types shared across service, handler, and repository layers).
 
@@ -51,7 +51,7 @@ Core Go backend: 29 packages, chi router, pgx/PostgreSQL, zap logger.
 
 - `test/` outside internal/ — E2E tests in root break `go test ./...` isolation
 - `cmd/` constructs pipelines directly — should delegate to `internal/pipeline/`
-- No golangci-lint config — varying style, no lint CI step
-- Repository organized into 10 domain subpackages with PoolProvider injection
+- ~~golangci-lint config exists (.golangci.yml) but Makefile lint target ignores it~~ ✅ Fixed: Makefile lint target now uses golangci-lint with go vet fallback
+- Repository organized into 12 domain subpackages with PoolProvider injection
 - pool passed as parameter in interfaces.go and flat compatibility files (subpackages use PoolProvider)
 - Package naming: `config` (struct) vs `configloader` (parser) — adjacent but not cohesive

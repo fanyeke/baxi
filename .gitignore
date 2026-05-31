@@ -57,6 +57,7 @@ frontend/tsconfig.tsbuildinfo
 /baxi-api
 /baxi-cli
 /baxi-worker
+/baxi-mcp
 *.test
 *.out
 vendor/
