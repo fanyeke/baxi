@@ -61,3 +61,22 @@ frontend/tsconfig.tsbuildinfo
 *.test
 *.out
 vendor/
+
+# Claude / AI workflow artifacts (not source code)
+.claude/
+.pi/
+.sisyphus/
+
+# Test coverage and results
+frontend/coverage/
+frontend/test-results/
+test-results/
+frontend/e2e-results.json
+
+# Data outputs (generated)
+outputs/
+
+# Data intermediates (generated)
+data/interim/
+data/processed/
+data/system/
