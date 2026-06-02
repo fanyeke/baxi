@@ -239,8 +239,14 @@ func (m *MockExecuteService) ExecuteProposal(ctx context.Context, pool *pgxpool.
 type MockOntologyService struct {
 	DescribeOntologyFunc    func(ctx context.Context) (*OntologyDescriptor, error)
 	GetObjectFunc           func(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
+	GetObjectMetricsFunc    func(ctx context.Context, objectType, objectID string) (map[string]float64, error)
 	GetLinkedObjectsFunc    func(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
 	ExecuteActionFunc       func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+	ProposeActionFunc       func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+}
+
+type MockBuildContextService struct {
+	BuildEnvelopeFunc func(ctx context.Context, caseID, recipeID string) (*llm.LLMSafeContextEnvelope, error)
 }
 
 type MockActionSchemaService struct {
@@ -323,6 +329,27 @@ func (m *MockOntologyService) ExecuteAction(ctx context.Context, objectType, obj
 		return m.ExecuteActionFunc(ctx, objectType, objectID, actionType, params)
 	}
 	return &ActionResult{Success: true, ActionType: actionType, ObjectType: objectType, ObjectID: objectID, Result: map[string]interface{}{}}, nil
+}
+
+func (m *MockOntologyService) GetObjectMetrics(ctx context.Context, objectType, objectID string) (map[string]float64, error) {
+	if m.GetObjectMetricsFunc != nil {
+		return m.GetObjectMetricsFunc(ctx, objectType, objectID)
+	}
+	return map[string]float64{}, nil
+}
+
+func (m *MockOntologyService) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error) {
+	if m.ProposeActionFunc != nil {
+		return m.ProposeActionFunc(ctx, objectType, objectID, actionType, params)
+	}
+	return &ActionResult{Success: true, ActionType: actionType, ObjectType: objectType, ObjectID: objectID, Result: map[string]interface{}{"proposal_id": "mock-proposal-123", "status": "proposed"}}, nil
+}
+
+func (m *MockBuildContextService) BuildEnvelope(ctx context.Context, caseID, recipeID string) (*llm.LLMSafeContextEnvelope, error) {
+	if m.BuildEnvelopeFunc != nil {
+		return m.BuildEnvelopeFunc(ctx, caseID, recipeID)
+	}
+	return &llm.LLMSafeContextEnvelope{CaseID: caseID, ContextHash: "mock-hash"}, nil
 }
 
 func TestNewServer(t *testing.T) {
@@ -412,6 +439,7 @@ func TestServerToolRegistration(t *testing.T) {
 		"get_object",
 		"get_linked_objects",
 		"execute_action",
+		"propose_action",
 		"resolve_case",
 		"cancel_proposal",
 		"get_proposal_by_id",

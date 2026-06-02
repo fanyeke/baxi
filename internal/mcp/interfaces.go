@@ -174,6 +174,7 @@ type OntologyService interface {
 	GetObjectMetrics(ctx context.Context, objectType, objectID string) (map[string]float64, error)
 	GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
 	ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+	ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
 }
 
 // BuildContextService defines the interface for building recipe-driven contexts.

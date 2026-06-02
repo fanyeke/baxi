@@ -84,6 +84,35 @@ go test ./internal/ontology/        # unit + integration tests
 go test ./internal/ontology/ -run TestIntegration  # integration tests only
 ```
 
+## MCP INTEGRATION (Productionized)
+
+The following v2 capabilities are now wired into the MCP server (`cmd/baxi-mcp/main.go`):
+
+| Capability | Status | Entry Point |
+|-----------|--------|-------------|
+| `build_context` | ✅ Wired | `RecipeContextBuilder` constructed with 7 deps (caseSvc, compiler, metricQuery, linkExec, pool, actionTypes, recipes) |
+| `get_linked_objects` | ✅ Wired | `ontologyServiceAdapter` uses v2 `LinkResolver` first, falls back to v1 Via model |
+| `propose_action` | ✅ Wired | Creates `ActionProposalRow{ApplyStatus: "proposed"}` in `ai.action_proposal` |
+| `execute_action` | ✅ Hardened | Defaults to `dry_run=true`; rejects `dry_run=false` without approved proposal |
+| `execute_proposal` | ✅ Existing | Uses `ApplyService.ExecuteProposal` with `action.WithDryRun(true)` default |
+
+### Wiring Details
+
+**build_context** (`internal/decision/context_builder_recipe.go`):
+- Constructor: `NewRecipeContextBuilder(caseSvc, compiler, metricQuery, linkExec, pool, actionTypes, recipes)`
+- Loads `config/context_recipes.yml` and `config/metric_definitions.yml`
+- Returns `LLMSafeContextEnvelope` with `ContextHash`, `ObjectContext`, `AllowedActions`, `Governance`
+
+**get_linked_objects** (`cmd/baxi-mcp/main.go`):
+- `ontologyServiceAdapter.linkResolver` is set when v2 objects are available
+- `GetLinkedObjects` tries v2 path first (`linkResolver.CompileAllLinks` + SQL execution), falls back to v1
+- v2 path executes compiled SQL via `pool.Query()` and maps rows to `ObjectContext`
+
+**Action Safety** (`internal/mcp/tools_action.go`, `tools_ontology.go`):
+- `propose_action` tool registered; handler calls `OntologyService.ProposeAction`
+- `execute_action` handler defaults `dry_run=true` and rejects non-dry-run without approval
+- Proposal creation inserts into `ai.decision_case` + `ai.action_proposal` with `apply_status='proposed'`
+
 ## ANTI-PATTERNS
 
 - **Duplicate method names**: `QueryCompiler` methods spread across `query_plan.go` and `compiler.go` — both files define methods on the same type, risking name collisions
