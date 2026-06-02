@@ -68,18 +68,24 @@ func convertRawV2(name string, raw *rawObjectV2) (*ObjectTypeV2, error) {
 			llmReadable = *rp.LLMReadable
 		}
 
+		availability := rp.Availability
+		if availability == "" {
+			availability = "real"
+		}
+
 		prop := ObjectPropertyV2{
-			Name:        pname,
-			Type:        rp.Type,
-			SourceField: rp.Source,
-			Expression:  rp.Expression,
-			MetricRef:   rp.MetricRef,
-			Sensitivity: sensitivity,
-			Aggregation: rp.Agg,
-			LLMReadable: llmReadable,
-			Searchable:  rp.Searchable != nil && *rp.Searchable,
-			Filterable:  rp.Filterable != nil && *rp.Filterable,
-			IsPK:        isPK,
+			Name:         pname,
+			Type:         rp.Type,
+			SourceField:  rp.Source,
+			Expression:   rp.Expression,
+			MetricRef:    rp.MetricRef,
+			Sensitivity:  sensitivity,
+			Aggregation:  rp.Agg,
+			LLMReadable:  llmReadable,
+			Searchable:   rp.Searchable != nil && *rp.Searchable,
+			Filterable:   rp.Filterable != nil && *rp.Filterable,
+			IsPK:         isPK,
+			Availability: availability,
 		}
 		props[pname] = prop
 	}
@@ -128,11 +134,17 @@ func convertRawV2(name string, raw *rawObjectV2) (*ObjectTypeV2, error) {
 		llmAccess = readWriteLLMAccess()
 	}
 
+	maturity := raw.Maturity
+	if maturity == "" {
+		maturity = "stable"
+	}
+
 	return &ObjectTypeV2{
 		Name:           name,
 		DisplayName:    raw.DisplayName,
 		Description:    raw.Description,
 		Grain:          raw.Grain,
+		Maturity:       maturity,
 		Source:         ObjectSource{Schema: raw.Source.Schema, Table: raw.Source.Table, PrimaryKey: raw.Source.PrimaryKey},
 		Properties:     props,
 		Metrics:        raw.Metrics,

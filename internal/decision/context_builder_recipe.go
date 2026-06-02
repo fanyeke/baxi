@@ -68,6 +68,22 @@ func (b *RecipeContextBuilder) BuildEnvelope(ctx context.Context, caseID string,
 		return nil, fmt.Errorf("load root object: %w", err)
 	}
 
+	// Check object type maturity before including in context.
+	// stable=full, virtual=with note, planned=skip.
+	if rootObj != nil {
+		if ot, ok := b.compiler.GetObjectType(objectType); ok {
+			switch ot.Maturity {
+			case "planned":
+				rootObj = nil
+			case "virtual":
+				if rootObj.Properties == nil {
+					rootObj.Properties = make(map[string]interface{})
+				}
+				rootObj.Properties["_maturity_note"] = "Object type is virtual — derived/computed, not backed by a physical table"
+			}
+		}
+	}
+
 	metricResults := b.loadMetrics(ctx, objectID, recipe)
 	linkedObjects := b.loadLinks(ctx, objectType, objectID, recipe)
 
@@ -241,6 +257,8 @@ func (b *RecipeContextBuilder) loadRootObject(ctx context.Context, recipe *ontol
 		props = filtered
 	}
 
+	props = b.filterPropertiesByAvailability(objectType, props)
+
 	return &ontRepo.ObjectInstance{
 		ObjectType: objectType,
 		ID:         id,
@@ -329,11 +347,12 @@ func (b *RecipeContextBuilder) loadLinks(ctx context.Context, objectType, object
 		}
 
 		for i := range linked {
+			props := b.filterPropertiesByAvailability(linked[i].ObjectType, linked[i].Properties)
 			results = append(results, linkedObject{
 				LinkName:   linkName,
 				ObjectType: linked[i].ObjectType,
 				ObjectID:   linked[i].ID,
-				Properties: linked[i].Properties,
+				Properties: props,
 			})
 		}
 	}
@@ -473,6 +492,47 @@ func (b *RecipeContextBuilder) buildPolicyResult() *PolicyResult {
 		actionTypes: b.actionTypes,
 	}
 	return v2.buildPolicyResult()
+}
+
+// filterPropertiesByAvailability filters properties based on ObjectPropertyV2.Availability.
+// "planned" properties are skipped; "virtual" properties are kept with a source_explanation note.
+func (b *RecipeContextBuilder) filterPropertiesByAvailability(objectType string, props map[string]interface{}) map[string]interface{} {
+	if b.compiler == nil || len(props) == 0 {
+		return props
+	}
+	ot, ok := b.compiler.GetObjectType(objectType)
+	if !ok {
+		return props
+	}
+
+	filtered := make(map[string]interface{}, len(props))
+	var sourceNotes []string
+
+	for name, val := range props {
+		propDef, exists := ot.Properties[name]
+		if !exists {
+			// Property not in schema — keep it as-is
+			filtered[name] = val
+			continue
+		}
+
+		if propDef.Availability == "planned" {
+			// Skip planned properties — not yet available
+			continue
+		}
+
+		filtered[name] = val
+
+		if propDef.Availability == "virtual" {
+			sourceNotes = append(sourceNotes, fmt.Sprintf("%s: derived/computed (virtual)", name))
+		}
+	}
+
+	if len(sourceNotes) > 0 {
+		filtered["_source_explanations"] = sourceNotes
+	}
+
+	return filtered
 }
 
 func buildProps(rootObj *ontRepo.ObjectInstance, metricResults map[string]*ontology.MetricResult) map[string]interface{} {

@@ -74,5 +74,62 @@ func ValidateV2(objects map[string]*ObjectTypeV2) []ValidationIssue {
 		}
 	}
 
+	// 5. Field consistency
+	issues = append(issues, ValidateV2FieldConsistency(objects)...)
+
+	return issues
+}
+
+// ValidateV2FieldConsistency checks object field definitions for consistency.
+//
+// Checks:
+//  1. Real fields must have SourceField or Expression.
+//  2. Virtual fields must have metric_ref or expression (warning if neither).
+//  3. Planned fields must NOT have llm_readable=true.
+//  4. Stable objects should have at least one real field (warning).
+func ValidateV2FieldConsistency(objects map[string]*ObjectTypeV2) []ValidationIssue {
+	var issues []ValidationIssue
+
+	for name, ot := range objects {
+		realCount := 0
+
+		for _, prop := range ot.Properties {
+			switch prop.Availability {
+			case "real":
+				realCount++
+				if prop.SourceField == "" && prop.Expression == "" {
+					issues = append(issues, ValidationIssue{
+						ObjectType: name, Severity: "error",
+						Message: fmt.Sprintf("real property %q must have source_field or expression", prop.Name),
+					})
+				}
+
+			case "virtual":
+				if prop.MetricRef == "" && prop.Expression == "" {
+					issues = append(issues, ValidationIssue{
+						ObjectType: name, Severity: "warning",
+						Message: fmt.Sprintf("virtual property %q has no metric_ref or expression", prop.Name),
+					})
+				}
+
+			case "planned":
+				if prop.LLMReadable {
+					issues = append(issues, ValidationIssue{
+						ObjectType: name, Severity: "error",
+						Message: fmt.Sprintf("planned property %q must not have llm_readable=true", prop.Name),
+					})
+				}
+			}
+		}
+
+		// 4. Stable objects should have at least one real field.
+		if ot.Maturity == "stable" && realCount == 0 {
+			issues = append(issues, ValidationIssue{
+				ObjectType: name, Severity: "warning",
+				Message: "stable object has no real fields (availability=real)",
+			})
+		}
+	}
+
 	return issues
 }

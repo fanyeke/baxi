@@ -11,7 +11,7 @@ import (
 
 func TestRenderEvidence_BasicSubstitution(t *testing.T) {
 	rule := EvidenceRule{
-		Source: "metric:test",
+		Source:         "metric:test",
 		Interpretation: "Seller {object_id} late delivery rate is {current} (baseline: {baseline}, delta: {delta}), severity: {severity}",
 	}
 	params := map[string]interface{}{
@@ -104,8 +104,8 @@ func TestRenderRecipeEvidence_NilRecipe(t *testing.T) {
 
 func TestRenderRecipeEvidence_EmptyRules(t *testing.T) {
 	recipe := &ContextRecipe{
-		Name:           "test",
-		EvidenceRules:  []EvidenceRule{},
+		Name:          "test",
+		EvidenceRules: []EvidenceRule{},
 	}
 	rendered := RenderRecipeEvidence(recipe, "OBJ_001", "", nil)
 	assert.NotNil(t, rendered, "empty rules should return empty slice")
@@ -179,4 +179,154 @@ func TestRenderEvidence_AllEvidenceRules(t *testing.T) {
 			assert.NotEmpty(t, result, "rendered output should not be empty")
 		})
 	}
+}
+
+func TestUnifyEvidenceFormat(t *testing.T) {
+	t.Run("metric evidence", func(t *testing.T) {
+		re := RenderedEvidence{
+			Source:   "metric:seller_late_delivery_rate_7d",
+			Rendered: "Seller SELLER_001 late delivery rate is 0.31 (baseline: 0.08, delta: 0.23)",
+		}
+		vals := EvidenceValues{
+			ObjectID: "SELLER_001",
+			Current:  0.31,
+			Baseline: 0.08,
+			Delta:    0.23,
+			Severity: "high",
+		}
+		ue := UnifyEvidenceFormat(re, vals, "seller")
+
+		assert.Equal(t, "metric:SELLER_001:seller_late_delivery_rate_7d", ue.EvidenceID)
+		assert.Equal(t, "metric", ue.Type)
+		assert.Equal(t, "seller", ue.ObjectType)
+		assert.Equal(t, "SELLER_001", ue.ObjectID)
+		assert.Equal(t, 0.31, ue.Current)
+		assert.Equal(t, 0.08, ue.Baseline)
+		assert.Equal(t, 0.23, ue.Delta)
+		assert.Equal(t, "high", ue.Severity)
+		assert.Equal(t, re.Rendered, ue.Interpretation)
+	})
+
+	t.Run("link evidence", func(t *testing.T) {
+		re := RenderedEvidence{
+			Source:   "link:recent_orders",
+			Rendered: "Recent orders for SELLER_042 show delivery patterns",
+		}
+		vals := EvidenceValues{
+			ObjectID: "SELLER_042",
+			Severity: "medium",
+		}
+		ue := UnifyEvidenceFormat(re, vals, "seller")
+
+		assert.Equal(t, "link:SELLER_042:recent_orders", ue.EvidenceID)
+		assert.Equal(t, "link", ue.Type)
+		assert.Equal(t, "seller", ue.ObjectType)
+		assert.Equal(t, "SELLER_042", ue.ObjectID)
+		assert.Equal(t, 0.0, ue.Current)
+		assert.Equal(t, 0.0, ue.Baseline)
+		assert.Equal(t, 0.0, ue.Delta)
+		assert.Equal(t, "medium", ue.Severity)
+		assert.Equal(t, re.Rendered, ue.Interpretation)
+	})
+
+	t.Run("unknown source type", func(t *testing.T) {
+		re := RenderedEvidence{
+			Source:   "log:some_check",
+			Rendered: "Check passed for OBJ_099",
+		}
+		vals := EvidenceValues{
+			ObjectID: "OBJ_099",
+			Severity: "low",
+		}
+		ue := UnifyEvidenceFormat(re, vals, "task")
+
+		assert.Equal(t, "unknown", ue.Type)
+		assert.Equal(t, "unknown:OBJ_099:log:some_check", ue.EvidenceID)
+	})
+
+	t.Run("zero values", func(t *testing.T) {
+		re := RenderedEvidence{
+			Source:   "metric:no_data_metric",
+			Rendered: "No data for OBJ_000",
+		}
+		vals := EvidenceValues{
+			ObjectID: "OBJ_000",
+			Severity: "low",
+		}
+		ue := UnifyEvidenceFormat(re, vals, "order")
+
+		assert.Equal(t, "metric", ue.Type)
+		assert.Equal(t, 0.0, ue.Current)
+		assert.Equal(t, 0.0, ue.Baseline)
+		assert.Equal(t, 0.0, ue.Delta)
+	})
+}
+
+func TestRenderRecipeEvidenceUnified(t *testing.T) {
+	t.Run("with metric results", func(t *testing.T) {
+		recipe := &ContextRecipe{
+			Name: "test_recipe",
+			EvidenceRules: []EvidenceRule{
+				{Source: "metric:late_rate", Interpretation: "Late rate is {current} (baseline: {baseline})"},
+				{Source: "link:delivery", Interpretation: "Delivery check for {object_id}"},
+			},
+		}
+		metricResults := map[string]*MetricResult{
+			"late_rate": {Value: 0.31, Baseline: 0.08},
+		}
+		unified := RenderRecipeEvidenceUnified(recipe, "SELLER_001", "seller", "high", metricResults)
+
+		require.Len(t, unified, 2)
+
+		// Metric evidence
+		assert.Equal(t, "metric:SELLER_001:late_rate", unified[0].EvidenceID)
+		assert.Equal(t, "metric", unified[0].Type)
+		assert.Equal(t, "seller", unified[0].ObjectType)
+		assert.Equal(t, "SELLER_001", unified[0].ObjectID)
+		assert.Equal(t, 0.31, unified[0].Current)
+		assert.Equal(t, 0.08, unified[0].Baseline)
+		assert.InDelta(t, 0.23, unified[0].Delta, 0.001)
+		assert.Equal(t, "high", unified[0].Severity)
+		assert.Contains(t, unified[0].Interpretation, "0.31")
+
+		// Link evidence
+		assert.Equal(t, "link:SELLER_001:delivery", unified[1].EvidenceID)
+		assert.Equal(t, "link", unified[1].Type)
+		assert.Equal(t, "seller", unified[1].ObjectType)
+		assert.Contains(t, unified[1].Interpretation, "SELLER_001")
+	})
+
+	t.Run("nil recipe", func(t *testing.T) {
+		unified := RenderRecipeEvidenceUnified(nil, "OBJ_001", "seller", "", nil)
+		assert.Nil(t, unified)
+	})
+
+	t.Run("empty rules", func(t *testing.T) {
+		recipe := &ContextRecipe{
+			Name:          "test",
+			EvidenceRules: []EvidenceRule{},
+		}
+		unified := RenderRecipeEvidenceUnified(recipe, "OBJ_001", "seller", "", nil)
+		assert.NotNil(t, unified)
+		assert.Empty(t, unified)
+	})
+
+	t.Run("missing metric results", func(t *testing.T) {
+		recipe := &ContextRecipe{
+			Name: "test",
+			EvidenceRules: []EvidenceRule{
+				{Source: "metric:missing_metric", Interpretation: "Value is {current}"},
+			},
+		}
+		unified := RenderRecipeEvidenceUnified(recipe, "OBJ_001", "seller", "low", nil)
+
+		require.Len(t, unified, 1)
+		assert.Equal(t, "metric:OBJ_001:missing_metric", unified[0].EvidenceID)
+		assert.Equal(t, "metric", unified[0].Type)
+		assert.Equal(t, 0.0, unified[0].Current)
+		assert.Equal(t, 0.0, unified[0].Baseline)
+		assert.Equal(t, 0.0, unified[0].Delta)
+		assert.Equal(t, "low", unified[0].Severity)
+		assert.Contains(t, unified[0].Interpretation, "0.00")
+	})
 }

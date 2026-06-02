@@ -283,6 +283,11 @@ func (r *LinkResolver) compileQueryRef(source ObjectRef, link *ObjectLinkV2, lim
 	// placeholder. We keep $1 as a pgx parameterized placeholder to prevent
 	// SQL injection from user-controlled objectID values.
 	template := link.Target.Key
+
+	// Validate the SQL template before building the query.
+	if err := ValidateQueryRef(template); err != nil {
+		return nil, fmt.Errorf("query_ref validation failed: %w", err)
+	}
 	sortClause := r.resolveSort(link)
 
 	// Wrap with LIMIT/OFFSET if not already in template.

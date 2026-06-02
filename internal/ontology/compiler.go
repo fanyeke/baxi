@@ -29,9 +29,25 @@ func (qc *QueryCompiler) CompileGetObject(objectType, objectID string) (*Compile
 	var selectCols []string
 	var columns []string
 	var nonAggCols []string
+	var metricRefs []string
+	var virtualProps []string
 	args := pgx.NamedArgs{}
 
 	for name, prop := range ot.Properties {
+		// Skip metric_ref properties — resolved separately, not in SQL
+		if prop.MetricRef != "" {
+			metricRefs = append(metricRefs, name)
+			continue
+		}
+		// Skip planned properties — not yet implemented
+		if prop.Availability == "planned" {
+			continue
+		}
+		// Virtual properties without an expression cannot be computed in SQL
+		if prop.Availability == "virtual" && prop.Expression == "" {
+			virtualProps = append(virtualProps, name)
+			continue
+		}
 		colExpr := prop.SourceField
 		if prop.Expression != "" {
 			colExpr = prop.Expression
@@ -61,13 +77,15 @@ func (qc *QueryCompiler) CompileGetObject(objectType, objectID string) (*Compile
 		strings.Join(selectCols, ", "), schema, table, pk, groupBy)
 
 	return &CompiledQuery{
-		SQL:        sql,
-		Args:       args,
-		Columns:    columns,
-		ObjectType: objectType,
-		PrimaryKey: ot.Source.PrimaryKey,
-		Schema:     ot.Source.Schema,
-		Table:      ot.Source.Table,
+		SQL:               sql,
+		Args:              args,
+		Columns:           columns,
+		MetricRefs:        metricRefs,
+		VirtualProperties: virtualProps,
+		ObjectType:        objectType,
+		PrimaryKey:        ot.Source.PrimaryKey,
+		Schema:            ot.Source.Schema,
+		Table:             ot.Source.Table,
 	}, nil
 }
 
@@ -94,9 +112,25 @@ func (qc *QueryCompiler) CompileSearchObjects(objectType string, filters ObjectF
 	var whereClauses []string
 	var selectCols []string
 	var columns []string
+	var metricRefs []string
+	var virtualProps []string
 
 	// Build SELECT columns
 	for name, prop := range ot.Properties {
+		// Skip metric_ref properties — resolved separately, not in SQL
+		if prop.MetricRef != "" {
+			metricRefs = append(metricRefs, name)
+			continue
+		}
+		// Skip planned properties — not yet implemented
+		if prop.Availability == "planned" {
+			continue
+		}
+		// Virtual properties without an expression cannot be computed in SQL
+		if prop.Availability == "virtual" && prop.Expression == "" {
+			virtualProps = append(virtualProps, name)
+			continue
+		}
 		colExpr := prop.SourceField
 		if prop.Expression != "" {
 			colExpr = prop.Expression
@@ -158,14 +192,16 @@ func (qc *QueryCompiler) CompileSearchObjects(objectType string, filters ObjectF
 		schema, table, whereSQL)
 
 	return &CompiledQuery{
-		SQL:        dataSQL,
-		CountSQL:   countSQL,
-		Args:       args,
-		Columns:    columns,
-		ObjectType: objectType,
-		PrimaryKey: ot.Source.PrimaryKey,
-		Schema:     ot.Source.Schema,
-		Table:      ot.Source.Table,
+		SQL:               dataSQL,
+		CountSQL:          countSQL,
+		Args:              args,
+		Columns:           columns,
+		MetricRefs:        metricRefs,
+		VirtualProperties: virtualProps,
+		ObjectType:        objectType,
+		PrimaryKey:        ot.Source.PrimaryKey,
+		Schema:            ot.Source.Schema,
+		Table:             ot.Source.Table,
 	}, nil
 }
 
@@ -186,10 +222,26 @@ func (qc *QueryCompiler) CompileObjectMetrics(objectType, objectID string) (*Com
 
 	var selectCols []string
 	var columns []string
+	var metricRefs []string
+	var virtualProps []string
 	args := pgx.NamedArgs{}
 
 	// Collect aggregate properties
 	for name, prop := range ot.Properties {
+		// Skip metric_ref properties — resolved separately, not in SQL
+		if prop.MetricRef != "" {
+			metricRefs = append(metricRefs, name)
+			continue
+		}
+		// Skip planned properties — not yet implemented
+		if prop.Availability == "planned" {
+			continue
+		}
+		// Virtual properties without an expression cannot be computed in SQL
+		if prop.Availability == "virtual" && prop.Expression == "" {
+			virtualProps = append(virtualProps, name)
+			continue
+		}
 		if prop.Aggregation == "" {
 			continue
 		}
@@ -205,6 +257,20 @@ func (qc *QueryCompiler) CompileObjectMetrics(objectType, objectID string) (*Com
 	// Fallback: if no aggregate properties, select all properties as plain values
 	if len(selectCols) == 0 {
 		for name, prop := range ot.Properties {
+			// Skip metric_ref properties — resolved separately, not in SQL
+			if prop.MetricRef != "" {
+				metricRefs = append(metricRefs, name)
+				continue
+			}
+			// Skip planned properties — not yet implemented
+			if prop.Availability == "planned" {
+				continue
+			}
+			// Virtual properties without an expression cannot be computed in SQL
+			if prop.Availability == "virtual" && prop.Expression == "" {
+				virtualProps = append(virtualProps, name)
+				continue
+			}
 			colExpr := prop.SourceField
 			if prop.Expression != "" {
 				colExpr = prop.Expression
@@ -223,13 +289,15 @@ func (qc *QueryCompiler) CompileObjectMetrics(objectType, objectID string) (*Com
 		strings.Join(selectCols, ", "), schema, table, pk)
 
 	return &CompiledQuery{
-		SQL:        sql,
-		Args:       args,
-		Columns:    columns,
-		ObjectType: objectType,
-		PrimaryKey: ot.Source.PrimaryKey,
-		Schema:     ot.Source.Schema,
-		Table:      ot.Source.Table,
+		SQL:               sql,
+		Args:              args,
+		Columns:           columns,
+		MetricRefs:        metricRefs,
+		VirtualProperties: virtualProps,
+		ObjectType:        objectType,
+		PrimaryKey:        ot.Source.PrimaryKey,
+		Schema:            ot.Source.Schema,
+		Table:             ot.Source.Table,
 	}, nil
 }
 

@@ -11,12 +11,13 @@ import "github.com/jackc/pgx/v5"
 // It supersedes ObjectType with richer metadata and replaces flat source_tables
 // with structured Source, extends Properties with filter/search/meta fields,
 // adds explicit Metrics references, multi-cardinality Links, object-level
-// AllowedActions, and a Governance policy.
+// AllowedActions, Maturity classification, and a Governance policy.
 type ObjectTypeV2 struct {
 	Name           string
 	DisplayName    string
 	Description    string
 	Grain          string
+	Maturity       string // stable, virtual, or planned — controls Agent decision path eligibility
 	Source         ObjectSource
 	Properties     map[string]ObjectPropertyV2
 	Metrics        []string
@@ -36,7 +37,7 @@ type ObjectSource struct {
 
 // ObjectPropertyV2 extends ObjectProperty with search/filter/metadata flags,
 // optional SQL Expression, optional MetricRef for pre-aggregated metrics,
-// and explicit sensitivity classification.
+// explicit sensitivity classification, and availability marking.
 type ObjectPropertyV2 struct {
 	Name        string // property name
 	Type        string // string, int, float, bool, timestamp
@@ -49,6 +50,7 @@ type ObjectPropertyV2 struct {
 	Searchable  bool   // whether this field can be searched via ILIKE
 	Filterable  bool   // whether this field can be used as a filter
 	IsPK        bool   // true if this property is the primary key
+	Availability string // real, virtual, or planned — controls query compilation and LLM context
 }
 
 // ObjectLinkV2 extends ObjectLink with cardinality support, multiple resolution
@@ -90,16 +92,17 @@ type objectSchemaConfigV2 struct {
 
 // rawObjectV2 mirrors the v2 YAML structure for a single object type.
 type rawObjectV2 struct {
-	DisplayName string                        `yaml:"display_name"`
-	Description string                        `yaml:"description"`
-	Grain       string                        `yaml:"grain"`
-	Source      rawSourceV2                   `yaml:"source"`
-	Properties  map[string]rawPropertyV2      `yaml:"properties"`
-	Metrics     []string                      `yaml:"metrics,omitempty"`
-	Relationships map[string]rawLinkV2        `yaml:"relationships,omitempty"`
-	Actions     []string                      `yaml:"actions,omitempty"`
-	AlertFields []string                      `yaml:"alert_fields,omitempty"`
-	Governance  rawGovernanceV2               `yaml:"governance,omitempty"`
+	DisplayName   string                   `yaml:"display_name"`
+	Description   string                   `yaml:"description"`
+	Grain         string                   `yaml:"grain"`
+	Maturity      string                   `yaml:"maturity,omitempty"`
+	Source        rawSourceV2              `yaml:"source"`
+	Properties    map[string]rawPropertyV2 `yaml:"properties"`
+	Metrics       []string                 `yaml:"metrics,omitempty"`
+	Relationships map[string]rawLinkV2     `yaml:"relationships,omitempty"`
+	Actions       []string                 `yaml:"actions,omitempty"`
+	AlertFields   []string                 `yaml:"alert_fields,omitempty"`
+	Governance    rawGovernanceV2          `yaml:"governance,omitempty"`
 }
 
 type rawSourceV2 struct {
@@ -109,16 +112,17 @@ type rawSourceV2 struct {
 }
 
 type rawPropertyV2 struct {
-	Type        string `yaml:"type"`
-	Source      string `yaml:"source,omitempty"`
-	Expression  string `yaml:"expression,omitempty"`
-	MetricRef   string `yaml:"metric_ref,omitempty"`
-	Sensitivity string `yaml:"sensitivity,omitempty"`
-	Agg         string `yaml:"agg,omitempty"`
-	LLMReadable *bool  `yaml:"llm_readable,omitempty"`
-	Searchable  *bool  `yaml:"searchable,omitempty"`
-	Filterable  *bool  `yaml:"filterable,omitempty"`
-	IsPK        *bool  `yaml:"is_pk,omitempty"`
+	Type         string `yaml:"type"`
+	Source       string `yaml:"source,omitempty"`
+	Expression   string `yaml:"expression,omitempty"`
+	MetricRef    string `yaml:"metric_ref,omitempty"`
+	Sensitivity  string `yaml:"sensitivity,omitempty"`
+	Agg          string `yaml:"agg,omitempty"`
+	LLMReadable  *bool  `yaml:"llm_readable,omitempty"`
+	Searchable   *bool  `yaml:"searchable,omitempty"`
+	Filterable   *bool  `yaml:"filterable,omitempty"`
+	IsPK         *bool  `yaml:"is_pk,omitempty"`
+	Availability string `yaml:"availability,omitempty"`
 }
 
 type rawLinkV2 struct {
@@ -146,15 +150,18 @@ type rawGovernanceV2 struct {
 }
 
 // CompiledQuery holds a fully resolved query plan compiled from Ontology v2 schema.
-// It contains the parameterized SQL, column metadata, and object identity info.
+// It contains the parameterized SQL, column metadata, object identity info, and
+// lists of metric references and virtual properties for post-query resolution.
 // Args uses pgx.NamedArgs so the caller can pass them directly to pool.Query/QueryRow.
 type CompiledQuery struct {
-	SQL        string         // data query (with ORDER BY for search, or LIMIT 1 for get)
-	CountSQL   string         // COUNT(*) query (without ORDER BY/LIMIT), used by search
-	Args       pgx.NamedArgs  // named parameters
-	Columns    []string       // column/property names in select order
-	ObjectType string
-	PrimaryKey string
-	Schema     string
-	Table      string
+	SQL              string        // data query (with ORDER BY for search, or LIMIT 1 for get)
+	CountSQL         string        // COUNT(*) query (without ORDER BY/LIMIT), used by search
+	Args             pgx.NamedArgs // named parameters
+	Columns          []string      // column/property names in select order
+	MetricRefs       []string      // metric_ref property names (resolved separately, not in SQL)
+	VirtualProperties []string     // virtual property names (resolved by metric_ref/expression/link)
+	ObjectType       string
+	PrimaryKey       string
+	Schema           string
+	Table            string
 }

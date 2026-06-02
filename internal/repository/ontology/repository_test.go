@@ -2,14 +2,17 @@ package ontology
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
-	"baxi/internal/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"baxi/internal/repository/common"
+	"baxi/internal/testutil"
 )
 
 const ontoDDL = `
@@ -89,7 +92,7 @@ func TestOntologyQueryObjects_WithRole(t *testing.T) {
 func TestOntologyQueryObjects_Seller(t *testing.T) {
 	repo, pool := setupRepo(t)
 	ctx := WithRole(context.Background(), "admin")
-	pool.Exec(ctx, `INSERT INTO dwd.item_level(seller_id,order_id,price) VALUES('slr-1','ord-1',100.0)`)
+	pool.Exec(ctx, `INSERT INTO dwd.item_level(order_id,order_item_id,seller_id,price) VALUES('ord-1',1,'slr-1',100.0)`)
 
 	f := ObjectFilters{ObjectType: "seller", Limit: 10}
 	result, err := repo.QueryByObjectType(ctx, "seller", f)
@@ -151,4 +154,69 @@ func TestOntologyTableAccessible(t *testing.T) {
 	assert.True(t, tableAccessible("admin", "dwd", "order_level"))
 	assert.True(t, tableAccessible("viewer", "ops", "metric_alert"))
 	assert.False(t, tableAccessible("analyst", "dwd", "order_level"))
+}
+
+func TestV2Compiler_StableObjectsCompile(t *testing.T) {
+	schemaPath := filepath.Join("..", "..", "..", "config", "aip_object_schema_v2.yml")
+	data, err := os.ReadFile(schemaPath)
+	require.NoError(t, err)
+
+	var cfg struct {
+		Version string `yaml:"version"`
+		Objects map[string]struct {
+			Maturity    string `yaml:"maturity"`
+			DisplayName string `yaml:"display_name"`
+			Grain       string `yaml:"grain"`
+			Source      struct {
+				Schema     string `yaml:"schema"`
+				Table      string `yaml:"table"`
+				PrimaryKey string `yaml:"primary_key"`
+			} `yaml:"source"`
+			Properties map[string]struct {
+				Type         string `yaml:"type"`
+				Source       string `yaml:"source"`
+				IsPK         *bool  `yaml:"is_pk,omitempty"`
+				Availability string `yaml:"availability,omitempty"`
+			} `yaml:"properties"`
+		} `yaml:"objects"`
+	}
+	err = yaml.Unmarshal(data, &cfg)
+	require.NoError(t, err)
+	require.NotEmpty(t, cfg.Objects, "v2 schema should contain object definitions")
+
+	stableCount := 0
+	for name, obj := range cfg.Objects {
+		if obj.Maturity != "stable" {
+			continue
+		}
+		stableCount++
+		t.Run(name, func(t *testing.T) {
+			// source.schema is required for query compilation.
+			assert.NotEmpty(t, obj.Source.Schema, "source.schema must be set")
+			// source.table is required for query compilation.
+			assert.NotEmpty(t, obj.Source.Table, "source.table must be set")
+			// source.primary_key is required for get-by-id queries.
+			assert.NotEmpty(t, obj.Source.PrimaryKey, "source.primary_key must be set")
+			// At least one property must be defined for column selection.
+			assert.NotEmpty(t, obj.Properties, "at least one property must be defined")
+			// grain is required by schema validation.
+			assert.NotEmpty(t, obj.Grain, "grain must be set")
+
+			// Verify at least one non-planned property exists (compiler skips planned).
+			hasCompilable := false
+			hasPK := false
+			for _, prop := range obj.Properties {
+				if prop.Availability != "planned" {
+					hasCompilable = true
+				}
+				if prop.IsPK != nil && *prop.IsPK {
+					hasPK = true
+				}
+			}
+			assert.True(t, hasCompilable, "at least one non-planned property must exist")
+			assert.True(t, hasPK || obj.Source.PrimaryKey != "", "at least one is_pk property or source.primary_key required")
+		})
+	}
+
+	require.Greater(t, stableCount, 0, "at least one stable object must exist in v2 schema")
 }

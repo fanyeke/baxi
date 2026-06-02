@@ -4,6 +4,7 @@ objects:
     display_name: 卖家
     description: 电商平台上的销售主体
     grain: seller_id
+    maturity: stable
     source:
       schema: dwd
       table: item_level
@@ -12,6 +13,7 @@ objects:
       seller_id:
         type: string
         source: seller_id
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -19,35 +21,41 @@ objects:
       seller_state:
         type: string
         source: seller_state
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       seller_city:
         type: string
         source: seller_city
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       gmv:
         type: float
         source: price
+        availability: real
         agg: sum
         sensitivity: L0
         llm_readable: true
       order_count:
         type: int
         source: order_id
+        availability: real
         agg: count_distinct
         sensitivity: L0
         llm_readable: true
       avg_review_score:
         type: float
         expression: "AVG(order_level.review_score)"
+        availability: virtual
         sensitivity: L0
         llm_readable: true
       late_delivery_rate:
         type: float
         metric_ref: seller_late_delivery_rate_7d
+        availability: virtual
         sensitivity: L0
         llm_readable: true
     metrics:
@@ -102,6 +110,7 @@ objects:
     display_name: 订单
     description: 电商平台上的客户订单
     grain: order_id
+    maturity: stable
     source:
       schema: dwd
       table: order_level
@@ -110,6 +119,7 @@ objects:
       order_id:
         type: string
         source: order_id
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -117,22 +127,26 @@ objects:
       order_status:
         type: string
         source: order_status
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       payment_value:
         type: float
         source: payment_value
+        availability: real
         sensitivity: L1
         llm_readable: true
       review_score:
         type: float
         source: review_score
+        availability: real
         sensitivity: L0
         llm_readable: true
       delivery_status:
         type: string
         source: delivery_status
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
@@ -221,6 +235,7 @@ objects:
     display_name: 产品
     description: 电商平台上销售的产品
     grain: product_id
+    maturity: stable
     source:
       schema: dwd
       table: item_level
@@ -229,6 +244,7 @@ objects:
       product_id:
         type: string
         source: product_id
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -236,27 +252,32 @@ objects:
       product_category_name:
         type: string
         source: product_category_name
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       product_category_name_english:
         type: string
         source: product_category_name_english
+        availability: real
         sensitivity: L0
         llm_readable: true
       price:
         type: float
         source: price
+        availability: real
         sensitivity: L1
         llm_readable: true
       freight_value:
         type: float
         source: freight_value
+        availability: real
         sensitivity: L1
         llm_readable: true
       avg_review_score:
         type: float
         expression: "AVG(order_level.review_score)"
+        availability: virtual
         sensitivity: L0
         llm_readable: true
     alert_fields:
@@ -301,6 +322,7 @@ objects:
     display_name: 异常事件
     description: 系统产生的指标告警事件
     grain: alert_id
+    maturity: stable
     source:
       schema: ops
       table: metric_alert
@@ -309,6 +331,7 @@ objects:
       alert_id:
         type: string
         source: alert_id
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -316,28 +339,33 @@ objects:
       rule_id:
         type: string
         source: rule_id
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       metric_name:
         type: string
         source: metric_name
+        availability: real
         sensitivity: L0
         llm_readable: true
       severity:
         type: string
         source: severity
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       current_value:
         type: float
         source: current_value
+        availability: real
         sensitivity: L0
         llm_readable: true
       baseline_value:
         type: float
         source: baseline_value
+        availability: real
         sensitivity: L0
         llm_readable: true
     actions:
@@ -356,6 +384,7 @@ objects:
     display_name: 评价
     description: 电商平台上的客户评价
     grain: review_id
+    maturity: virtual
     source:
       schema: dwd
       table: order_level  # closest table; review_score field available, review_id mapped from order_id
@@ -364,6 +393,7 @@ objects:
       review_id:
         type: string
         source: order_id  # mapped from order_id (1:1 per order)
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -371,35 +401,41 @@ objects:
       order_id:
         type: string
         source: order_id
+        availability: real
         sensitivity: L2
         llm_readable: false
         searchable: true
       product_id:
         type: string
         source: order_id  # resolved via item_level join; no direct product_id in order_level
+        availability: real
         sensitivity: L2
         llm_readable: false
       customer_id:
         type: string
         source: customer_id  # not directly available in current tables
+        availability: planned
         sensitivity: L2
         llm_readable: false
       review_score:
         type: float
         source: review_score
+        availability: real
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       review_text:
         type: string
         source: review_text  # not directly available in current tables
+        availability: planned
         sensitivity: L2
-        llm_readable: true
+        llm_readable: false
       created_at:
         type: datetime
         source: review_created_at  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
     relationships:
       order:
         display_name: 关联订单
@@ -431,6 +467,7 @@ objects:
     display_name: 支付
     description: 电商平台上的支付记录
     grain: payment_id
+    maturity: virtual
     source:
       schema: dwd
       table: order_level  # closest table; payment_value available, payment_id mapped from order_id
@@ -439,6 +476,7 @@ objects:
       payment_id:
         type: string
         source: order_id  # mapped from order_id (1:1 per order)
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -446,31 +484,36 @@ objects:
       order_id:
         type: string
         source: order_id
+        availability: real
         sensitivity: L2
         llm_readable: false
         searchable: true
       payment_value:
         type: float
         source: payment_value
+        availability: real
         sensitivity: L1
         llm_readable: true
       payment_type:
         type: string
         source: payment_type  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       payment_status:
         type: string
         source: payment_status  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       installments:
         type: int
         source: installments  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
     relationships:
       order:
         display_name: 关联订单
@@ -492,6 +535,7 @@ objects:
     display_name: 物流
     description: 电商平台上的物流配送记录
     grain: shipment_id
+    maturity: virtual
     source:
       schema: dwd
       table: order_level  # closest table; delivery_status available, shipment_id mapped from order_id
@@ -500,6 +544,7 @@ objects:
       shipment_id:
         type: string
         source: order_id  # mapped from order_id (1:1 per order)
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -507,36 +552,42 @@ objects:
       order_id:
         type: string
         source: order_id
+        availability: real
         sensitivity: L2
         llm_readable: false
         searchable: true
       carrier:
         type: string
         source: carrier  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       delivery_status:
         type: string
         source: delivery_status
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       shipping_cost:
         type: float
         source: freight_value  # mapped from item_level.freight_value as proxy for shipping cost
+        availability: real
         sensitivity: L1
         llm_readable: true
       estimated_delivery:
         type: datetime
         source: estimated_delivery_date  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
       actual_delivery:
         type: datetime
         source: actual_delivery_date  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
     relationships:
       order:
         display_name: 关联订单
@@ -564,6 +615,7 @@ objects:
     display_name: 营销线索
     description: 营销活动产生的潜在客户线索
     grain: lead_id
+    maturity: planned
     source:
       schema: dwd
       table: item_level  # closest table with seller context; no dedicated marketing table exists
@@ -572,6 +624,7 @@ objects:
       lead_id:
         type: string
         source: seller_id  # mapped from seller_id (1:1 per seller)
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -579,36 +632,42 @@ objects:
       seller_id:
         type: string
         source: seller_id
+        availability: real
         sensitivity: L2
         llm_readable: false
         searchable: true
       campaign_source:
         type: string
         source: campaign_source  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       conversion_status:
         type: string
         source: conversion_status  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       lead_score:
         type: float
         source: lead_score  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
       created_date:
         type: datetime
         source: created_date  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
       converted_date:
         type: datetime
         source: converted_date  # not directly available in current tables
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
     relationships:
       seller:
         display_name: 关联卖家
@@ -630,6 +689,7 @@ objects:
     display_name: 客户
     description: 电商平台上的客户主体
     grain: customer_id
+    maturity: stable
     source:
       schema: dwd
       table: order_level
@@ -638,6 +698,7 @@ objects:
       customer_id:
         type: string
         source: customer_id
+        availability: real
         is_pk: true
         sensitivity: L2
         llm_readable: false
@@ -646,35 +707,41 @@ objects:
         # TODO: customer_city not in dwd.order_level; migrate from raw.olist_customers or create dwd.customer table
         type: string
         source: customer_city
+        availability: planned
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       customer_state:
         type: string
         source: customer_state
+        availability: real
         sensitivity: L0
-        llm_readable: true
+        llm_readable: false
         filterable: true
       order_count_90d:
         type: int
         source: order_id
+        availability: real
         agg: count_distinct
         sensitivity: L0
         llm_readable: true
       gmv_90d:
         type: float
         source: payment_value
+        availability: real
         agg: sum
         sensitivity: L1
         llm_readable: true
       avg_review_score:
         type: float
         expression: "AVG(order_level.review_score)"
+        availability: virtual
         sensitivity: L0
         llm_readable: true
       last_order_date:
         type: datetime
         source: order_purchase_timestamp
+        availability: real
         agg: max
         sensitivity: L0
         llm_readable: true
@@ -729,6 +796,7 @@ objects:
     display_name: 品类
     description: 电商平台上的产品分类
     grain: category_id
+    maturity: stable
     source:
       schema: dwd
       table: item_level
@@ -737,6 +805,7 @@ objects:
       category_id:
         type: string
         source: product_category_name
+        availability: real
         is_pk: true
         sensitivity: L0
         llm_readable: true
@@ -744,29 +813,34 @@ objects:
       category_name:
         type: string
         source: product_category_name
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       category_name_en:
         type: string
         source: product_category_name_english
+        availability: real
         sensitivity: L0
         llm_readable: true
       gmv_7d:
         type: float
         source: price
+        availability: real
         agg: sum
         sensitivity: L0
         llm_readable: true
       order_count_7d:
         type: int
         source: order_id
+        availability: real
         agg: count_distinct
         sensitivity: L0
         llm_readable: true
       avg_review_score:
         type: float
         expression: "AVG(order_level.review_score)"
+        availability: virtual
         sensitivity: L0
         llm_readable: true
     metrics:
@@ -812,6 +886,7 @@ objects:
     display_name: 区域
     description: 基于地理区域的统计分析
     grain: region_id
+    maturity: stable
     source:
       schema: dwd
       table: order_level
@@ -820,6 +895,7 @@ objects:
       region_id:
         type: string
         source: customer_state
+        availability: real
         is_pk: true
         sensitivity: L0
         llm_readable: true
@@ -827,34 +903,40 @@ objects:
       region_name:
         type: string
         source: customer_state
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       seller_count:
         type: int
         expression: "COUNT(DISTINCT dwd.item_level.seller_id)"
+        availability: virtual
         sensitivity: L0
         llm_readable: true
       customer_count:
         type: int
         source: customer_id
+        availability: real
         agg: count_distinct
         sensitivity: L0
         llm_readable: true
       order_count_7d:
         type: int
         source: order_id
+        availability: real
         agg: count_distinct
         sensitivity: L0
         llm_readable: true
       late_delivery_rate_7d:
         type: float
         expression: "AVG(CASE WHEN is_late THEN 1.0 ELSE 0.0 END)"
+        availability: virtual
         sensitivity: L0
         llm_readable: true
       gmv_7d:
         type: float
         source: payment_value
+        availability: real
         agg: sum
         sensitivity: L0
         llm_readable: true
@@ -901,6 +983,7 @@ objects:
     display_name: 平台全局
     description: Platform-level aggregated metrics and health indicators
     grain: metric_date
+    maturity: stable
     source:
       schema: mart
       table: metric_dimension_daily
@@ -909,32 +992,38 @@ objects:
       metric_name:
         type: string
         source: metric_name
+        availability: real
         sensitivity: L0
         llm_readable: true
         filterable: true
       metric_date:
         type: datetime
         source: snapshot_date
+        availability: real
         is_pk: true
         sensitivity: L0
       current_value:
         type: float
         source: current_value
+        availability: real
         sensitivity: L0
         llm_readable: true
       baseline_value:
         type: float
         source: baseline_value
+        availability: real
         sensitivity: L1
         llm_readable: true
       change_pct:
         type: float
         source: change_pct
+        availability: real
         sensitivity: L0
         llm_readable: true
       dimension_type:
         type: string
         source: dimension_type
+        availability: real
         sensitivity: L0
         filterable: true
     actions:

@@ -1,6 +1,7 @@
 package decision
 
 import (
+	"context"
 	"testing"
 
 	"baxi/internal/llm"
@@ -168,9 +169,18 @@ func TestGenerateDataSnapshotID_Format(t *testing.T) {
 
 // ──── Snapshot recorder types ──────────────────────────────────────────
 
+type mockSnapshotRecorder struct{}
+
+func (m *mockSnapshotRecorder) RecordSnapshot(ctx context.Context, record DataSnapshotRecord) error {
+	return nil
+}
+
+func (m *mockSnapshotRecorder) RecordEvent(ctx context.Context, record LineageEventRecord) error {
+	return nil
+}
+
 func TestDecisionEngine_WithMockSnapshotRecorder(t *testing.T) {
 	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
-	// Use the existing mockSnapshotRecorder from engine_test.go
 	result := engine.WithSnapshotRecorder(&mockSnapshotRecorder{})
 	assert.NotNil(t, result)
 }

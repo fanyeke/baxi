@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 
@@ -270,6 +271,33 @@ type Repository struct {
 	v2Compiler V2QueryCompiler
 }
 
+// ──── V1 fallback coverage tracking ──────────────────────────────────────────
+
+var (
+	v1FallbackMu    sync.Mutex
+	v1FallbackStats = make(map[string]int)
+)
+
+// recordV1Fallback records a v1 fallback occurrence for the given object type and method.
+// The method parameter should be the function name (e.g. "GetObjectByID").
+func recordV1Fallback(objectType, method string) {
+	v1FallbackMu.Lock()
+	v1FallbackStats[objectType+":"+method]++
+	v1FallbackMu.Unlock()
+}
+
+// GetV1FallbackStats returns a snapshot copy of the v1 fallback counter map.
+// Keys follow the format "object_type:method" (e.g. "order:GetObjectByID").
+func GetV1FallbackStats() map[string]int {
+	v1FallbackMu.Lock()
+	defer v1FallbackMu.Unlock()
+	result := make(map[string]int, len(v1FallbackStats))
+	for k, v := range v1FallbackStats {
+		result[k] = v
+	}
+	return result
+}
+
 // NewRepository creates a new ontology Repository.
 func NewRepository(provider common.Querier) *Repository {
 	return &Repository{Querier: provider}
@@ -298,7 +326,10 @@ func (r *Repository) QueryByObjectType(ctx context.Context, objectType string, f
 			return r.execV2SearchObjects(ctx, compiled, filters.Limit, filters.Offset)
 		}
 		slog.Warn("v2 CompileSearchObjects failed, falling back to v1 objectTableMap",
-			"object_type", objectType, "error", err)
+			"ontology_v1_fallback", true,
+			"object_type", objectType,
+			"reason", err.Error())
+		recordV1Fallback(objectType, "QueryByObjectType")
 	}
 
 	// Fall back to v1 hardcoded mapping.
@@ -396,7 +427,10 @@ func (r *Repository) GetObjectByID(ctx context.Context, objectType, objectID str
 			return r.execV2GetObject(ctx, compiled)
 		}
 		slog.Warn("v2 CompileGetObject failed, falling back to v1 objectTableMap",
-			"object_type", objectType, "error", err)
+			"ontology_v1_fallback", true,
+			"object_type", objectType,
+			"reason", err.Error())
+		recordV1Fallback(objectType, "GetObjectByID")
 	}
 
 	// Fall back to v1 hardcoded mapping.
@@ -453,7 +487,10 @@ func (r *Repository) GetObjectMetrics(ctx context.Context, objectType, objectID 
 			return r.execV2ObjectMetrics(ctx, compiled)
 		}
 		slog.Warn("v2 CompileObjectMetrics failed, falling back to v1 objectTableMap",
-			"object_type", objectType, "error", err)
+			"ontology_v1_fallback", true,
+			"object_type", objectType,
+			"reason", err.Error())
+		recordV1Fallback(objectType, "GetObjectMetrics")
 	}
 
 	// Fall back to v1 hardcoded mapping.
@@ -506,6 +543,33 @@ func (r *Repository) GetObjectMetrics(ctx context.Context, objectType, objectID 
 // SearchObjects searches for objects matching the given filters.
 // The query string is matched against searchable columns using ILIKE.
 func (r *Repository) SearchObjects(ctx context.Context, objectType string, filters SearchFilters) (*SearchResult, error) {
+	// Try v2 compiler path first.
+	if r.v2Compiler != nil {
+		v2Filters := V2CompilerFilters{
+			Limit:  filters.Limit,
+			Offset: filters.Offset,
+		}
+		if filters.Query != "" {
+			v2Filters.Filters = map[string]interface{}{"query": filters.Query}
+		}
+		compiled, err := r.v2Compiler.CompileSearchObjects(objectType, v2Filters)
+		if err == nil {
+			result, err := r.execV2SearchObjects(ctx, compiled, filters.Limit, filters.Offset)
+			if err != nil {
+				return nil, err
+			}
+			return &SearchResult{
+				Rows:  result.Rows,
+				Total: result.Total,
+			}, nil
+		}
+		slog.Warn("v2 CompileSearchObjects failed, falling back to v1 objectTableMap",
+			"ontology_v1_fallback", true,
+			"object_type", objectType,
+			"reason", err.Error())
+		recordV1Fallback(objectType, "SearchObjects")
+	}
+
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)

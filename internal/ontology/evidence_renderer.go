@@ -23,6 +23,21 @@ type RenderedEvidence struct {
 	Rendered string
 }
 
+// UnifiedEvidence is the canonical evidence format for downstream consumers
+// (MCP tools, LLM envelopes, audit logs). It carries both the rendered
+// interpretation and the structured numeric values that produced it.
+type UnifiedEvidence struct {
+	EvidenceID     string  `json:"evidence_id"`
+	Type           string  `json:"type"`
+	ObjectType     string  `json:"object_type"`
+	ObjectID       string  `json:"object_id"`
+	Current        float64 `json:"current"`
+	Baseline       float64 `json:"baseline"`
+	Delta          float64 `json:"delta"`
+	Severity       string  `json:"severity"`
+	Interpretation string  `json:"interpretation"`
+}
+
 // RenderEvidence substitutes {placeholder} tokens in template with the
 // corresponding values from params. Float64 values are formatted to two
 // decimal places ("%.2f"). Any {placeholder} that does not appear in params
@@ -82,7 +97,7 @@ func RenderEvidence(template string, params map[string]interface{}) string {
 //	results := map[string]*MetricResult{
 //	    "seller_late_delivery_rate_7d": {Value: 0.31, Baseline: 0.08},
 //	}
-//	rendered := RenderRecipeEvidence(recipe, "SELLER_001", results)
+//	rendered := RenderRecipeEvidence(recipe, "SELLER_001", "", results)
 //	// rendered[0].Rendered == "Seller SELLER_001 late delivery rate is 0.31 ..."
 func RenderRecipeEvidence(recipe *ContextRecipe, objectID string, severity string, metricResults map[string]*MetricResult) []RenderedEvidence {
 	if recipe == nil {
@@ -146,6 +161,79 @@ func RenderAllEvidence(rules []EvidenceRule, values EvidenceValues) []RenderedEv
 			Source:   rule.Source,
 			Rendered: RenderEvidence(rule.Interpretation, params),
 		}
+	}
+	return out
+}
+
+// UnifyEvidenceFormat converts a RenderedEvidence and its associated
+// EvidenceValues into the canonical UnifiedEvidence format. The objectType
+// parameter identifies the domain object kind (e.g. "seller", "order").
+//
+// The evidence_id is derived as "<type>:<object_id>:<source_key>" where
+// source_key is the source string with the metric:/link: prefix stripped.
+func UnifyEvidenceFormat(re RenderedEvidence, values EvidenceValues, objectType string) UnifiedEvidence {
+	evidenceType := "unknown"
+	sourceKey := re.Source
+	if strings.HasPrefix(re.Source, "metric:") {
+		evidenceType = "metric"
+		sourceKey = strings.TrimPrefix(re.Source, "metric:")
+	} else if strings.HasPrefix(re.Source, "link:") {
+		evidenceType = "link"
+		sourceKey = strings.TrimPrefix(re.Source, "link:")
+	}
+
+	evidenceID := fmt.Sprintf("%s:%s:%s", evidenceType, values.ObjectID, sourceKey)
+
+	return UnifiedEvidence{
+		EvidenceID:     evidenceID,
+		Type:           evidenceType,
+		ObjectType:     objectType,
+		ObjectID:       values.ObjectID,
+		Current:        values.Current,
+		Baseline:       values.Baseline,
+		Delta:          values.Delta,
+		Severity:       values.Severity,
+		Interpretation: re.Rendered,
+	}
+}
+
+// RenderRecipeEvidenceUnified renders the evidence rules from a recipe against
+// the corresponding metric values and returns them in the canonical
+// UnifiedEvidence format.
+//
+// It delegates to RenderRecipeEvidence for template rendering, then converts
+// each result via UnifyEvidenceFormat. The objectType parameter populates the
+// ObjectType field on every returned evidence item.
+//
+// See RenderRecipeEvidence for details on metric result lookup semantics.
+func RenderRecipeEvidenceUnified(recipe *ContextRecipe, objectID string, objectType string, severity string, metricResults map[string]*MetricResult) []UnifiedEvidence {
+	rendered := RenderRecipeEvidence(recipe, objectID, severity, metricResults)
+	if rendered == nil {
+		return nil
+	}
+	if len(rendered) == 0 {
+		return []UnifiedEvidence{}
+	}
+
+	out := make([]UnifiedEvidence, len(rendered))
+	for i, re := range rendered {
+		vals := EvidenceValues{
+			ObjectID: objectID,
+			Severity: severity,
+		}
+
+		// Reconstruct numeric values from metric results so UnifyEvidenceFormat
+		// receives accurate Current/Baseline/Delta.
+		if strings.HasPrefix(re.Source, "metric:") {
+			metricName := strings.TrimPrefix(re.Source, "metric:")
+			if res, ok := metricResults[metricName]; ok && res != nil {
+				vals.Current = res.Value
+				vals.Baseline = res.Baseline
+				vals.Delta = res.Value - res.Baseline
+			}
+		}
+
+		out[i] = UnifyEvidenceFormat(re, vals, objectType)
 	}
 	return out
 }
