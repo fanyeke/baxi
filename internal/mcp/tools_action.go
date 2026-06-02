@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"baxi/internal/action"
@@ -19,6 +20,17 @@ func (s *Server) registerActionTools() {
 	)
 	s.server.AddTool(executeTool, s.handleExecuteProposal)
 
+	// Tool: propose_action
+	proposeTool := mcp.NewTool(
+		"propose_action",
+		mcp.WithDescription("Propose an action on an object (creates a proposal for approval)"),
+		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the target object")),
+		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target object")),
+		mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to propose")),
+		mcp.WithString("params", mcp.Description("Optional JSON-encoded parameters for the action")),
+	)
+	s.server.AddTool(proposeTool, s.handleProposeAction)
+
 	// Tool: get_decision_context
 	contextTool := mcp.NewTool(
 		"get_decision_context",
@@ -26,6 +38,56 @@ func (s *Server) registerActionTools() {
 		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to get context for")),
 	)
 	s.server.AddTool(contextTool, s.handleGetDecisionContext)
+}
+
+// handleProposeAction handles the propose_action tool.
+func (s *Server) handleProposeAction(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := req.GetArguments()
+	objectType, ok := args["object_type"].(string)
+	if !ok || objectType == "" {
+		return mcp.NewToolResultError("object_type is required"), nil
+	}
+
+	objectID, ok := args["object_id"].(string)
+	if !ok || objectID == "" {
+		return mcp.NewToolResultError("object_id is required"), nil
+	}
+
+	actionType, ok := args["action_type"].(string)
+	if !ok || actionType == "" {
+		return mcp.NewToolResultError("action_type is required"), nil
+	}
+
+	var params map[string]interface{}
+	if paramsRaw, ok := args["params"].(string); ok && paramsRaw != "" {
+		if err := json.Unmarshal([]byte(paramsRaw), &params); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid JSON in params: %v", err)), nil
+		}
+	}
+
+	result, err := s.ontologySvc.ProposeAction(ctx, objectType, objectID, actionType, params)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to propose action: %v", err)), nil
+	}
+
+	res := map[string]interface{}{
+		"success":     result.Success,
+		"action_type": result.ActionType,
+		"object_type": result.ObjectType,
+		"object_id":   result.ObjectID,
+	}
+	if result.Result != nil {
+		if proposalID, ok := result.Result["proposal_id"].(string); ok {
+			res["proposal_id"] = proposalID
+		}
+		if status, ok := result.Result["status"].(string); ok {
+			res["status"] = status
+		}
+		if msg, ok := result.Result["message"].(string); ok {
+			res["message"] = msg
+		}
+	}
+	return mcp.NewToolResultJSON(res)
 }
 
 // handleExecuteProposal handles the execute_proposal tool.

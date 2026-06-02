@@ -45,6 +45,7 @@ func (s *Server) registerOntologyTools() {
 		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target object")),
 		mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to execute")),
 		mcp.WithString("params", mcp.Description("Optional JSON-encoded parameters for the action")),
+		mcp.WithBoolean("dry_run", mcp.Description("When true (default), simulate execution without side effects")),
 	)
 	s.server.AddTool(executeActionTool, s.handleExecuteAction)
 }
@@ -157,16 +158,27 @@ func (s *Server) handleExecuteAction(ctx context.Context, req mcp.CallToolReques
 		}
 	}
 
+	dryRun := true
+	if v, ok := args["dry_run"].(bool); ok {
+		dryRun = v
+	}
+
+	if !dryRun {
+		return mcp.NewToolResultError("execute_action with dry_run=false requires an approved proposal. Use propose_action first, then execute_proposal after approval"), nil
+	}
+
 	result, err := s.ontologySvc.ExecuteAction(ctx, objectType, objectID, actionType, params)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to execute action: %v", err)), nil
 	}
 
-	return mcp.NewToolResultJSON(map[string]interface{}{
+	res := map[string]interface{}{
 		"success":     result.Success,
 		"action_type": result.ActionType,
 		"object_type": result.ObjectType,
 		"object_id":   result.ObjectID,
 		"result":      result.Result,
-	})
+		"dry_run":     dryRun,
+	}
+	return mcp.NewToolResultJSON(res)
 }

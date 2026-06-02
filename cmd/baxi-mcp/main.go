@@ -29,6 +29,7 @@ import (
 	"baxi/internal/pipeline"
 	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
+	"baxi/internal/repository/common"
 	"baxi/internal/review"
 	"baxi/internal/service"
 )
@@ -180,10 +181,38 @@ func main() {
 	sandboxService := review.NewSandboxService(pool.Pool)
 	sandboxSvc := &sandboxServiceAdapter{svc: sandboxService}
 
-	// Create MCP server with stdio transport
-	// Build context service (recipe-driven, v2). Pass nil for now until wired.
+	var buildContextSvc mcp.BuildContextService
+	if objRegistry != nil {
+		v2Objects := objRegistry.AllObjectsV2()
+		if len(v2Objects) > 0 {
+			recipes, recipeErr := ontology.LoadContextRecipes(filepath.Join(configDir, "context_recipes.yml"))
+			if recipeErr != nil {
+				zapLog.Warn("failed to load context recipes, build_context will be unavailable", zap.Error(recipeErr))
+			} else {
+				metricDefs, metricErr := ontology.LoadMetricDefinitions(filepath.Join(configDir, "metric_definitions.yml"))
+				if metricErr != nil {
+					zapLog.Warn("failed to load metric definitions, build_context will be unavailable", zap.Error(metricErr))
+				} else {
+					metricResolver := ontology.NewMetricResolver(metricDefs)
+					metricQuery := ontology.NewMetricQueryResolver(metricResolver, pool.Pool)
+					linkExec := newLinkExecutor(common.NewPoolProvider(pool.Pool))
+					qc := ontology.NewQueryCompiler(v2Objects, 10000)
+					buildContextSvc = decision.NewRecipeContextBuilder(
+						decisionRepo, qc, metricQuery, linkExec, pool.Pool,
+						action.NewActionTypeProviderAdapter(reg), recipes,
+					)
+					ontologySvc.linkResolver = ontology.NewLinkResolver(v2Objects)
+					zapLog.Info("RecipeContextBuilder wired", zap.Int("recipes", len(recipes)), zap.Int("metrics", len(metricDefs)))
+				}
+			}
+		}
+	}
+	if buildContextSvc == nil {
+		zapLog.Warn("build_context service is not available (recipe loading failed or no v2 objects)")
+	}
+
 	mcpSrv, err := mcp.NewServer(
-		decisionSvcAdapter, engine, ctxBuilder, nil, proposalSvc, alertSvc, govSvc, pipelineSvc,
+		decisionSvcAdapter, engine, ctxBuilder, buildContextSvc, proposalSvc, alertSvc, govSvc, pipelineSvc,
 		reviewSvcAdapter, outboxSvc, pipelineInfoSvc,
 		executeSvc, pool.Pool,
 		statusSvc, searchSvc, ontologySvc,
@@ -599,12 +628,13 @@ func (a *searchServiceAdapter) SearchObjects(ctx context.Context, objectType, qu
 
 // ontologyServiceAdapter wraps ontology and action services for MCP ontology tools.
 type ontologyServiceAdapter struct {
-	registry  *ontology.ObjectRegistry
-	querySvc  *ontology.ObjectQueryService
-	ontRepo   *repository.OntologyRepo
-	pool      *pgxpool.Pool
-	actionReg *action.ActionRegistry
-	applySvc  *action.ApplyService
+	registry     *ontology.ObjectRegistry
+	querySvc     *ontology.ObjectQueryService
+	ontRepo      *repository.OntologyRepo
+	pool         *pgxpool.Pool
+	actionReg    *action.ActionRegistry
+	applySvc     *action.ApplyService
+	linkResolver *ontology.LinkResolver
 }
 
 func (a *ontologyServiceAdapter) DescribeOntology(ctx context.Context) (*mcp.OntologyDescriptor, error) {
@@ -700,6 +730,84 @@ func (a *ontologyServiceAdapter) GetLinkedObjects(ctx context.Context, objectTyp
 		return nil, fmt.Errorf("ontology services are not available")
 	}
 
+	if a.linkResolver != nil {
+		v2Result, err := a.getLinkedObjectsV2(ctx, objectType, objectID, linkName, maxDepth)
+		if err == nil {
+			return v2Result, nil
+		}
+	}
+
+	return a.getLinkedObjectsV1(ctx, objectType, objectID, linkName, maxDepth)
+}
+
+func (a *ontologyServiceAdapter) getLinkedObjectsV2(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*mcp.LinkedObjectsResult, error) {
+	source := ontology.ObjectRef{ObjectType: objectType, ObjectID: objectID}
+	opts := ontology.LinkOptions{MaxDepth: maxDepth}
+
+	_, err := a.linkResolver.GetLinkedObjects(ctx, source, linkName, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	plans, err := a.linkResolver.CompileAllLinks(ctx, source, opts)
+	if err != nil {
+		return nil, fmt.Errorf("compile links: %w", err)
+	}
+
+	var plan *ontology.CompiledLink
+	for _, p := range plans {
+		if p.LinkName == linkName {
+			plan = p
+			break
+		}
+	}
+	if plan == nil {
+		return nil, fmt.Errorf("link %q not found in compiled plans", linkName)
+	}
+
+	rows, err := a.pool.Query(ctx, plan.SQL, plan.Args...)
+	if err != nil {
+		return nil, fmt.Errorf("execute link query: %w", err)
+	}
+	defer rows.Close()
+
+	objects := make([]mcp.ObjectContext, 0)
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			continue
+		}
+		props := make(map[string]interface{})
+		for i, col := range plan.Columns {
+			if i < len(values) {
+				props[col] = values[i]
+			}
+		}
+		objID := objectID
+		if len(plan.Columns) > 0 {
+			objID = fmt.Sprintf("%v", props[plan.Columns[0]])
+		}
+		objects = append(objects, mcp.ObjectContext{
+			ObjectType: plan.TargetType,
+			ObjectID:   objID,
+			Properties: props,
+		})
+	}
+
+	return &mcp.LinkedObjectsResult{
+		ObjectType: objectType,
+		ObjectID:   objectID,
+		Links: []mcp.LinkResult{
+			{
+				LinkName:   linkName,
+				TargetType: plan.TargetType,
+				Objects:    objects,
+			},
+		},
+	}, nil
+}
+
+func (a *ontologyServiceAdapter) getLinkedObjectsV1(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*mcp.LinkedObjectsResult, error) {
 	links, err := a.registry.GetLinks(objectType)
 	if err != nil {
 		return nil, fmt.Errorf("get links for %s: %w", objectType, err)
@@ -1039,5 +1147,100 @@ func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, 
 		ObjectType: objectType,
 		ObjectID:   objectID,
 		Result:     res,
+	}, nil
+}
+
+func newLinkExecutor(provider *common.PoolProvider) *ontologyRepo.LinkExecutor {
+	return ontologyRepo.NewLinkExecutor(provider)
+}
+
+func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*mcp.ActionResult, error) {
+	if a.registry == nil {
+		return nil, fmt.Errorf("ontology registry is not available")
+	}
+
+	allowedActions := a.registry.GetAllowedActions(objectType)
+	allowed := false
+	for _, aa := range allowedActions {
+		if aa == actionType {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("action %q not allowed on %s", actionType, objectType)},
+		}, nil
+	}
+
+	if a.actionReg != nil && !a.actionReg.IsAllowed(actionType) {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("action %q is not allowed by the action registry", actionType)},
+		}, nil
+	}
+
+	if a.actionReg != nil && len(params) > 0 {
+		if errs := a.actionReg.ValidatePayload(actionType, params); len(errs) > 0 {
+			return &mcp.ActionResult{
+				Success:    false,
+				ActionType: actionType,
+				ObjectType: objectType,
+				ObjectID:   objectID,
+				Result:     map[string]interface{}{"error": fmt.Sprintf("invalid action payload: %v", errs)},
+			}, nil
+		}
+	}
+
+	caseID := fmt.Sprintf("mcp-%d", time.Now().UnixNano())
+	proposalID := fmt.Sprintf("mcp-proposal-%d", time.Now().UnixNano())
+
+	payloadJSON, _ := json.Marshal(params)
+
+	_, err := a.pool.Exec(ctx,
+		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'open', NOW())`, caseID)
+	if err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("create decision case: %v", err)},
+		}, nil
+	}
+
+	title := fmt.Sprintf("MCP propose_action: %s on %s %s", actionType, objectType, objectID)
+	_, err = a.pool.Exec(ctx,
+		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, risk_level, requires_human_review, payload, created_at)
+		 VALUES ($1, $2, $3, 'proposed', $4, 'medium', true, $5, NOW())`,
+		proposalID, caseID, actionType, title, payloadJSON)
+	if err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("create action proposal: %v", err)},
+		}, nil
+	}
+
+	return &mcp.ActionResult{
+		Success:    true,
+		ActionType: actionType,
+		ObjectType: objectType,
+		ObjectID:   objectID,
+		Result: map[string]interface{}{
+			"proposal_id": proposalID,
+			"case_id":     caseID,
+			"status":      "proposed",
+			"message":     fmt.Sprintf("Action %q proposed on %s %s", actionType, objectType, objectID),
+		},
 	}, nil
 }
