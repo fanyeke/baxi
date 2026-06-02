@@ -61,7 +61,7 @@ func (s *Server) handleDescribeOntology(ctx context.Context, req mcp.CallToolReq
 	})
 }
 
-// handleGetObject retrieves a single object by type and ID.
+// handleGetObject retrieves a single object by type and ID, including metrics.
 func (s *Server) handleGetObject(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
 	objectType, ok := args["object_type"].(string)
@@ -79,11 +79,19 @@ func (s *Server) handleGetObject(ctx context.Context, req mcp.CallToolRequest) (
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to get object: %v", err)), nil
 	}
 
-	return mcp.NewToolResultJSON(map[string]interface{}{
+	// Attempt to fetch metrics; non-fatal if unavailable.
+	metrics, _ := s.ontologySvc.GetObjectMetrics(ctx, objectType, objectID)
+
+	result := map[string]interface{}{
 		"object_type": obj.ObjectType,
 		"object_id":   obj.ObjectID,
 		"properties":  obj.Properties,
-	})
+	}
+	if metrics != nil && len(metrics) > 0 {
+		result["metrics"] = metrics
+	}
+
+	return mcp.NewToolResultJSON(result)
 }
 
 // handleGetLinkedObjects retrieves objects linked to the specified object.

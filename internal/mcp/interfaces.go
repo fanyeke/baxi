@@ -89,13 +89,29 @@ type OntologyDescriptor struct {
 
 // ObjectTypeDescriptor describes a single AIP object type.
 type ObjectTypeDescriptor struct {
-	Name           string              `json:"name"`
-	DisplayName    string              `json:"display_name"`
-	Grain          string              `json:"grain"`
+	Name           string               `json:"name"`
+	DisplayName    string               `json:"display_name"`
+	Grain          string               `json:"grain"`
+	Source         *SourceDescriptor    `json:"source,omitempty"`
 	Properties     []PropertyDescriptor `json:"properties"`
+	Metrics        []string             `json:"metrics,omitempty"`
 	Links          []LinkDescriptor     `json:"links"`
 	AllowedActions []string             `json:"allowed_actions"`
 	LLMAccess      LLMAccessDescriptor  `json:"llm_access"`
+	Governance     *GovDescriptor       `json:"governance,omitempty"`
+}
+
+// SourceDescriptor describes the physical table backing an object type.
+type SourceDescriptor struct {
+	Schema     string `json:"schema"`
+	Table      string `json:"table"`
+	PrimaryKey string `json:"primary_key"`
+}
+
+// GovDescriptor describes the governance policy for an object type.
+type GovDescriptor struct {
+	DefaultRole string `json:"default_role"`
+	RedactPII   bool   `json:"redact_pii"`
 }
 
 // PropertyDescriptor describes a single property of an object type.
@@ -155,8 +171,14 @@ type ActionResult struct {
 type OntologyService interface {
 	DescribeOntology(ctx context.Context) (*OntologyDescriptor, error)
 	GetObject(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
+	GetObjectMetrics(ctx context.Context, objectType, objectID string) (map[string]float64, error)
 	GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
 	ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+}
+
+// BuildContextService defines the interface for building recipe-driven contexts.
+type BuildContextService interface {
+	BuildEnvelope(ctx context.Context, caseID, recipeID string) (*llm.LLMSafeContextEnvelope, error)
 }
 
 // ActionSchemaService defines the interface for action schema operations.
