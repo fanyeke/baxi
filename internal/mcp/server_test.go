@@ -330,6 +330,7 @@ func TestNewServer(t *testing.T) {
 		&MockDecisionService{},
 		&MockDecisionEngine{},
 		&MockContextBuilder{},
+		nil, // buildContextSvc
 		&MockProposalService{},
 		&MockAlertService{},
 		&MockGovernanceService{},
@@ -363,6 +364,7 @@ func TestServerToolRegistration(t *testing.T) {
 		&MockDecisionService{},
 		&MockDecisionEngine{},
 		&MockContextBuilder{},
+		nil, // buildContextSvc
 		&MockProposalService{},
 		&MockAlertService{},
 		&MockGovernanceService{},
@@ -390,6 +392,7 @@ func TestServerToolRegistration(t *testing.T) {
 	expectedTools := []string{
 		"create_decision_case",
 		"decide",
+		"build_context",
 		"list_cases",
 		"get_case",
 		"list_proposals",
