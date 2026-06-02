@@ -3,35 +3,40 @@ package mcp
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mark3labs/mcp-go/server"
+
+	"baxi/internal/ontology"
 )
 
-// Server wraps the MCP server with service dependencies.
 type Server struct {
-	server          *server.MCPServer
-	decisionSvc     DecisionService
-	decisionEngine  DecisionEngine
-	contextBuilder  ContextBuilder
-	proposalSvc     ProposalService
-	alertSvc        AlertService
-	govSvc          GovernanceService
-	pipelineRunner  PipelineRunner
-	reviewSvc       ReviewService
-	outboxSvc       OutboxService
-	pipelineInfoSvc PipelineInfoService
-	statusSvc       SystemStatusService
-	searchSvc       ObjectSearchService
-	executeSvc      ExecuteService
-	ontologySvc     OntologyService
-	schemaSvc       ActionSchemaService
-	sandboxSvc      SandboxService
-	pool            *pgxpool.Pool
+	server                 *server.MCPServer
+	decisionSvc            DecisionService
+	decisionEngine         DecisionEngine
+	contextBuilder         ContextBuilder
+	buildContextSvc        BuildContextService
+	proposalSvc            ProposalService
+	alertSvc               AlertService
+	govSvc                 GovernanceService
+	pipelineRunner         PipelineRunner
+	reviewSvc              ReviewService
+	outboxSvc              OutboxService
+	pipelineInfoSvc        PipelineInfoService
+	statusSvc              SystemStatusService
+	searchSvc              ObjectSearchService
+	executeSvc             ExecuteService
+	ontologySvc            OntologyService
+	schemaSvc              ActionSchemaService
+	sandboxSvc             SandboxService
+	pool                   *pgxpool.Pool
+	linkResolver           *ontology.LinkResolver
+	actionBindingValidator *ontology.ActionBindingValidator
+	objectTypesV2          map[string]*ontology.ObjectTypeV2
 }
 
-// NewServer creates a new MCP server with the given service dependencies.
 func NewServer(
 	decisionSvc DecisionService,
 	decisionEngine DecisionEngine,
 	contextBuilder ContextBuilder,
+	buildContextSvc BuildContextService,
 	proposalSvc ProposalService,
 	alertSvc AlertService,
 	govSvc GovernanceService,
@@ -59,6 +64,7 @@ func NewServer(
 		decisionSvc:     decisionSvc,
 		decisionEngine:  decisionEngine,
 		contextBuilder:  contextBuilder,
+		buildContextSvc: buildContextSvc,
 		proposalSvc:     proposalSvc,
 		alertSvc:        alertSvc,
 		govSvc:          govSvc,
@@ -84,13 +90,25 @@ func NewServer(
 	srv.registerStatusTools()
 	srv.registerActionTools()
 	srv.registerOntologyTools()
+	srv.registerContextTools()
 	srv.registerSchemaTools()
 	srv.registerSandboxTools()
 
 	return srv, nil
 }
 
-// Run starts the MCP server using stdio transport.
+func (s *Server) SetLinkResolver(lr *ontology.LinkResolver) {
+	s.linkResolver = lr
+}
+
+func (s *Server) SetActionBindingValidator(abv *ontology.ActionBindingValidator) {
+	s.actionBindingValidator = abv
+}
+
+func (s *Server) SetObjectTypesV2(ots map[string]*ontology.ObjectTypeV2) {
+	s.objectTypesV2 = ots
+}
+
 func (s *Server) Run() error {
 	return server.ServeStdio(s.server)
 }

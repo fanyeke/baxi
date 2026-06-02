@@ -21,7 +21,8 @@ func WithRole(ctx context.Context, role string) context.Context {
 // OntologyRepo provides object queries against dwd/mart/ops tables.
 // DEPRECATED: Use ontology.Repository instead.
 type OntologyRepo struct {
-	inner *ontologyRepo.Repository
+	inner      *ontologyRepo.Repository
+	v2Compiler ontologyRepo.V2QueryCompiler
 }
 
 // NewOntologyRepo creates a new OntologyRepo (DEPRECATED).
@@ -29,9 +30,20 @@ func NewOntologyRepo() *OntologyRepo {
 	return &OntologyRepo{}
 }
 
+// SetV2Compiler sets the v2 query compiler, enabling schema-driven queries.
+func (r *OntologyRepo) SetV2Compiler(qc ontologyRepo.V2QueryCompiler) {
+	r.v2Compiler = qc
+	if r.inner != nil {
+		r.inner.SetV2Compiler(qc)
+	}
+}
+
 func (r *OntologyRepo) ensureInitialized(pool *pgxpool.Pool) *ontologyRepo.Repository {
 	if r.inner == nil {
 		r.inner = ontologyRepo.NewRepository(common.NewPoolProvider(pool))
+		if r.v2Compiler != nil {
+			r.inner.SetV2Compiler(r.v2Compiler)
+		}
 	}
 	return r.inner
 }

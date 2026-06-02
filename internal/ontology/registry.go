@@ -19,9 +19,15 @@ import (
 // It loads schema from the gov.object_schema table (via ObjectSchemaRepository)
 // with a YAML file as fallback, and exposes typed accessor methods. All public
 // methods are safe for concurrent use.
+//
+// V2 extension: objectsV2 holds ObjectTypeV2 definitions loaded from the v2
+// YAML schema (config/aip_object_schema_v2.yml). When a v2 object exists for
+// a type, it takes precedence over the v1 definition for query compilation,
+// link resolution, context recipes, and action binding.
 type ObjectRegistry struct {
-	mu      sync.RWMutex
-	objects map[string]*ObjectType
+	mu        sync.RWMutex
+	objects   map[string]*ObjectType
+	objectsV2 map[string]*ObjectTypeV2
 }
 
 // NewObjectRegistry creates an ObjectRegistry, loading object schema from the
@@ -31,7 +37,8 @@ type ObjectRegistry struct {
 // Either repo or yamlPath must be usable; if both fail an error is returned.
 func NewObjectRegistry(ctx context.Context, repo repository.ObjectSchemaRepository, pool *pgxpool.Pool, yamlPath string) (*ObjectRegistry, error) {
 	reg := &ObjectRegistry{
-		objects: make(map[string]*ObjectType),
+		objects:   make(map[string]*ObjectType),
+		objectsV2: make(map[string]*ObjectTypeV2),
 	}
 
 	// Attempt DB load first.
@@ -54,6 +61,62 @@ func NewObjectRegistry(ctx context.Context, repo repository.ObjectSchemaReposito
 	}
 
 	return nil, errors.New("ontology: no schema source available (nil repo and empty yamlPath)")
+}
+
+// LoadV2Schema loads v2 object types from a v2 YAML file into the registry.
+// These coexist with v1 objects - HasV2/GetObjectV2 methods check v2 first.
+func (r *ObjectRegistry) LoadV2Schema(v2YamlPath string) error {
+	v2objs, err := LoadObjectSchemaV2(v2YamlPath)
+	if err != nil {
+		return fmt.Errorf("load v2 schema: %w", err)
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for k, v := range v2objs {
+		r.objectsV2[k] = v
+	}
+	return nil
+}
+
+// GetObjectTypeV2 returns the v2 object type definition for the given name.
+func (r *ObjectRegistry) GetObjectTypeV2(name string) (*ObjectTypeV2, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	ot, ok := r.objectsV2[name]
+	if !ok {
+		return nil, fmt.Errorf("ontology: unknown v2 object type %q", name)
+	}
+	return ot, nil
+}
+
+// HasV2 checks if a v2 object type definition exists for the given name.
+func (r *ObjectRegistry) HasV2(name string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	_, ok := r.objectsV2[name]
+	return ok
+}
+
+// ListObjectTypesV2 returns all registered v2 object type names.
+func (r *ObjectRegistry) ListObjectTypesV2() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	names := make([]string, 0, len(r.objectsV2))
+	for n := range r.objectsV2 {
+		names = append(names, n)
+	}
+	return names
+}
+
+// AllObjectsV2 returns the full v2 object map.
+func (r *ObjectRegistry) AllObjectsV2() map[string]*ObjectTypeV2 {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	result := make(map[string]*ObjectTypeV2, len(r.objectsV2))
+	for k, v := range r.objectsV2 {
+		result[k] = v
+	}
+	return result
 }
 
 // GetObjectType returns the object type definition for the given name.

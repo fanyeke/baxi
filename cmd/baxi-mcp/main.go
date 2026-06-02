@@ -25,6 +25,7 @@ import (
 	mcp "baxi/internal/mcp"
 	"baxi/internal/model"
 	"baxi/internal/ontology"
+	ontologyRepo "baxi/internal/repository/ontology"
 	"baxi/internal/pipeline"
 	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
@@ -147,6 +148,17 @@ func main() {
 			zapLog.Warn("failed to load object registry, ontology tools will be unavailable", zap.Error(regErr))
 		}
 	}
+
+	// Set up v2 QueryCompiler on the repository if v2 objects are available.
+	if objRegistry != nil {
+		v2Objects := objRegistry.AllObjectsV2()
+		if len(v2Objects) > 0 {
+			qc := ontology.NewQueryCompiler(v2Objects, 10000)
+			ontologyRepo.SetV2Compiler(&v2CompilerAdapter{compiler: qc})
+			zapLog.Info("v2 QueryCompiler enabled", zap.Int("object_types", len(v2Objects)))
+		}
+	}
+
 	ontologySvc := &ontologyServiceAdapter{
 		registry:  objRegistry,
 		querySvc:  objectSvc,
@@ -169,8 +181,9 @@ func main() {
 	sandboxSvc := &sandboxServiceAdapter{svc: sandboxService}
 
 	// Create MCP server with stdio transport
+	// Build context service (recipe-driven, v2). Pass nil for now until wired.
 	mcpSrv, err := mcp.NewServer(
-		decisionSvcAdapter, engine, ctxBuilder, proposalSvc, alertSvc, govSvc, pipelineSvc,
+		decisionSvcAdapter, engine, ctxBuilder, nil, proposalSvc, alertSvc, govSvc, pipelineSvc,
 		reviewSvcAdapter, outboxSvc, pipelineInfoSvc,
 		executeSvc, pool.Pool,
 		statusSvc, searchSvc, ontologySvc,
@@ -671,6 +684,17 @@ func (a *ontologyServiceAdapter) GetObject(ctx context.Context, objectType, obje
 	}, nil
 }
 
+func (a *ontologyServiceAdapter) GetObjectMetrics(ctx context.Context, objectType, objectID string) (map[string]float64, error) {
+	if a.ontRepo == nil || a.pool == nil {
+		return nil, fmt.Errorf("ontology repository is not available")
+	}
+	metrics, err := a.ontRepo.GetObjectMetrics(ctx, a.pool, objectType, objectID)
+	if err != nil {
+		return nil, fmt.Errorf("get metrics for %s %s: %w", objectType, objectID, err)
+	}
+	return metrics.Metrics, nil
+}
+
 func (a *ontologyServiceAdapter) GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*mcp.LinkedObjectsResult, error) {
 	if a.registry == nil || a.querySvc == nil {
 		return nil, fmt.Errorf("ontology services are not available")
@@ -781,6 +805,70 @@ func (a *schemaServiceAdapter) GetActionSchema(ctx context.Context, actionType s
 		PayloadSchema: def.PayloadSchema,
 		AllowedBy:     def.AllowedBy,
 		Adapter:       def.Adapter,
+	}, nil
+}
+
+// v2CompilerAdapter wraps ontology.QueryCompiler to implement
+// ontologyRepo.V2QueryCompiler (avoids circular imports).
+type v2CompilerAdapter struct {
+	compiler *ontology.QueryCompiler
+}
+
+func (a *v2CompilerAdapter) CompileGetObject(objectType, objectID string) (*ontologyRepo.V2CompiledQuery, error) {
+	result, err := a.compiler.CompileGetObject(objectType, objectID)
+	if err != nil {
+		return nil, err
+	}
+	return &ontologyRepo.V2CompiledQuery{
+		SQL:        result.SQL,
+		CountSQL:   result.CountSQL,
+		Args:       result.Args,
+		Columns:    result.Columns,
+		ObjectType: result.ObjectType,
+		PrimaryKey: result.PrimaryKey,
+		Schema:     result.Schema,
+		Table:      result.Table,
+	}, nil
+}
+
+func (a *v2CompilerAdapter) CompileSearchObjects(objectType string, filters ontologyRepo.V2CompilerFilters) (*ontologyRepo.V2CompiledQuery, error) {
+	ontologyFilters := ontology.ObjectFilters{
+		Filters: filters.Filters,
+		Limit:   filters.Limit,
+		Offset:  filters.Offset,
+		Sort:    filters.Sort,
+		Order:   filters.Order,
+	}
+	result, err := a.compiler.CompileSearchObjects(objectType, ontologyFilters)
+	if err != nil {
+		return nil, err
+	}
+	return &ontologyRepo.V2CompiledQuery{
+		SQL:        result.SQL,
+		CountSQL:   result.CountSQL,
+		Args:       result.Args,
+		Columns:    result.Columns,
+		ObjectType: result.ObjectType,
+		PrimaryKey: result.PrimaryKey,
+		Schema:     result.Schema,
+		Table:      result.Table,
+	}, nil
+}
+
+func (a *v2CompilerAdapter) CompileObjectMetrics(objectType, objectID string) (*ontologyRepo.V2CompiledQuery, error) {
+	result, err := a.compiler.CompileObjectMetrics(objectType, objectID)
+	if err != nil {
+		return nil, err
+	}
+	return &ontologyRepo.V2CompiledQuery{
+		SQL:        result.SQL,
+		CountSQL:   result.CountSQL,
+		Args:       result.Args,
+		Columns:    result.Columns,
+		ObjectType: result.ObjectType,
+		PrimaryKey: result.PrimaryKey,
+		Schema:     result.Schema,
+		Table:      result.Table,
 	}, nil
 }
 

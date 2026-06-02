@@ -73,6 +73,12 @@ func (r *ObjectRegistry) Validate() *ValidationResult {
 		}
 	}
 
+	// V2 validation: validate registered v2 objects.
+	v2Issues := ValidateV2(r.objectsV2)
+	for _, iss := range v2Issues {
+		result.Issues = append(result.Issues, iss)
+	}
+
 	// Build summary.
 	result.Valid = true
 	for _, iss := range result.Issues {

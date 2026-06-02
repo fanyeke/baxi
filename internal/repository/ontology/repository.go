@@ -224,11 +224,47 @@ func (m tableMapping) fullTableName() string {
 	return m.Schema + "." + m.Table
 }
 
+// ──── V2 Compiler interface ───────────────────────────────────────────────────
+// These types are defined locally to avoid importing internal/ontology (circular).
+// An adapter in cmd/baxi-mcp/main.go wraps ontology.QueryCompiler.
+
+// V2QueryCompiler compiles v2 object schema definitions into safe, parameterized
+// SQL queries. Implemented via an adapter wrapping ontology.QueryCompiler.
+type V2QueryCompiler interface {
+	CompileGetObject(objectType, objectID string) (*V2CompiledQuery, error)
+	CompileSearchObjects(objectType string, filters V2CompilerFilters) (*V2CompiledQuery, error)
+	CompileObjectMetrics(objectType, objectID string) (*V2CompiledQuery, error)
+}
+
+// V2CompiledQuery holds a fully resolved SQL query from a v2 compilation.
+type V2CompiledQuery struct {
+	SQL        string         // data query (with ORDER BY for search, or LIMIT 1 for get)
+	CountSQL   string         // COUNT(*) query (without ORDER BY/LIMIT), for search totals
+	Args       pgx.NamedArgs  // named parameters
+	Columns    []string       // column/property names in select order
+	ObjectType string
+	PrimaryKey string
+	Schema     string
+	Table      string
+}
+
+// V2CompilerFilters holds filter parameters for CompileSearchObjects.
+type V2CompilerFilters struct {
+	Filters map[string]interface{}
+	Limit   int
+	Offset  int
+	Sort    string
+	Order   string
+}
+
 // ──── Repository ─────────────────────────────────────────────────────────────
 
 // Repository provides object queries against dwd/mart/ops tables with pool injection.
+// When a V2QueryCompiler is set, queries for v2-aware object types use the compiled
+// SQL instead of the hardcoded objectTableMap.
 type Repository struct {
 	*common.PoolProvider
+	v2Compiler V2QueryCompiler
 }
 
 // NewRepository creates a new ontology Repository.
@@ -236,10 +272,31 @@ func NewRepository(provider *common.PoolProvider) *Repository {
 	return &Repository{PoolProvider: provider}
 }
 
+// SetV2Compiler sets the v2 query compiler for schema-driven query compilation.
+// When set, GetObjectByID, QueryByObjectType, and GetObjectMetrics will attempt
+// v2 compilation first and fall back to v1 objectTableMap on error.
+func (r *Repository) SetV2Compiler(qc V2QueryCompiler) {
+	r.v2Compiler = qc
+}
+
 // QueryByObjectType queries objects by type, using the schema-based table mapping.
 // Filters are applied as WHERE clauses. Limit defaults to 1000, max 10000.
 // Role-based access is enforced using the role in context (default: analyst).
 func (r *Repository) QueryByObjectType(ctx context.Context, objectType string, filters ObjectFilters) (*ObjectQueryResult, error) {
+	// Try v2 compiler path first.
+	if r.v2Compiler != nil {
+		v2Filters := V2CompilerFilters{
+			Filters: filters.Filters,
+			Limit:   filters.Limit,
+			Offset:  filters.Offset,
+		}
+		compiled, err := r.v2Compiler.CompileSearchObjects(objectType, v2Filters)
+		if err == nil {
+			return r.execV2SearchObjects(ctx, compiled, filters.Limit, filters.Offset)
+		}
+	}
+
+	// Fall back to v1 hardcoded mapping.
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
@@ -324,7 +381,18 @@ func (r *Repository) QueryByObjectType(ctx context.Context, objectType string, f
 }
 
 // GetObjectByID retrieves a single object by its ID.
+// If a v2 QueryCompiler is set and the object type exists in v2 schema, the
+// compiled query is used instead of the hardcoded objectTableMap.
 func (r *Repository) GetObjectByID(ctx context.Context, objectType, objectID string) (*ObjectInstance, error) {
+	// Try v2 compiler path first.
+	if r.v2Compiler != nil {
+		compiled, err := r.v2Compiler.CompileGetObject(objectType, objectID)
+		if err == nil {
+			return r.execV2GetObject(ctx, compiled)
+		}
+	}
+
+	// Fall back to v1 hardcoded mapping.
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
@@ -371,6 +439,15 @@ func (r *Repository) GetObjectByID(ctx context.Context, objectType, objectID str
 // GetObjectMetrics retrieves metrics for a specific object.
 // Metrics are computed as SQL aggregates from the object's mapped source table.
 func (r *Repository) GetObjectMetrics(ctx context.Context, objectType, objectID string) (*ObjectMetrics, error) {
+	// Try v2 compiler path first.
+	if r.v2Compiler != nil {
+		compiled, err := r.v2Compiler.CompileObjectMetrics(objectType, objectID)
+		if err == nil {
+			return r.execV2ObjectMetrics(ctx, compiled)
+		}
+	}
+
+	// Fall back to v1 hardcoded mapping.
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
@@ -499,6 +576,143 @@ func (r *Repository) SearchObjects(ctx context.Context, objectType string, filte
 		Rows:  results,
 		Total: total,
 	}, nil
+}
+
+// ──── V2 execution helpers ────────────────────────────────────────────────────
+
+// execV2GetObject executes a v2-compiled GetObject query and returns an ObjectInstance.
+func (r *Repository) execV2GetObject(ctx context.Context, compiled *V2CompiledQuery) (*ObjectInstance, error) {
+	rows, err := r.Query(ctx, compiled.SQL, compiled.Args)
+	if err != nil {
+		return nil, fmt.Errorf("v2 get %s by id: %w", compiled.ObjectType, err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, fmt.Errorf("%s with pk=%q not found", compiled.ObjectType, compiled.PrimaryKey)
+	}
+
+	values, err := rows.Values()
+	if err != nil {
+		return nil, fmt.Errorf("v2 scan row: %w", err)
+	}
+
+	props := make(map[string]interface{}, len(compiled.Columns))
+	for i, col := range compiled.Columns {
+		if i < len(values) {
+			props[col] = values[i]
+		}
+	}
+
+	return &ObjectInstance{
+		ObjectType: compiled.ObjectType,
+		ID:         formatV2ID(compiled.PrimaryKey, compiled.Columns, props),
+		Properties: props,
+	}, nil
+}
+
+// execV2SearchObjects executes a v2-compiled search query, performing both
+// a COUNT query for total and a filtered data query with LIMIT/OFFSET.
+func (r *Repository) execV2SearchObjects(ctx context.Context, compiled *V2CompiledQuery, reqLimit, reqOffset int) (*ObjectQueryResult, error) {
+	// Count query.
+	var total int
+	if err := r.QueryRow(ctx, compiled.CountSQL, compiled.Args).Scan(&total); err != nil {
+		return nil, fmt.Errorf("v2 count %s: %w", compiled.ObjectType, err)
+	}
+
+	// Resolve limit.
+	limit := reqLimit
+	if limit <= 0 {
+		limit = 1000
+	} else if limit > 10000 {
+		return nil, fmt.Errorf("limit %d exceeds maximum of 10000", limit)
+	}
+
+	// Data query with LIMIT/OFFSET appended.
+	dataSQL := compiled.SQL + fmt.Sprintf(" LIMIT %d OFFSET %d", limit, reqOffset)
+
+	rows, err := r.Query(ctx, dataSQL, compiled.Args)
+	if err != nil {
+		return nil, fmt.Errorf("v2 query %s: %w", compiled.ObjectType, err)
+	}
+	defer rows.Close()
+
+	var results []ObjectInstance
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return nil, fmt.Errorf("v2 scan row: %w", err)
+		}
+
+		props := make(map[string]interface{}, len(compiled.Columns))
+		for i, col := range compiled.Columns {
+			if i < len(values) {
+				props[col] = values[i]
+			}
+		}
+
+		id := formatV2ID(compiled.PrimaryKey, compiled.Columns, props)
+
+		results = append(results, ObjectInstance{
+			ObjectType: compiled.ObjectType,
+			ID:         id,
+			Properties: props,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("v2 iterate rows: %w", err)
+	}
+
+	if results == nil {
+		results = []ObjectInstance{}
+	}
+
+	return &ObjectQueryResult{
+		Rows:  results,
+		Total: total,
+	}, nil
+}
+
+// execV2ObjectMetrics executes a v2-compiled metrics query and returns ObjectMetrics.
+func (r *Repository) execV2ObjectMetrics(ctx context.Context, compiled *V2CompiledQuery) (*ObjectMetrics, error) {
+	row := r.QueryRow(ctx, compiled.SQL, compiled.Args)
+
+	scanTargets := make([]interface{}, len(compiled.Columns))
+	for i := range compiled.Columns {
+		scanTargets[i] = new(float64)
+	}
+
+	if err := row.Scan(scanTargets...); err != nil {
+		return nil, fmt.Errorf("v2 query metrics for %s: %w", compiled.ObjectType, err)
+	}
+
+	metrics := make(map[string]float64, len(compiled.Columns))
+	for i, col := range compiled.Columns {
+		if i < len(scanTargets) {
+			metrics[col] = *(scanTargets[i].(*float64))
+		}
+	}
+
+	return &ObjectMetrics{
+		ObjectType: compiled.ObjectType,
+		ID:         "", // caller must set the ID
+		Metrics:    metrics,
+	}, nil
+}
+
+// formatV2ID extracts the primary key value from a v2 query result's properties.
+func formatV2ID(pkColumn string, columns []string, props map[string]interface{}) string {
+	// Try exact column name first.
+	if raw, ok := props[pkColumn]; ok && raw != nil {
+		return fmt.Sprintf("%v", raw)
+	}
+	// Fall back to first column value.
+	if len(columns) > 0 {
+		if raw, ok := props[columns[0]]; ok && raw != nil {
+			return fmt.Sprintf("%v", raw)
+		}
+	}
+	return ""
 }
 
 // ──── Utility functions ──────────────────────────────────────────────────────
