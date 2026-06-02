@@ -1,0 +1,42 @@
+version: context_recipes.v1
+recipes:
+  seller_late_delivery_alert:
+    description: 卖家延迟发货异常上下文
+    trigger:
+      object_type: metric_alert
+      rule_id: seller_late_delivery_spike
+    root_object:
+      type_from: alert.object_type
+      id_from: alert.object_id
+    include:
+      root_properties:
+        - seller_state
+        - seller_city
+        - gmv
+        - order_count
+        - avg_review_score
+        - late_delivery_rate
+      metrics:
+        - seller_late_delivery_rate_7d
+        - seller_order_count_7d
+        - seller_gmv_7d
+      links:
+        recent_orders:
+          limit: 10
+          fields:
+            - order_id
+            - order_status
+            - payment_value
+            - review_score
+            - delivery_status
+      actions:
+        - notify_owner
+        - create_followup_task
+        - export_report
+    budget:
+      max_link_depth: 2
+      max_objects: 30
+      max_tokens_hint: 4000
+    governance:
+      role: agent_readonly
+      redact_pii: true

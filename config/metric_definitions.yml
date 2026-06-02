@@ -1,0 +1,45 @@
+version: metrics.v1
+metrics:
+  seller_late_delivery_rate_7d:
+    display_name: 最近 7 天延迟发货率
+    object_type: seller
+    grain: seller_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: seller
+      metric_name: late_delivery_rate_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value > baseline_value + 0.10"
+      high: "current_value > baseline_value + 0.20"
+    llm_explanation: >
+      衡量卖家近期履约稳定性。显著高于基线时，可能存在库存、发货或物流问题。
+
+  seller_order_count_7d:
+    display_name: 最近 7 天订单数
+    object_type: seller
+    grain: seller_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: seller
+      metric_name: order_count_7d
+    value_column: current_value
+    baseline_column: ""
+
+  seller_gmv_7d:
+    display_name: 最近 7 天 GMV
+    object_type: seller
+    grain: seller_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: seller
+      metric_name: gmv_7d
+    value_column: current_value
+    baseline_column: ""
