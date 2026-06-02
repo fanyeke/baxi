@@ -1,3 +1,5 @@
+# Deprecated: This is the v1 schema. New objects should be defined in aip_object_schema_v2.yml.
+# This file is kept for backward compatibility and will be removed in a future release.
 objects:
   - object_type_id: customer
     display_name: "客户"

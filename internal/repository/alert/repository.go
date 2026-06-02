@@ -13,12 +13,12 @@ import (
 
 // Repository provides data access for alert events.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new alert repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 // AlertRow represents a single row from ops.metric_alert.

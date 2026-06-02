@@ -10,6 +10,7 @@ import (
 	"baxi/internal/model"
 	"baxi/internal/review"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type MockDecisionService struct {
@@ -131,10 +132,10 @@ func (m *MockPipelineRunner) Run(ctx context.Context, config string) (string, er
 }
 
 type MockReviewService struct {
-	ApproveProposalFunc  func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
-	RejectProposalFunc   func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
-	CancelProposalFunc   func(ctx context.Context, proposalID, reason string) error
-	GetProposalByIDFunc  func(ctx context.Context, proposalID string) (*action.ActionProposal, error)
+	ApproveProposalFunc   func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	RejectProposalFunc    func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
+	CancelProposalFunc    func(ctx context.Context, proposalID, reviewerID, reason string) error
+	GetProposalByIDFunc   func(ctx context.Context, proposalID string) (*action.ActionProposal, error)
 	ListReviewRecordsFunc func(ctx context.Context, proposalID string, limit, offset int) ([]review.ReviewRecord, int, error)
 }
 
@@ -152,9 +153,9 @@ func (m *MockReviewService) RejectProposal(ctx context.Context, proposalID, revi
 	return nil, nil
 }
 
-func (m *MockReviewService) CancelProposal(ctx context.Context, proposalID, reason string) error {
+func (m *MockReviewService) CancelProposal(ctx context.Context, proposalID, reviewerID, reason string) error {
 	if m.CancelProposalFunc != nil {
-		return m.CancelProposalFunc(ctx, proposalID, reason)
+		return m.CancelProposalFunc(ctx, proposalID, reviewerID, reason)
 	}
 	return nil
 }
@@ -237,12 +238,12 @@ func (m *MockExecuteService) ExecuteProposal(ctx context.Context, pool *pgxpool.
 }
 
 type MockOntologyService struct {
-	DescribeOntologyFunc    func(ctx context.Context) (*OntologyDescriptor, error)
-	GetObjectFunc           func(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
-	GetObjectMetricsFunc    func(ctx context.Context, objectType, objectID string) (map[string]float64, error)
-	GetLinkedObjectsFunc    func(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
-	ExecuteActionFunc       func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
-	ProposeActionFunc       func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+	DescribeOntologyFunc func(ctx context.Context) (*OntologyDescriptor, error)
+	GetObjectFunc        func(ctx context.Context, objectType, objectID string) (*ObjectContext, error)
+	GetObjectMetricsFunc func(ctx context.Context, objectType, objectID string) (map[string]float64, error)
+	GetLinkedObjectsFunc func(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
+	ExecuteActionFunc    func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+	ProposeActionFunc    func(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}, trace ProposeActionTrace) (*ActionResult, error)
 }
 
 type MockBuildContextService struct {
@@ -269,10 +270,10 @@ func (m *MockActionSchemaService) GetActionSchema(ctx context.Context, actionTyp
 }
 
 type MockSandboxService struct {
-	CreateSandboxFunc       func(ctx context.Context, caseID string, data map[string]interface{}) (string, error)
+	CreateSandboxFunc        func(ctx context.Context, caseID string, data map[string]interface{}) (string, error)
 	AddProposalToSandboxFunc func(ctx context.Context, sandboxID, proposalID string) error
-	CompareSandboxFunc      func(ctx context.Context, sandboxID1, sandboxID2 string) (*ComparisonResult, error)
-	GetSandboxFunc          func(ctx context.Context, sandboxID string) (*Sandbox, error)
+	CompareSandboxFunc       func(ctx context.Context, sandboxID1, sandboxID2 string) (*ComparisonResult, error)
+	GetSandboxFunc           func(ctx context.Context, sandboxID string) (*Sandbox, error)
 }
 
 func (m *MockSandboxService) CreateSandbox(ctx context.Context, caseID string, data map[string]interface{}) (string, error) {
@@ -338,9 +339,9 @@ func (m *MockOntologyService) GetObjectMetrics(ctx context.Context, objectType, 
 	return map[string]float64{}, nil
 }
 
-func (m *MockOntologyService) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error) {
+func (m *MockOntologyService) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}, trace ProposeActionTrace) (*ActionResult, error) {
 	if m.ProposeActionFunc != nil {
-		return m.ProposeActionFunc(ctx, objectType, objectID, actionType, params)
+		return m.ProposeActionFunc(ctx, objectType, objectID, actionType, params, trace)
 	}
 	return &ActionResult{Success: true, ActionType: actionType, ObjectType: objectType, ObjectID: objectID, Result: map[string]interface{}{"proposal_id": "mock-proposal-123", "status": "proposed"}}, nil
 }
@@ -465,5 +466,117 @@ func TestServerToolRegistration(t *testing.T) {
 
 	if len(tools) != len(expectedTools) {
 		t.Errorf("Expected %d tools, got %d", len(expectedTools), len(tools))
+	}
+}
+
+func TestServerIdentity_DefaultsFromEnv(t *testing.T) {
+	// Regression test: Server identity must not be empty (prevents anonymous review/execute).
+	server, err := NewServer(
+		&MockDecisionService{},
+		&MockDecisionEngine{},
+		&MockContextBuilder{},
+		nil,
+		&MockProposalService{},
+		&MockAlertService{},
+		&MockGovernanceService{},
+		&MockPipelineRunner{},
+		&MockReviewService{},
+		&MockOutboxService{},
+		&MockPipelineInfoService{},
+		&MockExecuteService{},
+		(*pgxpool.Pool)(nil),
+		&MockSystemStatusService{},
+		&MockObjectSearchService{},
+		&MockOntologyService{},
+		&MockActionSchemaService{},
+		&MockSandboxService{},
+	)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+
+	if server.mcpUserID == "" {
+		t.Error("mcpUserID must not be empty")
+	}
+}
+
+func TestServerIdentity_ApproveRejectUseServerIdentity(t *testing.T) {
+	// Regression test: approve_proposal and reject_proposal must use
+	// the server's configured mcpUserID, not a caller-supplied value.
+	usedReviewerID := ""
+	reviewSvc := &MockReviewService{
+		ApproveProposalFunc: func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
+			usedReviewerID = reviewerID
+			return &review.ReviewRecord{RecordID: "r1", ProposalID: proposalID, Verdict: review.VerdictApprove, Feedback: feedback}, nil
+		},
+		RejectProposalFunc: func(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error) {
+			usedReviewerID = reviewerID
+			return &review.ReviewRecord{RecordID: "r2", ProposalID: proposalID, Verdict: review.VerdictReject, Feedback: feedback}, nil
+		},
+	}
+
+	server, err := NewServer(
+		&MockDecisionService{},
+		&MockDecisionEngine{},
+		&MockContextBuilder{},
+		nil,
+		&MockProposalService{},
+		&MockAlertService{},
+		&MockGovernanceService{},
+		&MockPipelineRunner{},
+		reviewSvc,
+		&MockOutboxService{},
+		&MockPipelineInfoService{},
+		&MockExecuteService{},
+		(*pgxpool.Pool)(nil),
+		&MockSystemStatusService{},
+		&MockObjectSearchService{},
+		&MockOntologyService{},
+		&MockActionSchemaService{},
+		&MockSandboxService{},
+	)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+
+	// Verify the server's mcpUserID is non-empty
+	if server.mcpUserID == "" {
+		t.Fatal("mcpUserID must not be empty")
+	}
+
+	// Test approve_proposal handler uses server identity
+	approveReq := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Name: "approve_proposal",
+			Arguments: map[string]interface{}{
+				"proposal_id": "prop-1",
+				"feedback":    "Looks good",
+			},
+		},
+	}
+	_, err = server.handleApproveProposal(nil, approveReq)
+	if err != nil {
+		t.Fatalf("handleApproveProposal failed: %v", err)
+	}
+	if usedReviewerID != server.mcpUserID {
+		t.Errorf("approve_proposal should use server mcpUserID (%q), got %q", server.mcpUserID, usedReviewerID)
+	}
+
+	// Test reject_proposal handler uses server identity
+	rejectReq := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Name: "reject_proposal",
+			Arguments: map[string]interface{}{
+				"proposal_id": "prop-2",
+				"feedback":    "Not needed",
+			},
+		},
+	}
+	_, err = server.handleRejectProposal(nil, rejectReq)
+	if err != nil {
+		t.Fatalf("handleRejectProposal failed: %v", err)
+	}
+	if usedReviewerID != server.mcpUserID {
+		t.Errorf("reject_proposal should use server mcpUserID (%q), got %q", server.mcpUserID, usedReviewerID)
 	}
 }

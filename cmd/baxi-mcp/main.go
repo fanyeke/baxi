@@ -25,11 +25,11 @@ import (
 	mcp "baxi/internal/mcp"
 	"baxi/internal/model"
 	"baxi/internal/ontology"
-	ontologyRepo "baxi/internal/repository/ontology"
 	"baxi/internal/pipeline"
 	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
 	"baxi/internal/repository/common"
+	ontologyRepo "baxi/internal/repository/ontology"
 	"baxi/internal/review"
 	"baxi/internal/service"
 )
@@ -167,6 +167,8 @@ func main() {
 		pool:      pool.Pool,
 		actionReg: reg,
 		applySvc:  executeSvc,
+		mcpRole:   os.Getenv("BAXI_MCP_ROLE"),
+		log:       zapLog,
 	}
 
 	// Create adapters to satisfy extended MCP interfaces
@@ -293,8 +295,8 @@ func (a *reviewServiceAdapter) RejectProposal(ctx context.Context, proposalID, r
 	return a.svc.RejectProposal(ctx, proposalID, reviewerID, feedback)
 }
 
-func (a *reviewServiceAdapter) CancelProposal(ctx context.Context, proposalID, reason string) error {
-	_, err := a.svc.CancelProposal(ctx, proposalID, "mcp_system", reason)
+func (a *reviewServiceAdapter) CancelProposal(ctx context.Context, proposalID, reviewerID, reason string) error {
+	_, err := a.svc.CancelProposal(ctx, proposalID, reviewerID, reason)
 	if err != nil {
 		return err
 	}
@@ -635,12 +637,17 @@ type ontologyServiceAdapter struct {
 	actionReg    *action.ActionRegistry
 	applySvc     *action.ApplyService
 	linkResolver *ontology.LinkResolver
+	mcpRole      string // role used for allowed_by authorization checks
+	log          *zap.Logger
 }
 
 func (a *ontologyServiceAdapter) DescribeOntology(ctx context.Context) (*mcp.OntologyDescriptor, error) {
 	if a.registry == nil {
+		a.log.Warn("DescribeOntology: object registry is nil, returning empty descriptor")
 		return &mcp.OntologyDescriptor{ObjectTypes: []mcp.ObjectTypeDescriptor{}}, nil
 	}
+
+	a.log.Warn("DescribeOntology: using v1 object registry; v2 object types are not included in this path")
 
 	names := a.registry.ListObjectTypes()
 	desc := &mcp.OntologyDescriptor{
@@ -735,6 +742,14 @@ func (a *ontologyServiceAdapter) GetLinkedObjects(ctx context.Context, objectTyp
 		if err == nil {
 			return v2Result, nil
 		}
+		a.log.Warn("v2 link resolution failed, falling back to v1",
+			zap.String("object_type", objectType),
+			zap.String("link_name", linkName),
+			zap.Error(err))
+	} else {
+		a.log.Info("v2 link resolver not available, using v1 link resolution",
+			zap.String("object_type", objectType),
+			zap.String("link_name", linkName))
 	}
 
 	return a.getLinkedObjectsV1(ctx, objectType, objectID, linkName, maxDepth)
@@ -1040,6 +1055,14 @@ func stringPtrOrEmpty(s *string) string {
 	return *s
 }
 
+// nullIfEmpty returns nil for an empty string, or the string pointer otherwise.
+func nullIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*mcp.ActionResult, error) {
 	if a.registry == nil {
 		return nil, fmt.Errorf("ontology registry is not available")
@@ -1104,7 +1127,7 @@ func newLinkExecutor(provider *common.PoolProvider) *ontologyRepo.LinkExecutor {
 	return ontologyRepo.NewLinkExecutor(provider)
 }
 
-func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*mcp.ActionResult, error) {
+func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}, trace mcp.ProposeActionTrace) (*mcp.ActionResult, error) {
 	if a.registry == nil {
 		return nil, fmt.Errorf("ontology registry is not available")
 	}
@@ -1149,13 +1172,56 @@ func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, 
 		}
 	}
 
-	caseID := fmt.Sprintf("mcp-%d", time.Now().UnixNano())
+	// Check allowed_by from the action registry config.
+	// If the config defines specific roles (non-empty AllowedBy), the caller's
+	// role must match at least one entry.
+	if a.actionReg != nil {
+		cfg, ok := a.actionReg.GetActionConfig(actionType)
+		if ok && len(cfg.AllowedBy) > 0 {
+			roleAllowed := false
+			for _, role := range cfg.AllowedBy {
+				if role == a.mcpRole {
+					roleAllowed = true
+					break
+				}
+			}
+			if !roleAllowed {
+				return &mcp.ActionResult{
+					Success:    false,
+					ActionType: actionType,
+					ObjectType: objectType,
+					ObjectID:   objectID,
+					Result:     map[string]interface{}{"error": fmt.Sprintf("action %q requires one of roles %v, caller has role %q", actionType, cfg.AllowedBy, a.mcpRole)},
+				}, nil
+			}
+		}
+	}
+
+	var caseID string
+	if trace.CaseID != "" {
+		caseID = trace.CaseID
+	} else {
+		caseID = fmt.Sprintf("mcp-%d", time.Now().UnixNano())
+	}
 	proposalID := fmt.Sprintf("mcp-proposal-%d", time.Now().UnixNano())
 
 	payloadJSON, _ := json.Marshal(params)
 
-	_, err := a.pool.Exec(ctx,
-		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'open', NOW())`, caseID)
+	// Wrap the two INSERTs in a transaction to prevent orphaned decision_case rows.
+	tx, err := a.pool.Begin(ctx)
+	if err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("begin transaction: %v", err)},
+		}, nil
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO ai.decision_case (case_id, status, source_type, source_id, object_type, object_id, created_at) VALUES ($1, 'open', $2, $3, $2, $3, NOW())`, caseID, objectType, objectID)
 	if err != nil {
 		return &mcp.ActionResult{
 			Success:    false,
@@ -1167,10 +1233,11 @@ func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, 
 	}
 
 	title := fmt.Sprintf("MCP propose_action: %s on %s %s", actionType, objectType, objectID)
-	_, err = a.pool.Exec(ctx,
-		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, risk_level, requires_human_review, payload, created_at)
-		 VALUES ($1, $2, $3, 'proposed', $4, 'medium', true, $5, NOW())`,
-		proposalID, caseID, actionType, title, payloadJSON)
+	_, err = tx.Exec(ctx,
+		`INSERT INTO ai.action_proposal (proposal_id, case_id, decision_id, action_type, apply_status, title, risk_level, requires_human_review, payload, evidence_refs, context_hash, recipe_id, created_at)
+		 VALUES ($1, $2, $3, $4, 'proposed', $5, 'medium', true, $6, $7, $8, $9, NOW())`,
+		proposalID, caseID, nullIfEmpty(trace.DecisionID), actionType, title, payloadJSON,
+		nullIfEmpty(trace.EvidenceRefs), nullIfEmpty(trace.ContextHash), nullIfEmpty(trace.RecipeID))
 	if err != nil {
 		return &mcp.ActionResult{
 			Success:    false,
@@ -1178,6 +1245,16 @@ func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, 
 			ObjectType: objectType,
 			ObjectID:   objectID,
 			Result:     map[string]interface{}{"error": fmt.Sprintf("create action proposal: %v", err)},
+		}, nil
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return &mcp.ActionResult{
+			Success:    false,
+			ActionType: actionType,
+			ObjectType: objectType,
+			ObjectID:   objectID,
+			Result:     map[string]interface{}{"error": fmt.Sprintf("commit transaction: %v", err)},
 		}, nil
 	}
 

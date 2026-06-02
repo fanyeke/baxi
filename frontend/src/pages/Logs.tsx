@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { apiClient } from "../api/client"
+import { useLogQuery } from "../hooks/useLogQuery"
 import type { ErrorLogListResponse, AuditLogListResponse, RecentLogListResponse } from "../api/types"
 import { EmptyState } from "../components/EmptyState"
 import { LoadingSkeleton } from "../components/LoadingSkeleton"
@@ -37,10 +36,7 @@ export default function Logs() {
 }
 
 function ErrorsTab() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["log-errors"],
-    queryFn: () => apiClient.get<ErrorLogListResponse>("/logs/errors", { limit: "100" }),
-  })
+  const { data, isLoading, error } = useLogQuery<ErrorLogListResponse>("log-errors", "/logs/errors", { limit: "100" })
 
   if (isLoading) return <LoadingSkeleton type="table" count={5} />
   if (error) return <ErrorPanel title="加载失败" message={error.message || "Failed to load error logs"} />
@@ -75,10 +71,7 @@ function ErrorsTab() {
 }
 
 function AuditTab() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["log-audit"],
-    queryFn: () => apiClient.get<AuditLogListResponse>("/logs/audit", { limit: "100" }),
-  })
+  const { data, isLoading, error } = useLogQuery<AuditLogListResponse>("log-audit", "/logs/audit", { limit: "100" })
 
   if (isLoading) return <LoadingSkeleton type="table" count={3} />
   if (error) return <ErrorPanel title="加载失败" message={error.message || "Failed to load audit logs"} />
@@ -113,10 +106,7 @@ function AuditTab() {
 }
 
 function RecentTab() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["log-recent"],
-    queryFn: () => apiClient.get<RecentLogListResponse>("/logs/recent", { limit: "50" }),
-  })
+  const { data, isLoading, error } = useLogQuery<RecentLogListResponse>("log-recent", "/logs/recent", { limit: "50" })
 
   if (isLoading) return <LoadingSkeleton type="text" count={5} />
   if (error) return <ErrorPanel title="加载失败" message={error.message || "Failed to load recent logs"} />

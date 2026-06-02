@@ -44,12 +44,12 @@ type OutboxSummary struct {
 
 // Repository provides context data queries for the Qoder decision engine.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new context Repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 type pipelineRunRow struct {

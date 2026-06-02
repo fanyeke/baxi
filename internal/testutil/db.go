@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -98,8 +99,55 @@ func (c *PostgresContainer) RunMigrationsWithOptions(ctx context.Context, migrat
 
 // Terminate stops and removes the container.
 func (c *PostgresContainer) Terminate(ctx context.Context) error {
+	if c == nil || c.Container == nil {
+		return nil
+	}
 	if err := c.Container.Terminate(ctx); err != nil {
 		return fmt.Errorf("terminate postgres container: %w", err)
 	}
 	return nil
+}
+
+// requireDBSkip skips the test if running in short mode (-short flag).
+// Database integration tests should call this at the top to allow fast
+// unit-test-only runs.
+func requireDBSkip(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping database test in short mode")
+	}
+}
+
+// SetupTestPool starts a PostgreSQL test container, applies migrations,
+// and returns a connection pool. The container and pool are cleaned up
+// when the test finishes.
+func SetupTestPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+	requireDBSkip(t)
+
+	ctx := context.Background()
+
+	pg, err := StartPostgres(ctx)
+	if err != nil {
+		t.Fatalf("StartPostgres: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if err := pg.Terminate(context.Background()); err != nil {
+			t.Errorf("Terminate: %v", err)
+		}
+	})
+
+	if err := pg.RunMigrations(ctx, "../../../migrations"); err != nil {
+		t.Fatalf("RunMigrations: %v", err)
+	}
+
+	pool, err := pgxpool.New(ctx, pg.ConnectionString())
+	if err != nil {
+		t.Fatalf("pgxpool.New: %v", err)
+	}
+
+	t.Cleanup(func() { pool.Close() })
+
+	return pool
 }

@@ -19,6 +19,7 @@ recipes:
       metrics:
         - seller_late_delivery_rate_7d
         - seller_order_count_7d
+        - seller_avg_review_score_7d
         - seller_gmv_7d
       links:
         recent_orders:
@@ -33,6 +34,324 @@ recipes:
         - notify_owner
         - create_followup_task
         - export_report
+    budget:
+      max_link_depth: 2
+      max_objects: 30
+      max_tokens_hint: 4000
+    governance:
+      role: agent_readonly
+      redact_pii: true
+    evidence_rules:
+      - source: "metric:seller_late_delivery_rate_7d"
+        interpretation: "Seller {object_id} late delivery rate is {current} (baseline: {baseline}, delta: {delta}), severity: {severity}"
+      - source: "metric:seller_order_count_7d"
+        interpretation: "Seller {object_id} has {current} orders in last 7 days (baseline: {baseline})"
+      - source: "metric:seller_gmv_7d"
+        interpretation: "Seller {object_id} GMV is {current} (baseline: {baseline})"
+      - source: "metric:seller_avg_review_score_7d"
+        interpretation: "Seller {object_id} average review score is {current} (baseline: {baseline})"
+      - source: "link:recent_orders"
+        interpretation: "Recent orders show delivery and review patterns"
+    decision_guidance:
+      levels:
+        - severity: low
+          recommendation: "Monitor, no action needed"
+          actions: []
+        - severity: medium
+          recommendation: "Create followup task for seller ops review"
+          actions:
+            - create_followup_task
+        - severity: high
+          recommendation: "Notify seller operations team for intervention"
+          actions:
+            - create_followup_task
+            - notify_owner
+        - severity: critical
+          recommendation: "Immediate escalation — export report and notify owner"
+          actions:
+            - create_followup_task
+            - notify_owner
+            - export_report
+
+  order_anomaly_alert:
+    description: Order anomaly detection context
+    trigger:
+      object_type: metric_alert
+      rule_id: order_anomaly
+    root_object:
+      type_from: alert.object_type
+      id_from: alert.object_id
+    include:
+      root_properties:
+        - region_id
+        - region_name
+        - seller_count
+        - order_count_7d
+        - late_delivery_rate_7d
+        - gmv_7d
+      metrics:
+        - region_late_delivery_rate_7d
+        - region_order_count_7d
+        - region_gmv_7d
+      links:
+        sellers:
+          limit: 15
+          fields:
+            - seller_id
+            - seller_name
+            - seller_state
+            - late_delivery_rate
+        customers:
+          limit: 15
+          fields:
+            - customer_id
+            - customer_name
+            - order_count
+            - gmv
+      actions:
+        - create_followup_task
+        - notify_owner
+        - export_report
+    evidence_rules:
+      - source: "metric:region_late_delivery_rate_7d"
+        interpretation: "Region {object_id} late delivery rate is {current} (baseline: {baseline}, delta: {delta}), severity: {severity}"
+      - source: "metric:region_order_count_7d"
+        interpretation: "Region {object_id} has {current} orders in last 7 days (baseline: {baseline})"
+      - source: "metric:region_gmv_7d"
+        interpretation: "Region {object_id} GMV is {current} (baseline: {baseline})"
+      - source: "link:sellers"
+        interpretation: "Sellers in this region show delivery and order patterns"
+    decision_guidance:
+      levels:
+        - severity: low
+          recommendation: "Monitor, no action needed"
+          actions: []
+        - severity: medium
+          recommendation: "Review logistics in the region"
+          actions:
+            - create_followup_task
+        - severity: high
+          recommendation: "Notify regional ops team for intervention"
+          actions:
+            - create_followup_task
+            - notify_owner
+        - severity: critical
+          recommendation: "Immediate escalation to logistics director — export report and notify owner"
+          actions:
+            - create_followup_task
+            - notify_owner
+            - export_report
+    budget:
+      max_link_depth: 2
+      max_objects: 30
+      max_tokens_hint: 4000
+    governance:
+      role: agent_readonly
+      redact_pii: true
+
+  customer_churn_risk_alert:
+    description: Customer churn risk detection context
+    trigger:
+      object_type: metric_alert
+      rule_id: customer_churn_risk
+    root_object:
+      type_from: alert.object_type
+      id_from: alert.object_id
+    include:
+      root_properties:
+        - customer_id
+        - customer_city
+        - customer_state
+        - order_count_90d
+        - gmv_90d
+        - avg_review_score
+        - last_order_date
+      metrics:
+        - customer_order_count_90d
+        - customer_gmv_90d
+        - customer_avg_review_score
+      links:
+        recent_orders:
+          limit: 20
+          fields:
+            - order_id
+            - order_status
+            - payment_value
+            - review_score
+            - delivery_status
+      actions:
+        - create_followup_task
+        - notify_owner
+    evidence_rules:
+      - source: "metric:customer_gmv_90d"
+        interpretation: "Customer {object_id} GMV is {current} (baseline: {baseline}, delta: {delta}), severity: {severity}"
+      - source: "metric:customer_order_count_90d"
+        interpretation: "Customer {object_id} has {current} orders in last 90 days (baseline: {baseline})"
+      - source: "metric:customer_avg_review_score"
+        interpretation: "Customer {object_id} average review score is {current} (baseline: {baseline})"
+      - source: "link:recent_orders"
+        interpretation: "Recent orders show customer value and review patterns"
+    decision_guidance:
+      levels:
+        - severity: low
+          recommendation: "Monitor, no action needed"
+          actions: []
+        - severity: medium
+          recommendation: "Review customer activity for behavioral changes"
+          actions:
+            - create_followup_task
+        - severity: high
+          recommendation: "Notify account manager for intervention"
+          actions:
+            - create_followup_task
+            - notify_owner
+        - severity: critical
+          recommendation: "Initiate retention program — immediate escalation"
+          actions:
+            - create_followup_task
+            - notify_owner
+    budget:
+      max_link_depth: 2
+      max_objects: 30
+      max_tokens_hint: 4000
+    governance:
+      role: agent_readonly
+      redact_pii: true
+
+  product_performance_drop_alert:
+    description: Product performance abnormal drop context
+    trigger:
+      object_type: metric_alert
+      rule_id: product_performance_drop
+    root_object:
+      type_from: alert.object_type
+      id_from: alert.object_id
+    include:
+      root_properties:
+        - product_id
+        - product_category_name
+        - price
+        - avg_review_score
+      metrics:
+        - product_avg_review_score_7d
+        - product_review_drop_7d
+        - product_order_count_7d
+      links:
+        reviews:
+          limit: 20
+          fields:
+            - review_id
+            - review_score
+            - review_text
+            - created_at
+      actions:
+        - create_followup_task
+        - notify_owner
+        - export_report
+    evidence_rules:
+      - source: "metric:product_avg_review_score_7d"
+        interpretation: "Product {object_id} average review score is {current} (baseline: {baseline}, delta: {delta}), severity: {severity}"
+      - source: "metric:product_review_drop_7d"
+        interpretation: "Product {object_id} review drop rate is {current} (baseline: {baseline})"
+      - source: "metric:product_order_count_7d"
+        interpretation: "Product {object_id} has {current} orders in last 7 days (baseline: {baseline})"
+      - source: "link:reviews"
+        interpretation: "Recent reviews show rating and feedback patterns"
+    decision_guidance:
+      levels:
+        - severity: low
+          recommendation: "Monitor, no action needed"
+          actions: []
+        - severity: medium
+          recommendation: "Investigate quality issues"
+          actions:
+            - create_followup_task
+        - severity: high
+          recommendation: "Notify category ops team for intervention"
+          actions:
+            - create_followup_task
+            - notify_owner
+        - severity: critical
+          recommendation: "Consider delisting — export report and notify owner"
+          actions:
+            - create_followup_task
+            - notify_owner
+            - export_report
+    budget:
+      max_link_depth: 2
+      max_objects: 30
+      max_tokens_hint: 4000
+    governance:
+      role: agent_readonly
+      redact_pii: true
+
+  inventory_stockout_alert:
+    description: Inventory stockout risk context
+    trigger:
+      object_type: metric_alert
+      rule_id: inventory_stockout
+    root_object:
+      type_from: alert.object_type
+      id_from: alert.object_id
+    include:
+      root_properties:
+        - category_id
+        - category_name
+        - gmv_7d
+        - order_count_7d
+        - avg_review_score
+      metrics:
+        - category_gmv_7d
+        - category_order_count_7d
+        - category_avg_review_score_7d
+      links:
+        products:
+          limit: 10
+          fields:
+            - product_id
+            - product_name
+            - stock_level
+            - reorder_point
+        top_sellers:
+          limit: 10
+          fields:
+            - seller_id
+            - seller_name
+            - gmv
+            - order_count
+      actions:
+        - create_followup_task
+        - notify_owner
+        - export_report
+    evidence_rules:
+      - source: "metric:category_gmv_7d"
+        interpretation: "Category {object_id} GMV is {current} (baseline: {baseline}, delta: {delta}), severity: {severity}"
+      - source: "metric:category_order_count_7d"
+        interpretation: "Category {object_id} has {current} orders in last 7 days (baseline: {baseline})"
+      - source: "metric:category_avg_review_score_7d"
+        interpretation: "Category {object_id} average review score is {current} (baseline: {baseline})"
+      - source: "link:products"
+        interpretation: "Products in category show sales and review patterns"
+    decision_guidance:
+      levels:
+        - severity: low
+          recommendation: "Monitor, no action needed"
+          actions: []
+        - severity: medium
+          recommendation: "Review category performance and update pricing"
+          actions:
+            - create_followup_task
+        - severity: high
+          recommendation: "Notify category manager for intervention"
+          actions:
+            - create_followup_task
+            - notify_owner
+        - severity: critical
+          recommendation: "Escalate to merchandising — export report and notify owner"
+          actions:
+            - create_followup_task
+            - notify_owner
+            - export_report
     budget:
       max_link_depth: 2
       max_objects: 30

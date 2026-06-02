@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -28,6 +29,7 @@ type Server struct {
 	bearerToken          string
 	corsAllowedOrigins   string
 	cfg                  *config.Config
+	handlerMu            sync.Mutex
 	decisionHandlerVal   *handler.DecisionHandler
 	actionHandlerVal     *handler.ActionHandler
 	llmHandlerVal        *handler.LLMHandler

@@ -40,6 +40,16 @@ func (h *PipelineHandler) HandleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Dry run: return a preview without executing the pipeline.
+	if r.URL.Query().Get("dry_run") == "true" {
+		preview := dtoFromPipelinePreview(&model.PipelinePreview{
+			Command:      req.Config,
+			PipelineType: req.Config,
+		})
+		httputil.JSON(w, http.StatusOK, preview)
+		return
+	}
+
 	runID, err := h.svc.Run(r.Context(), req.Config)
 	if err != nil {
 		writeServiceError(w, r, err, "internal server error")

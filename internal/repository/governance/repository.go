@@ -13,12 +13,12 @@ import (
 
 // Repository provides data access for governance configuration.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new Governance repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(q common.Querier) *Repository {
+	return &Repository{Querier: q}
 }
 
 // ConfigSnapshotRow represents a row from gov.config_snapshot.

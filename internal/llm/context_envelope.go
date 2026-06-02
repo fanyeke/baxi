@@ -2,6 +2,12 @@ package llm
 
 import "time"
 
+// RenderedEvidence holds the rendered interpretation of a single evidence rule.
+type RenderedEvidence struct {
+	Source   string `json:"source"`
+	Rendered string `json:"rendered"`
+}
+
 // LLMSafeContextEnvelope is the versioned, auditable wrapper around an LLMSafeContext.
 // It captures everything needed to replay or audit an LLM decision request:
 // the redacted context, evidence items, governance metadata, redaction summary,
@@ -15,6 +21,7 @@ type LLMSafeContextEnvelope struct {
 	Trigger          TriggerInfo       `json:"trigger"`
 	ObjectContext    ObjectContext     `json:"object_context"`
 	Evidence         []EvidenceItem    `json:"evidence"`
+	RenderedEvidence []RenderedEvidence `json:"rendered_evidence,omitempty"`
 	AllowedActions   []string          `json:"allowed_actions"`
 	ForbiddenActions []string          `json:"forbidden_actions"`
 	Governance       GovernanceInfo    `json:"governance"`

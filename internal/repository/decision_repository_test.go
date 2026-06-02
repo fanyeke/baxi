@@ -52,7 +52,10 @@ CREATE TABLE IF NOT EXISTS ai.llm_decision (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     status TEXT,
     fallback_reason TEXT,
-    validation_errors JSONB
+    validation_errors JSONB,
+    recipe_id TEXT,
+    context_hash TEXT,
+    severity TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ai.action_proposal (
@@ -70,7 +73,9 @@ CREATE TABLE IF NOT EXISTS ai.action_proposal (
     risk_level TEXT,
     requires_human_review BOOLEAN DEFAULT TRUE,
     context_hash TEXT,
-    action_schema_version TEXT
+    action_schema_version TEXT,
+    evidence_refs TEXT,
+    recipe_id TEXT
 );
 `
 

@@ -165,9 +165,16 @@ func (r *ObjectRegistry) GetLinks(objectType string) ([]ObjectLink, error) {
 }
 
 // GetAllowedActions returns the allowed action strings for the given object type.
+// Checks v2 objects first (which supersede v1), then falls back to v1.
 func (r *ObjectRegistry) GetAllowedActions(objectType string) []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	// v2 takes precedence when available and has actions defined.
+	if v2ot, ok := r.objectsV2[objectType]; ok && len(v2ot.AllowedActions) > 0 {
+		return v2ot.AllowedActions
+	}
+
 	ot, ok := r.objects[objectType]
 	if !ok {
 		return nil

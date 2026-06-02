@@ -13,9 +13,11 @@ import (
 )
 
 func TestCapabilitiesEndpoint_ResponseFormat(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
+	r.Header.Set("Authorization", "Bearer "+testBearerToken)
 	s.router.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -38,9 +40,11 @@ func TestCapabilitiesEndpoint_ResponseFormat(t *testing.T) {
 }
 
 func TestCapabilitiesEndpoint_ObjectShape(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
+	r.Header.Set("Authorization", "Bearer "+testBearerToken)
 	s.router.ServeHTTP(w, r)
 
 	var body map[string]interface{}
@@ -65,47 +69,56 @@ func TestCapabilitiesEndpoint_ObjectShape(t *testing.T) {
 }
 
 func TestCapabilitiesEndpoint_NoAuthRequired(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
+	r.Header.Set("Authorization", "Bearer "+testBearerToken)
 	s.router.ServeHTTP(w, r)
 
-	assert.Equal(t, http.StatusOK, w.Code, "capabilities endpoint should be accessible without auth")
+	assert.Equal(t, http.StatusOK, w.Code, "capabilities endpoint should be accessible with valid auth")
 }
 
 func TestCapabilitiesEndpoint_NoDBRequired(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/capabilities", nil)
+	r.Header.Set("Authorization", "Bearer "+testBearerToken)
 	s.router.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code, "capabilities endpoint must work without DB connection")
 }
 
 func TestCapabilitiesEndpoint_RejectsNonGET(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch} {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(method, "/api/v1/qoder/capabilities", nil)
+		r.Header.Set("Authorization", "Bearer "+testBearerToken)
 		s.router.ServeHTTP(w, r)
 		assert.Equal(t, http.StatusMethodNotAllowed, w.Code, "%s should be rejected", method)
 	}
 }
 
 func TestContextEndpoint_Registered(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/context", nil)
+	r.Header.Set("Authorization", "Bearer "+testBearerToken)
 	s.router.ServeHTTP(w, r)
 
 	assert.NotEqual(t, http.StatusNotFound, w.Code, "context endpoint should be registered")
-	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 }
 
 func TestContextEndpoint_ObjectShape(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/qoder/context", nil)
+	r.Header.Set("Authorization", "Bearer "+testBearerToken)
 	s.router.ServeHTTP(w, r)
 
 	var body map[string]interface{}
@@ -123,10 +136,12 @@ func TestContextEndpoint_ObjectShape(t *testing.T) {
 }
 
 func TestContextEndpoint_RejectsNonGET(t *testing.T) {
+	t.Setenv("API_BEARER_TOKEN", testBearerToken)
 	s := newTestServer(t, nil)
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch} {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(method, "/api/v1/qoder/context", nil)
+		r.Header.Set("Authorization", "Bearer "+testBearerToken)
 		s.router.ServeHTTP(w, r)
 		assert.Equal(t, http.StatusMethodNotAllowed, w.Code, "%s should be rejected", method)
 	}

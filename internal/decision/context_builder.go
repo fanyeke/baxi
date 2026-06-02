@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"baxi/internal/governance"
+	"baxi/internal/llm"
 	"baxi/internal/ontology"
 	"baxi/internal/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -79,6 +80,7 @@ type DecisionContext struct {
 	ForbiddenActions []string             `json:"forbidden_actions"`
 	Policy           *PolicyResult        `json:"policy,omitempty"`
 	EnrichedObjects  []EnrichedObjectData `json:"enriched_objects,omitempty"`
+	RenderedEvidence []llm.RenderedEvidence   `json:"rendered_evidence,omitempty"`
 }
 
 // TriggerInfo holds the alert/metric data that triggered the decision case.

@@ -3,10 +3,23 @@ package ontology
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"baxi/internal/repository/common"
 )
+
+// validSortExpr validates a SQL ORDER BY expression to prevent SQL injection.
+// Allows: column names with optional ASC/DESC (case-insensitive), comma-separated
+// multi-column sorts. Only plain spaces are allowed as separators (no tabs/newlines).
+var validSortExpr = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*([ ]+(ASC|DESC|asc|desc))?([ ]*,[ ]*[a-zA-Z_][a-zA-Z0-9_]*([ ]+(ASC|DESC|asc|desc))?)*$`)
+
+func isValidSort(sort string) bool {
+	if sort == "" {
+		return true
+	}
+	return validSortExpr.MatchString(sort)
+}
 
 // LinkOptions configures how linked objects are fetched.
 type LinkOptions struct {
@@ -27,12 +40,12 @@ type LinkOptions struct {
 // LinkExecutor resolves relationships between objects using LinkResolver strategies.
 // Supports reverse_lookup strategy for one_to_many relationships.
 type LinkExecutor struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewLinkExecutor creates a LinkExecutor.
-func NewLinkExecutor(provider *common.PoolProvider) *LinkExecutor {
-	return &LinkExecutor{PoolProvider: provider}
+func NewLinkExecutor(provider common.Querier) *LinkExecutor {
+	return &LinkExecutor{Querier: provider}
 }
 
 // ExecuteLink resolves a link for the given source object and returns linked ObjectInstances.
@@ -69,11 +82,14 @@ func (e *LinkExecutor) executeReverseLookup(ctx context.Context, opts LinkOption
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", cols, tableName, pk)
 	args := []interface{}{opts.SourceID}
 
+	if opts.Sort != "" {
+		if !isValidSort(opts.Sort) {
+			return nil, fmt.Errorf("invalid sort expression for %s->%s: %q", opts.SourceType, opts.TargetType, opts.Sort)
+		}
+		query += " ORDER BY " + opts.Sort
+	}
 	if opts.Limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", opts.Limit)
-	}
-	if opts.Sort != "" {
-		query += " ORDER BY " + opts.Sort
 	}
 
 	rows, err := e.Query(ctx, query, args...)

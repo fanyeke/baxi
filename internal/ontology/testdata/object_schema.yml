@@ -1,0 +1,12 @@
+objects:
+  - object_type_id: order
+    display_name: Order
+    grain: order_id
+    source_tables:
+      - test_table
+    properties:
+      id:
+        type: string
+        is_pk: true
+      name:
+        type: string

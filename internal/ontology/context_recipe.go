@@ -16,6 +16,9 @@ type ContextRecipe struct {
 	Include     RecipeInclude
 	Budget      RecipeBudget
 	Governance  RecipeGovernance
+
+	EvidenceRules    []EvidenceRule   // rules for extracting evidence from metrics/links
+	DecisionGuidance DecisionGuidance // guidance for decision-making based on severity levels
 }
 
 // RecipeTrigger defines which alert object type and rule ID this recipe matches.
@@ -57,6 +60,24 @@ type RecipeGovernance struct {
 	RedactPII bool
 }
 
+// EvidenceRule defines a rule for extracting evidence from a metric or link.
+type EvidenceRule struct {
+	Source          string `yaml:"source"`
+	Interpretation  string `yaml:"interpretation"`
+}
+
+// DecisionGuidance defines guidance for decision-making across severity levels.
+type DecisionGuidance struct {
+	Levels []GuidanceLevel `yaml:"levels"`
+}
+
+// GuidanceLevel defines a single severity level with recommendation and actions.
+type GuidanceLevel struct {
+	Severity        string   `yaml:"severity"`
+	Recommendation  string   `yaml:"recommendation"`
+	Actions         []string `yaml:"actions"`
+}
+
 // ──── YAML parsing types ─────────────────────────────────────────────────────
 
 type contextRecipesConfig struct {
@@ -71,6 +92,9 @@ type rawRecipeV1 struct {
 	Include     rawIncludeV1       `yaml:"include"`
 	Budget      rawBudgetV1        `yaml:"budget,omitempty"`
 	Governance  rawRecipeGovV1     `yaml:"governance,omitempty"`
+
+	EvidenceRules    []rawEvidenceRuleV1    `yaml:"evidence_rules,omitempty"`
+	DecisionGuidance *rawDecisionGuidanceV1 `yaml:"decision_guidance,omitempty"`
 }
 
 type rawTriggerV1 struct {
@@ -104,4 +128,19 @@ type rawBudgetV1 struct {
 type rawRecipeGovV1 struct {
 	Role      string `yaml:"role"`
 	RedactPII *bool  `yaml:"redact_pii,omitempty"`
+}
+
+type rawEvidenceRuleV1 struct {
+	Source         string `yaml:"source"`
+	Interpretation string `yaml:"interpretation"`
+}
+
+type rawDecisionGuidanceV1 struct {
+	Levels []rawGuidanceLevelV1 `yaml:"levels"`
+}
+
+type rawGuidanceLevelV1 struct {
+	Severity       string   `yaml:"severity"`
+	Recommendation string   `yaml:"recommendation"`
+	Actions        []string `yaml:"actions,omitempty"`
 }

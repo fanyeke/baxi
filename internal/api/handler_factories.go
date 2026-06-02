@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -33,6 +34,7 @@ import (
 
 // outboxHandler lazily initializes the outbox handler.
 func (s *Server) outboxHandler() *handler.OutboxHandler {
+	s.handlerMu.Lock()
 	if s.outboxHandlerVal == nil {
 		repo := repository.NewOutboxRepository()
 		writeRepo := outbox.NewOutboxRepository()
@@ -46,6 +48,7 @@ func (s *Server) outboxHandler() *handler.OutboxHandler {
 		}
 		s.outboxHandlerVal = handler.NewOutboxHandler(adapter)
 	}
+	s.handlerMu.Unlock()
 	return s.outboxHandlerVal
 }
 
@@ -80,50 +83,59 @@ func (s *Server) actionExecutors() map[string]action.ActionExecutor {
 
 // governanceHandler lazily initializes the governance handler.
 func (s *Server) governanceHandler() *handler.GovernanceHandler {
+	s.handlerMu.Lock()
 	if s.governanceHandlerVal == nil {
 		repo := repository.NewGovernanceRepository()
 		svc := service.NewGovernanceService(repo, s.pool)
 		s.governanceHandlerVal = handler.NewGovernanceHandler(svc, svc)
 	}
+	s.handlerMu.Unlock()
 	return s.governanceHandlerVal
 }
 
 // qoderHandler lazily initializes the Qoder handler.
 func (s *Server) qoderHandler() *handler.QoderHandler {
+	s.handlerMu.Lock()
 	if s.qoderHandlerVal == nil {
 		ctxRepo := repository.NewContextRepository()
 		svc := service.NewQoderService(ctxRepo, s.pool)
 		s.qoderHandlerVal = handler.NewQoderHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.qoderHandlerVal
 }
 
 // statusHandler lazily initializes the status handler.
 func (s *Server) statusHandler() *handler.StatusHandler {
+	s.handlerMu.Lock()
 	if s.statusHandlerVal == nil {
 		repo := repository.NewStatusRepository()
 		dbURL := ""
 		if s.pool != nil {
-			dbURL = s.pool.Config().ConnString()
+			dbURL = redactConnString(s.pool.Config().ConnString())
 		}
 		svc := service.NewStatusService(repo, s.pool, dbURL)
 		s.statusHandlerVal = handler.NewStatusHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.statusHandlerVal
 }
 
 // logHandler lazily initializes the logs handler.
 func (s *Server) logHandler() *handler.LogHandler {
+	s.handlerMu.Lock()
 	if s.logHandlerVal == nil {
 		repo := repository.NewLogRepository()
 		svc := service.NewLogService(repo, s.pool)
 		s.logHandlerVal = handler.NewLogHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.logHandlerVal
 }
 
 // agentLogHandler lazily initializes the agent execution logs handler.
 func (s *Server) agentLogHandler() *handler.AgentLogHandler {
+	s.handlerMu.Lock()
 	if s.agentLogHandlerVal == nil {
 		provider := common.NewPoolProvider(s.pool)
 		agentExecRepo := agent_execution.NewRepository(provider)
@@ -131,29 +143,35 @@ func (s *Server) agentLogHandler() *handler.AgentLogHandler {
 		svc := service.NewAgentLogService(agentExecRepo, mcpCallRepo)
 		s.agentLogHandlerVal = handler.NewAgentLogHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.agentLogHandlerVal
 }
 
 // alertHandler lazily initializes the alerts handler.
 func (s *Server) alertHandler() *handler.AlertHandler {
+	s.handlerMu.Lock()
 	if s.alertHandlerVal == nil {
 		repo := repository.NewAlertRepository()
 		svc := service.NewAlertService(repo, s.pool)
 		s.alertHandlerVal = handler.NewAlertHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.alertHandlerVal
 }
 
 // llmHandler lazily initializes the LLM handler.
 func (s *Server) llmHandler() *handler.LLMHandler {
+	s.handlerMu.Lock()
 	if s.llmHandlerVal == nil {
 		s.llmHandlerVal = handler.NewLLMHandler(s.cfg, eval.NewMetricsCollector())
 	}
+	s.handlerMu.Unlock()
 	return s.llmHandlerVal
 }
 
 // feishuHandler lazily initializes the Feishu handler.
 func (s *Server) feishuHandler() *handler.FeishuHandler {
+	s.handlerMu.Lock()
 	if s.feishuHandlerVal == nil {
 		feishuWebhookURL := ""
 		if s.cfg != nil {
@@ -166,11 +184,13 @@ func (s *Server) feishuHandler() *handler.FeishuHandler {
 		svc := handler.NewFeishuService(feishuAdapter)
 		s.feishuHandlerVal = handler.NewFeishuHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.feishuHandlerVal
 }
 
 // diagnosisHandler lazily initializes the diagnosis handler.
 func (s *Server) diagnosisHandler() *handler.DiagnosisHandler {
+	s.handlerMu.Lock()
 	if s.diagnosisHandlerVal == nil {
 		svc := service.NewDiagnosisService(
 			"logs/api/error.log",
@@ -179,11 +199,13 @@ func (s *Server) diagnosisHandler() *handler.DiagnosisHandler {
 		)
 		s.diagnosisHandlerVal = handler.NewDiagnosisHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.diagnosisHandlerVal
 }
 
 // decisionHandler lazily initializes the decision handler.
 func (s *Server) decisionHandler() *handler.DecisionHandler {
+	s.handlerMu.Lock()
 	if s.decisionHandlerVal == nil {
 		decisionRepo := repository.NewDecisionRepository()
 		alertRepo := repository.NewAlertRepository()
@@ -248,11 +270,13 @@ func (s *Server) decisionHandler() *handler.DecisionHandler {
 			WithRuleProvider(ruleProvider)
 		s.decisionHandlerVal = handler.NewDecisionHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.decisionHandlerVal
 }
 
 // reviewHandler lazily initializes the review handler.
 func (s *Server) reviewHandler() *handler.ReviewHandler {
+	s.handlerMu.Lock()
 	if s.reviewHandlerVal == nil {
 		repo := review.NewReviewRepository()
 		svc := review.NewReviewService(repo, s.pool)
@@ -263,11 +287,13 @@ func (s *Server) reviewHandler() *handler.ReviewHandler {
 		}
 		s.reviewHandlerVal = handler.NewReviewHandler(adapter)
 	}
+	s.handlerMu.Unlock()
 	return s.reviewHandlerVal
 }
 
 // pipelineHandler lazily initializes the pipeline handler.
 func (s *Server) pipelineHandler() *handler.PipelineHandler {
+	s.handlerMu.Lock()
 	if s.pipelineHandlerVal == nil {
 		pipelineSteps := []pipeline.Step{
 			steps.NewIngestRawStep(),
@@ -288,20 +314,24 @@ func (s *Server) pipelineHandler() *handler.PipelineHandler {
 		svc := &pipelineRunService{ctx: s.ctx, runner: runner, log: s.logger}
 		s.pipelineHandlerVal = handler.NewPipelineHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.pipelineHandlerVal
 }
 
 // sandboxHandler lazily initializes the sandbox handler.
 func (s *Server) sandboxHandler() *handler.SandboxHandler {
+	s.handlerMu.Lock()
 	if s.sandboxHandlerVal == nil {
 		svc := review.NewSandboxService(s.pool)
 		s.sandboxHandlerVal = handler.NewSandboxHandler(svc)
 	}
+	s.handlerMu.Unlock()
 	return s.sandboxHandlerVal
 }
 
 // actionHandler lazily initializes the action handler.
 func (s *Server) actionHandler() *handler.ActionHandler {
+	s.handlerMu.Lock()
 	if s.actionHandlerVal == nil {
 		repo := review.NewReviewRepository()
 		reg, err := action.NewActionRegistry("")
@@ -336,6 +366,7 @@ func (s *Server) actionHandler() *handler.ActionHandler {
 		}
 		s.actionHandlerVal = handler.NewActionHandler(adapter, s.pool)
 	}
+	s.handlerMu.Unlock()
 	return s.actionHandlerVal
 }
 
@@ -646,4 +677,39 @@ func newPipelineRunID() string {
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+}
+
+// redactConnString removes the password portion from a PostgreSQL connection
+// string to prevent credential leakage in API responses.
+//
+// Input:  postgres://user:password@host:5432/dbname?sslmode=disable
+// Output: postgres://user:xxxxx@host:5432/dbname?sslmode=disable
+//
+// If the string does not match the expected format or has no password, it
+// is returned unchanged (except for whitespace trimming).
+func redactConnString(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+
+	// Look for the password portion between first ':' after "://" and the '@'.
+	// Format: postgres://user:PASSWORD@host:port/dbname?params
+	schemeEnd := strings.Index(raw, "://")
+	if schemeEnd < 0 {
+		return raw
+	}
+	afterScheme := raw[schemeEnd+3:]
+	atIdx := strings.Index(afterScheme, "@")
+	if atIdx < 0 {
+		return raw
+	}
+	colonIdx := strings.Index(afterScheme, ":")
+	if colonIdx < 0 || colonIdx > atIdx {
+		return raw
+	}
+	// We have user:password@host — redact the password portion.
+	userPart := afterScheme[:colonIdx+1]          // "user:"
+	hostPart := afterScheme[atIdx:]               // "@host:port/dbname..."
+	return raw[:schemeEnd+3] + userPart + "xxxxx" + hostPart
 }

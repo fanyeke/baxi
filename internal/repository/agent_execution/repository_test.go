@@ -135,11 +135,3 @@ func TestList(t *testing.T) {
 	assert.Len(t, results, 1)
 	assert.GreaterOrEqual(t, total, 2)
 }
-
-func strPtr(s string) *string {
-	return &s
-}
-
-func int64Ptr(n int64) *int64 {
-	return &n
-}

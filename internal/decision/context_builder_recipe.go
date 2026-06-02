@@ -82,6 +82,12 @@ func (b *RecipeContextBuilder) BuildEnvelope(ctx context.Context, caseID string,
 	}
 
 	evidence := b.buildEvidence(trigger, metricResults)
+	renderedEvidence := ontology.RenderRecipeEvidence(recipe, objectID, severity, metricResults)
+	// Convert ontology.RenderedEvidence to llm.RenderedEvidence for the envelope.
+	envRenderedEvidence := make([]llm.RenderedEvidence, len(renderedEvidence))
+	for i, re := range renderedEvidence {
+		envRenderedEvidence[i] = llm.RenderedEvidence{Source: re.Source, Rendered: re.Rendered}
+	}
 	allowedActions, forbiddenActions := b.resolveActions(recipe)
 
 	classifications := make(map[string]string)
@@ -151,6 +157,7 @@ func (b *RecipeContextBuilder) BuildEnvelope(ctx context.Context, caseID string,
 		Trigger:          llmTrigger,
 		ObjectContext:    objectCtx,
 		Evidence:         evidence,
+		RenderedEvidence: envRenderedEvidence,
 		AllowedActions:   allowedActions,
 		ForbiddenActions: forbiddenActions,
 		Governance:       govData,

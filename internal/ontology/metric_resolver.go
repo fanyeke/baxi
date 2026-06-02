@@ -68,8 +68,15 @@ func (r *MetricQueryResolver) QueryMetric(ctx context.Context, objectID string, 
 		whereClause = " WHERE " + joinClauses(clauses, " AND ")
 	}
 
+	// Guard against empty BaselineColumn which produces invalid SQL
+	// (e.g. "SELECT current_value,  FROM mart.metric_dimension_daily WHERE ...").
+	// Use NULL::float8 when no baseline column is configured.
+	baselineCol := def.BaselineColumn
+	if baselineCol == "" {
+		baselineCol = "NULL::float8"
+	}
 	query := fmt.Sprintf("SELECT %s, %s FROM %s%s",
-		def.ValueColumn, def.BaselineColumn, tableName, whereClause)
+		def.ValueColumn, baselineCol, tableName, whereClause)
 
 	row := r.pool.QueryRow(ctx, query, objectID)
 

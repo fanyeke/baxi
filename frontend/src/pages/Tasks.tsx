@@ -22,13 +22,13 @@ export default function Tasks() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">任务中心</h1>
       <div className="flex gap-2">
-        <select className="px-3 py-1 border rounded text-sm" value={status} onChange={e => setStatus(e.target.value)}>
+        <select className="px-3 py-1 border rounded text-sm" aria-label="任务状态" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">全部状态</option>
           <option value="todo">待办</option>
           <option value="in_progress">进行中</option>
           <option value="done">已完成</option>
         </select>
-        <select className="px-3 py-1 border rounded text-sm" value={priority} onChange={e => setPriority(e.target.value)}>
+        <select className="px-3 py-1 border rounded text-sm" aria-label="任务优先级" value={priority} onChange={e => setPriority(e.target.value)}>
           <option value="">全部优先级</option>
           <option value="high">高</option>
           <option value="medium">中</option>

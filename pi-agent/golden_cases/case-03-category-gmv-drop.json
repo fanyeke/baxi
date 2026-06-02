@@ -1,0 +1,25 @@
+{
+  "case_id": "golden_category_gmv_drop_alert_001",
+  "name": "Category GMV drop alert — category-wide traffic issue",
+  "trigger": {
+    "alert_id": "alert_cat_gmv_001",
+    "rule_id": "category_gmv_drop",
+    "severity": "high",
+    "metric_name": "category_gmv_7d",
+    "current_value": 65000,
+    "baseline_value": 100000,
+    "delta_pct": -35.0
+  },
+  "object_context": {
+    "object_type": "category",
+    "object_id": "CAT_ELECTRONICS"
+  },
+  "expected_decision_type": "investigate",
+  "expected_min_confidence": 0.7,
+  "expected_min_severity": "high",
+  "forbidden_actions": [],
+  "minimum_rationale_count": 2,
+  "expected_owner_roles": ["category_ops", "analyst"],
+  "expected_evidence_refs": ["category_gmv_7d", "category_order_count_7d", "link:products"],
+  "expected_actions": ["create_followup_task"]
+}

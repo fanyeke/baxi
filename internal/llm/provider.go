@@ -91,6 +91,8 @@ type DecisionOutput struct {
 	RecommendedActions  []RecommendedAction `json:"recommended_actions"`
 	Confidence          float64             `json:"confidence"`
 	RequiresHumanReview bool                `json:"requires_human_review"`
+	EvidenceRefs        []string            `json:"evidence_refs,omitempty"`
+	RecipeID            string              `json:"recipe_id,omitempty"`
 }
 
 // RecommendedAction is a single action suggested by a decision.

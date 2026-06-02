@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import Layout from "./components/Layout"
+import { ErrorBoundary } from "./components/ErrorBoundary"
 import Dashboard from "./pages/Dashboard"
 import Alerts from "./pages/Alerts"
 import Tasks from "./pages/Tasks"
@@ -19,20 +20,20 @@ function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/alerts" element={<Alerts />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/outbox" element={<Outbox />} />
-        <Route path="/logs" element={<Logs />} />
-        <Route path="/feishu" element={<Feishu />} />
-        <Route path="/pipeline" element={<Pipeline />} />
-        <Route path="/governance" element={<Governance />} />
-        <Route path="/agent-logs" element={<AgentLogs />} />
-        <Route path="/cases/:id" element={<CaseDetail />} />
-        <Route path="/audit-timeline" element={<AuditTimeline />} />
-        <Route path="/policy-inspector" element={<PolicyInspector />} />
-        <Route path="/decision-review" element={<DecisionReview />} />
-        <Route path="/sandbox" element={<SandboxCompare />} />
+        <Route path="/" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+        <Route path="/alerts" element={<ErrorBoundary><Alerts /></ErrorBoundary>} />
+        <Route path="/tasks" element={<ErrorBoundary><Tasks /></ErrorBoundary>} />
+        <Route path="/outbox" element={<ErrorBoundary><Outbox /></ErrorBoundary>} />
+        <Route path="/logs" element={<ErrorBoundary><Logs /></ErrorBoundary>} />
+        <Route path="/feishu" element={<ErrorBoundary><Feishu /></ErrorBoundary>} />
+        <Route path="/pipeline" element={<ErrorBoundary><Pipeline /></ErrorBoundary>} />
+        <Route path="/governance" element={<ErrorBoundary><Governance /></ErrorBoundary>} />
+        <Route path="/agent-logs" element={<ErrorBoundary><AgentLogs /></ErrorBoundary>} />
+        <Route path="/cases/:id" element={<ErrorBoundary><CaseDetail /></ErrorBoundary>} />
+        <Route path="/audit-timeline" element={<ErrorBoundary><AuditTimeline /></ErrorBoundary>} />
+        <Route path="/policy-inspector" element={<ErrorBoundary><PolicyInspector /></ErrorBoundary>} />
+        <Route path="/decision-review" element={<ErrorBoundary><DecisionReview /></ErrorBoundary>} />
+        <Route path="/sandbox" element={<ErrorBoundary><SandboxCompare /></ErrorBoundary>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

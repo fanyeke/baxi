@@ -141,6 +141,78 @@ objects:
     alert_fields:
       - review_score
       - order_status
+    relationships:
+      customer:
+        display_name: 客户
+        to: customer
+        cardinality: many_to_one
+        strategy: query_ref
+        source_key: customer_id
+        target:
+          key: "SELECT * FROM dwd.order_level WHERE customer_id = (SELECT customer_id FROM dwd.order_level WHERE order_id = $1)"
+        limit: 1
+      seller:
+        display_name: 卖家
+        to: seller
+        cardinality: many_to_one
+        strategy: reverse_lookup
+        source_key: order_id
+        target:
+          schema: dwd
+          table: item_level
+          key: order_id
+          object_id_field: seller_id
+        limit: 1
+      product:
+        display_name: 产品
+        to: product
+        cardinality: many_to_one
+        strategy: reverse_lookup
+        source_key: order_id
+        target:
+          schema: dwd
+          table: item_level
+          key: order_id
+          object_id_field: product_id
+        limit: 20
+      payment:
+        display_name: 支付
+        to: payment
+        cardinality: one_to_many
+        strategy: direct_key
+        source_key: order_id
+        target:
+          schema: dwd
+          table: order_level
+          key: order_id
+          object_id_field: order_id
+        limit: 20
+      shipment:
+        display_name: 物流
+        to: shipment
+        cardinality: one_to_many
+        strategy: direct_key
+        source_key: order_id
+        target:
+          schema: dwd
+          table: order_level
+          key: order_id
+          object_id_field: order_id
+        limit: 20
+      reviews:
+        display_name: 评价
+        to: review
+        cardinality: one_to_many
+        strategy: direct_key
+        source_key: order_id
+        target:
+          schema: dwd
+          table: order_level
+          key: order_id
+          object_id_field: order_id
+        limit: 20
+        fields:
+          - review_score
     governance:
       default_role: agent_readonly
       redact_pii: false
@@ -189,6 +261,38 @@ objects:
         llm_readable: true
     alert_fields:
       - avg_review_score
+    actions:
+      - read
+    relationships:
+      category:
+        display_name: 品类
+        to: category
+        cardinality: many_to_one
+        strategy: query_ref
+        source_key: product_category_name
+        target:
+          key: "SELECT * FROM dwd.item_level WHERE product_category_name = (SELECT product_category_name FROM dwd.item_level WHERE product_id = $1)"
+        limit: 1
+      reviews:
+        display_name: 评价
+        to: review
+        cardinality: one_to_many
+        strategy: query_ref
+        source_key: product_id
+        target:
+          key: "SELECT * FROM dwd.order_level WHERE order_id IN (SELECT order_id FROM dwd.item_level WHERE product_id = $1)"
+        limit: 20
+        sort: review_score desc
+      orders:
+        display_name: 订单
+        to: order
+        cardinality: one_to_many
+        strategy: query_ref
+        source_key: product_id
+        target:
+          key: "SELECT * FROM dwd.order_level WHERE order_id IN (SELECT order_id FROM dwd.item_level WHERE product_id = $1)"
+        limit: 20
+        sort: order_purchase_timestamp desc
     governance:
       default_role: agent_readonly
       redact_pii: false
@@ -236,18 +340,609 @@ objects:
         source: baseline_value
         sensitivity: L0
         llm_readable: true
-      status:
+    actions:
+      - read
+      - acknowledge
+    alert_fields:
+      - severity
+      - metric_name
+      - current_value
+      - baseline_value
+    governance:
+      default_role: agent_readonly
+      redact_pii: false
+
+  review:
+    display_name: 评价
+    description: 电商平台上的客户评价
+    grain: review_id
+    source:
+      schema: dwd
+      table: order_level  # closest table; review_score field available, review_id mapped from order_id
+      primary_key: order_id
+    properties:
+      review_id:
         type: string
-        source: status
+        source: order_id  # mapped from order_id (1:1 per order)
+        is_pk: true
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      order_id:
+        type: string
+        source: order_id
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      product_id:
+        type: string
+        source: order_id  # resolved via item_level join; no direct product_id in order_level
+        sensitivity: L2
+        llm_readable: false
+      customer_id:
+        type: string
+        source: customer_id  # not directly available in current tables
+        sensitivity: L2
+        llm_readable: false
+      review_score:
+        type: float
+        source: review_score
         sensitivity: L0
         llm_readable: true
         filterable: true
+      review_text:
+        type: string
+        source: review_text  # not directly available in current tables
+        sensitivity: L2
+        llm_readable: true
+      created_at:
+        type: datetime
+        source: review_created_at  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+    relationships:
+      order:
+        display_name: 关联订单
+        to: order
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: order_id
+      product:
+        display_name: 关联产品
+        to: product
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: product_id
+      customer:
+        display_name: 关联客户
+        to: customer
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: customer_id
+    actions:
+      - create_followup_task
+    alert_fields:
+      - review_score
+    governance:
+      default_role: agent_readonly
+      redact_pii: true
+
+  payment:
+    display_name: 支付
+    description: 电商平台上的支付记录
+    grain: payment_id
+    source:
+      schema: dwd
+      table: order_level  # closest table; payment_value available, payment_id mapped from order_id
+      primary_key: order_id
+    properties:
+      payment_id:
+        type: string
+        source: order_id  # mapped from order_id (1:1 per order)
+        is_pk: true
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      order_id:
+        type: string
+        source: order_id
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      payment_value:
+        type: float
+        source: payment_value
+        sensitivity: L1
+        llm_readable: true
+      payment_type:
+        type: string
+        source: payment_type  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      payment_status:
+        type: string
+        source: payment_status  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      installments:
+        type: int
+        source: installments  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+    relationships:
+      order:
+        display_name: 关联订单
+        to: order
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: order_id
+    actions:
+      - create_followup_task
+      - export_report
+    alert_fields:
+      - payment_value
+      - payment_status
+    governance:
+      default_role: agent_readonly
+      redact_pii: false
+
+  shipment:
+    display_name: 物流
+    description: 电商平台上的物流配送记录
+    grain: shipment_id
+    source:
+      schema: dwd
+      table: order_level  # closest table; delivery_status available, shipment_id mapped from order_id
+      primary_key: order_id
+    properties:
+      shipment_id:
+        type: string
+        source: order_id  # mapped from order_id (1:1 per order)
+        is_pk: true
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      order_id:
+        type: string
+        source: order_id
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      carrier:
+        type: string
+        source: carrier  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      delivery_status:
+        type: string
+        source: delivery_status
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      shipping_cost:
+        type: float
+        source: freight_value  # mapped from item_level.freight_value as proxy for shipping cost
+        sensitivity: L1
+        llm_readable: true
+      estimated_delivery:
+        type: datetime
+        source: estimated_delivery_date  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+      actual_delivery:
+        type: datetime
+        source: actual_delivery_date  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+    relationships:
+      order:
+        display_name: 关联订单
+        to: order
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: order_id
+      seller:
+        display_name: 关联卖家
+        to: seller
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: order_id  # resolved via item_level join on order_id
     actions:
       - create_followup_task
       - notify_owner
     alert_fields:
+      - delivery_status
+      - actual_delivery
+    governance:
+      default_role: agent_readonly
+      redact_pii: false
+
+  marketing_lead:
+    display_name: 营销线索
+    description: 营销活动产生的潜在客户线索
+    grain: lead_id
+    source:
+      schema: dwd
+      table: item_level  # closest table with seller context; no dedicated marketing table exists
+      primary_key: seller_id
+    properties:
+      lead_id:
+        type: string
+        source: seller_id  # mapped from seller_id (1:1 per seller)
+        is_pk: true
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      seller_id:
+        type: string
+        source: seller_id
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      campaign_source:
+        type: string
+        source: campaign_source  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      conversion_status:
+        type: string
+        source: conversion_status  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      lead_score:
+        type: float
+        source: lead_score  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+      created_date:
+        type: datetime
+        source: created_date  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+      converted_date:
+        type: datetime
+        source: converted_date  # not directly available in current tables
+        sensitivity: L0
+        llm_readable: true
+    relationships:
+      seller:
+        display_name: 关联卖家
+        to: seller
+        cardinality: many_to_one
+        strategy: lookup
+        source_key: seller_id
+    actions:
+      - create_followup_task
+      - notify_owner
+    alert_fields:
+      - conversion_status
+      - lead_score
+    governance:
+      default_role: agent_readonly
+      redact_pii: true
+
+  customer:
+    display_name: 客户
+    description: 电商平台上的客户主体
+    grain: customer_id
+    source:
+      schema: dwd
+      table: order_level
+      primary_key: customer_id
+    properties:
+      customer_id:
+        type: string
+        source: customer_id
+        is_pk: true
+        sensitivity: L2
+        llm_readable: false
+        searchable: true
+      customer_city:
+        # TODO: customer_city not in dwd.order_level; migrate from raw.olist_customers or create dwd.customer table
+        type: string
+        source: customer_city
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      customer_state:
+        type: string
+        source: customer_state
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      order_count_90d:
+        type: int
+        source: order_id
+        agg: count_distinct
+        sensitivity: L0
+        llm_readable: true
+      gmv_90d:
+        type: float
+        source: payment_value
+        agg: sum
+        sensitivity: L1
+        llm_readable: true
+      avg_review_score:
+        type: float
+        expression: "AVG(order_level.review_score)"
+        sensitivity: L0
+        llm_readable: true
+      last_order_date:
+        type: datetime
+        source: order_purchase_timestamp
+        agg: max
+        sensitivity: L0
+        llm_readable: true
+    metrics:
+      - customer_order_count_90d
+      - customer_gmv_90d
+      - customer_avg_review_score
+    relationships:
+      recent_orders:
+        display_name: 最近订单
+        to: order
+        cardinality: one_to_many
+        strategy: reverse_lookup
+        source_key: customer_id
+        target:
+          schema: dwd
+          table: order_level
+          key: customer_id
+          object_id_field: order_id
+        limit: 20
+        sort: order_purchase_timestamp desc
+        fields:
+          - order_id
+          - order_status
+          - payment_value
+          - review_score
+      reviews:
+        display_name: 评价
+        to: review
+        cardinality: one_to_many
+        strategy: reverse_lookup
+        source_key: customer_id
+        target:
+          schema: dwd
+          table: order_level
+          key: customer_id
+          object_id_field: order_id
+        limit: 20
+        fields:
+          - review_score
+    actions:
+      - create_followup_task
+      - notify_owner
+    alert_fields:
+      - gmv_90d
+      - avg_review_score
+    governance:
+      default_role: agent_readonly
+      redact_pii: true
+
+  category:
+    display_name: 品类
+    description: 电商平台上的产品分类
+    grain: category_id
+    source:
+      schema: dwd
+      table: item_level
+      primary_key: product_category_name
+    properties:
+      category_id:
+        type: string
+        source: product_category_name
+        is_pk: true
+        sensitivity: L0
+        llm_readable: true
+        searchable: true
+      category_name:
+        type: string
+        source: product_category_name
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      category_name_en:
+        type: string
+        source: product_category_name_english
+        sensitivity: L0
+        llm_readable: true
+      gmv_7d:
+        type: float
+        source: price
+        agg: sum
+        sensitivity: L0
+        llm_readable: true
+      order_count_7d:
+        type: int
+        source: order_id
+        agg: count_distinct
+        sensitivity: L0
+        llm_readable: true
+      avg_review_score:
+        type: float
+        expression: "AVG(order_level.review_score)"
+        sensitivity: L0
+        llm_readable: true
+    metrics:
+      - category_gmv_7d
+      - category_order_count_7d
+      - category_avg_review_score
+    relationships:
+      products:
+        display_name: 关联产品
+        to: product
+        cardinality: one_to_many
+        strategy: reverse_lookup
+        source_key: product_category_name
+        target:
+          schema: dwd
+          table: item_level
+          key: product_category_name
+          object_id_field: product_id
+        limit: 20
+      top_sellers:
+        display_name: 头部卖家
+        to: seller
+        cardinality: one_to_many
+        strategy: reverse_lookup
+        source_key: product_category_name
+        target:
+          schema: dwd
+          table: item_level
+          key: product_category_name
+          object_id_field: seller_id
+        limit: 20
+    actions:
+      - create_followup_task
+      - export_report
+    alert_fields:
+      - gmv_7d
+      - avg_review_score
+    governance:
+      default_role: agent_readonly
+      redact_pii: false
+
+  region:
+    display_name: 区域
+    description: 基于地理区域的统计分析
+    grain: region_id
+    source:
+      schema: dwd
+      table: order_level
+      primary_key: customer_state
+    properties:
+      region_id:
+        type: string
+        source: customer_state
+        is_pk: true
+        sensitivity: L0
+        llm_readable: true
+        searchable: true
+      region_name:
+        type: string
+        source: customer_state
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      seller_count:
+        type: int
+        expression: "COUNT(DISTINCT dwd.item_level.seller_id)"
+        sensitivity: L0
+        llm_readable: true
+      customer_count:
+        type: int
+        source: customer_id
+        agg: count_distinct
+        sensitivity: L0
+        llm_readable: true
+      order_count_7d:
+        type: int
+        source: order_id
+        agg: count_distinct
+        sensitivity: L0
+        llm_readable: true
+      late_delivery_rate_7d:
+        type: float
+        expression: "AVG(CASE WHEN is_late THEN 1.0 ELSE 0.0 END)"
+        sensitivity: L0
+        llm_readable: true
+      gmv_7d:
+        type: float
+        source: payment_value
+        agg: sum
+        sensitivity: L0
+        llm_readable: true
+    metrics:
+      - region_order_count_7d
+      - region_late_delivery_rate_7d
+      - region_gmv_7d
+    relationships:
+      sellers:
+        display_name: 关联卖家
+        to: seller
+        cardinality: one_to_many
+        strategy: reverse_lookup
+        source_key: customer_state
+        target:
+          schema: dwd
+          table: item_level
+          key: seller_state
+          object_id_field: seller_id
+        limit: 20
+      customers:
+        display_name: 关联客户
+        to: customer
+        cardinality: one_to_many
+        strategy: reverse_lookup
+        source_key: customer_state
+        target:
+          schema: dwd
+          table: order_level
+          key: customer_state
+          object_id_field: customer_id
+        limit: 20
+    actions:
+      - create_followup_task
+      - export_report
+    alert_fields:
+      - late_delivery_rate_7d
+      - gmv_7d
+    governance:
+      default_role: agent_readonly
+      redact_pii: false
+
+  global:
+    display_name: 平台全局
+    description: Platform-level aggregated metrics and health indicators
+    grain: metric_date
+    source:
+      schema: mart
+      table: metric_dimension_daily
+      primary_key: metric_date
+    properties:
+      metric_name:
+        type: string
+        source: metric_name
+        sensitivity: L0
+        llm_readable: true
+        filterable: true
+      metric_date:
+        type: datetime
+        source: snapshot_date
+        is_pk: true
+        sensitivity: L0
+      current_value:
+        type: float
+        source: current_value
+        sensitivity: L0
+        llm_readable: true
+      baseline_value:
+        type: float
+        source: baseline_value
+        sensitivity: L1
+        llm_readable: true
+      change_pct:
+        type: float
+        source: change_pct
+        sensitivity: L0
+        llm_readable: true
+      dimension_type:
+        type: string
+        source: dimension_type
+        sensitivity: L0
+        filterable: true
+    actions:
+      - create_followup_task
+      - export_report
+    alert_fields:
       - current_value
-      - severity
+      - change_pct
     governance:
       default_role: agent_readonly
       redact_pii: false

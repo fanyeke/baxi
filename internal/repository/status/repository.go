@@ -4,7 +4,10 @@ package status
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
 
 	"baxi/internal/repository/common"
 )
@@ -30,12 +33,12 @@ type PipelineRunRow struct {
 
 // Repository provides read queries for system status aggregation.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new status Repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 // GetTableCounts queries row counts from all tracked tables.
@@ -107,6 +110,9 @@ func (r *Repository) GetLastPipelineRun(ctx context.Context) (*PipelineRunRow, e
 		&pr.ErrorMessage,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("query last pipeline run: %w", err)
 	}
 

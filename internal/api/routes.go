@@ -20,12 +20,11 @@ func (s *Server) setupRoutes() {
 	s.router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.handleHealth)
 
-		r.Get("/qoder/capabilities", s.qoderHandler().HandleCapabilities)
-		r.Get("/qoder/context", s.qoderHandler().HandleContext)
-
 		r.Group(func(r chi.Router) {
 			r.Use(apimw.NewAuthMiddleware(s.bearerToken))
 
+			r.Get("/qoder/capabilities", s.qoderHandler().HandleCapabilities)
+			r.Get("/qoder/context", s.qoderHandler().HandleContext)
 			r.Get("/status", s.statusHandler().HandleStatus)
 			r.Get("/alerts", s.alertHandler().HandleListAlerts)
 			r.Get("/tasks", s.handleListTasks)

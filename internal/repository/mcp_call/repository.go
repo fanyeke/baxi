@@ -13,12 +13,12 @@ import (
 
 // Repository provides data access for MCP call audit logs.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new MCP call repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 // MCPCall represents a row from audit.mcp_call.

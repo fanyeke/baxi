@@ -1,0 +1,47 @@
+{
+  "case_id": "case-01-seller-late-delivery",
+  "recipe_id": "seller_late_delivery_alert",
+  "context_summary": "BuildContext returned case CASE_001 for object seller/SELLER_001 triggered by ALERT_001 (rule: seller_late_delivery_spike, severity: high, metric: late_delivery_rate, current: 0.31, baseline: 0.08, delta: +287.5%). Root object properties include seller_state, seller_city, gmv, order_count, avg_review_score, late_delivery_rate. Metrics available: seller_late_delivery_rate_7d (0.31 vs 0.08 baseline), seller_order_count_7d (45 vs 52 baseline), seller_avg_review_score_7d (3.2 vs 4.1 baseline), seller_gmv_7d (12500 vs 14800 baseline). Linked objects: recent_orders (up to 10, fields: order_id, order_status, payment_value, review_score, delivery_status). Allowed actions: notify_owner, create_followup_task, export_report. Governance: role=agent_readonly, redact_pii=true, classification=open.",
+  "expected_decision": {
+    "schema_version": "decision_output.v1",
+    "decision_type": "intervention",
+    "severity": "high",
+    "summary": "Seller SELLER_001 exhibits a significant late delivery rate of 31% (baseline 8%, delta +23pp), indicating a systemic fulfillment issue. Order volume is slightly declining and review scores are dropping. Immediate seller operations intervention is required to prevent further impact on customer experience and platform reputation.",
+    "rationale": [
+      "Seller SELLER_001 late_delivery_rate_7d is 0.31, far exceeding the recipe threshold for high-severity escalation (baseline 0.08), a 287.5% relative increase and 23 percentage point absolute delta.",
+      "Seller order count is declining (45 vs 52 baseline), and average review score has dropped from 4.1 to 3.2, suggesting deteriorating service quality affecting customer satisfaction.",
+      "The late delivery rate at 31% indicates a systemic fulfillment problem beyond normal variance — likely root causes include logistics capacity, inventory management, or carrier issues.",
+      "Recent orders (available via link:recent_orders) provide order-level delivery status and review patterns that corroborate the aggregate metric signal."
+    ],
+    "recommended_actions": [
+      {
+        "action_type": "notify_owner",
+        "priority": "high",
+        "owner_role": "seller_ops",
+        "payload": {
+          "message": "Seller SELLER_001 late delivery rate at 31% (baseline 8%) — immediate intervention required.",
+          "channels": ["feishu", "internal_ticket"]
+        }
+      },
+      {
+        "action_type": "create_followup_task",
+        "priority": "high",
+        "owner_role": "seller_ops",
+        "payload": {
+          "title": "Investigate and resolve late delivery issue for SELLER_001",
+          "description": "Follow up on seller SELLER_001 late delivery rate spike (31% vs 8% baseline). Review recent orders, contact seller, identify root cause (logistics/inventory/carrier), and implement corrective actions with 7-day remediation plan.",
+          "due_in_days": 3
+        }
+      }
+    ],
+    "confidence": 0.85,
+    "requires_human_review": true
+  },
+  "grading_criteria": {
+    "severity_match": "must be high",
+    "min_confidence": 0.7,
+    "must_recommend": ["notify_owner", "create_followup_task"],
+    "must_not_recommend": ["export_report"],
+    "required_evidence_refs": ["metric:seller_late_delivery_rate_7d"]
+  }
+}

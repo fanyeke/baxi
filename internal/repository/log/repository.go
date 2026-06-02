@@ -12,12 +12,12 @@ import (
 
 // Repository provides read-only access to audit log tables.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new Log repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(querier common.Querier) *Repository {
+	return &Repository{Querier: querier}
 }
 
 // LogRow represents a single row from a combined log query.

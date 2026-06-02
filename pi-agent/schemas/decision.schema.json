@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://baxi.internal/schemas/decision.schema.json",
+  "title": "Agent Decision Output",
+  "description": "Canonical JSON Schema for all Pi Agent decision outputs. Every agent decision MUST validate against this schema before it is persisted to ai.llm_decision.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "decision_type",
+    "severity",
+    "summary",
+    "rationale",
+    "recommended_actions",
+    "confidence",
+    "requires_human_review"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version identifier. Must be 'decision_output.v1' or empty string for legacy decisions.",
+      "enum": ["decision_output.v1", ""]
+    },
+    "decision_type": {
+      "type": "string",
+      "description": "The classification of the decision type.",
+      "enum": ["monitor_only", "investigate", "optimize", "intervention", "experiment"]
+    },
+    "severity": {
+      "type": "string",
+      "description": "The severity level of the decision.",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable summary of the decision.",
+      "minLength": 1
+    },
+    "rationale": {
+      "type": "array",
+      "description": "List of reasoning steps that led to the decision.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "recommended_actions": {
+      "type": "array",
+      "description": "Actions recommended by the agent.",
+      "items": {
+        "$ref": "#/definitions/RecommendedAction"
+      },
+      "minItems": 1
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confidence score for the decision, between 0.0 and 1.0.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "requires_human_review": {
+      "type": "boolean",
+      "description": "Whether this decision requires human review before any action is taken. Phase 6 guardrail: must be true.",
+      "const": true
+    },
+    "evidence_refs": {
+      "type": "array",
+      "description": "References to evidence items that support the decision (e.g., metric:seller_late_delivery_rate_7d).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "requires_approval": {
+      "type": "boolean",
+      "description": "Whether the recommended actions require explicit approval before execution."
+    }
+  },
+  "definitions": {
+    "RecommendedAction": {
+      "type": "object",
+      "description": "A single action recommended by the agent decision.",
+      "required": ["action_type", "priority", "owner_role", "payload"],
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "description": "The canonical action type identifier.",
+          "enum": [
+            "create_followup_task",
+            "notify_owner",
+            "export_report",
+            "create_outbox_message",
+            "escalate_to_human"
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "description": "Priority level for this action (e.g., low, medium, high, critical).",
+          "minLength": 1
+        },
+        "owner_role": {
+          "type": "string",
+          "description": "The role responsible for executing this action.",
+          "minLength": 1
+        },
+        "payload": {
+          "type": "object",
+          "description": "Action-specific parameters as a JSON object.",
+          "minProperties": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

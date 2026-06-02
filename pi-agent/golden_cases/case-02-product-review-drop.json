@@ -1,0 +1,135 @@
+{
+  "case_id": "CASE_GOLDEN_02",
+  "name": "product_review_drop_alert",
+  "description": "Product PROD_001 has experienced a critical drop in average review score from 4.2 to 2.1 (delta -2.1). Recent reviews consistently show 1-2 star ratings with quality complaints. The system should recognize this as a critical severity issue requiring both report generation and owner notification.",
+  "trigger": {
+    "alert_id": "alert_golden_review_drop_001",
+    "rule_id": "product_review_drop",
+    "severity": "critical",
+    "metric_name": "product_avg_review_score_7d",
+    "current_value": 2.1,
+    "baseline_value": 4.2,
+    "delta": -2.1,
+    "delta_pct": -50.0
+  },
+  "object_context": {
+    "object_type": "product",
+    "object_id": "PROD_001"
+  },
+  "evidence": {
+    "metrics": [
+      {
+        "key": "metric:product_avg_review_score_7d",
+        "name": "product_avg_review_score_7d",
+        "value": 2.1,
+        "baseline": 4.2,
+        "delta": -2.1,
+        "delta_pct": -50.0,
+        "severity": "critical"
+      },
+      {
+        "key": "metric:product_review_drop_7d",
+        "name": "product_review_drop_7d",
+        "value": -2.1,
+        "baseline": 0,
+        "severity": "critical"
+      }
+    ],
+    "links": [
+      {
+        "key": "link:reviews",
+        "name": "reviews",
+        "object_type": "product",
+        "object_id": "PROD_001",
+        "description": "Recent reviews for PROD_001, total 24 reviews in last 7 days",
+        "items": [
+          { "rating": 1, "text": "Product arrived damaged, poor quality" },
+          { "rating": 2, "text": "Not as described, cheap material" },
+          { "rating": 1, "text": "Fell apart after one use" },
+          { "rating": 2, "text": "Poor quality, would not recommend" },
+          { "rating": 1, "text": "Terrible product, waste of money" },
+          { "rating": 2, "text": "Quality issues, returning" },
+          { "rating": 1, "text": "Defective item received" },
+          { "rating": 2, "text": "Not worth the price, poor quality" }
+        ],
+        "summary": "All 24 recent reviews rated 1-2 stars. Common complaints: quality issues, defects, misleading description. No positive reviews in the window."
+      }
+    ]
+  },
+  "expected_decision": {
+    "case_id": "CASE_GOLDEN_02",
+    "context_hash": "sha256:golden_review_drop_hash",
+    "decision": "escalate",
+    "confidence": 0.85,
+    "severity": "critical",
+    "reasoning": "Product PROD_001 avg review score dropped from 4.2 to 2.1 (delta -2.1, CRITICAL). The product_review_drop_7d metric confirms a sustained decline of -2.1 points. All 24 recent reviews are 1-2 star ratings with consistent complaints about quality, defects, and misleading product description. This is not an isolated anomaly but a systemic quality issue. Recommend export_report to generate a detailed quality analysis report for root cause investigation, and notify_owner to alert the product owner for immediate intervention.",
+    "evidence_refs": [
+      "metric:product_avg_review_score_7d",
+      "metric:product_review_drop_7d",
+      "link:reviews"
+    ],
+    "recommended_actions": [
+      {
+        "action_type": "export_report",
+        "params": {
+          "report_type": "product_quality",
+          "object_id": "PROD_001",
+          "severity": "critical"
+        },
+        "rationale": "Export detailed quality report for PROD_001 to enable root cause analysis of the sudden and sustained review score drop"
+      },
+      {
+        "action_type": "notify_owner",
+        "params": {
+          "message": "Your product PROD_001 has received critically low reviews (avg 2.1/5.0, down from 4.2 baseline). All 24 recent reviews cite quality issues including defects and misleading description. Immediate attention required.",
+          "priority": "high"
+        },
+        "rationale": "Notify product owner about critical review score drop with specific quality concerns raised by customers for immediate intervention"
+      }
+    ],
+    "requires_human_approval": true,
+    "missing_information": []
+  },
+  "grading_criteria": {
+    "severity": {
+      "expected": "critical",
+      "weight": 1.0,
+      "pass_on_match": true,
+      "description": "Decision severity must be 'critical' given 50% drop in review score (baseline 4.2 to 2.1) and consistent 1-2 star quality complaints across all recent reviews"
+    },
+    "confidence": {
+      "min": 0.8,
+      "weight": 1.0,
+      "pass_on_match": true,
+      "description": "Confidence must be >= 0.8 because evidence is clear, consistent, and unambiguous: sustained metric drop, correlated review text complaints, and no contradictory signals"
+    },
+    "decision": {
+      "expected": "escalate",
+      "weight": 1.0,
+      "pass_on_match": true,
+      "description": "Decision must be 'escalate' because the problem is critical (product quality affecting customers) and requires human intervention beyond simple monitoring"
+    },
+    "actions": {
+      "must_include": ["export_report", "notify_owner"],
+      "weight": 1.0,
+      "pass_on_match": true,
+      "description": "Must recommend both export_report (for root cause analysis) and notify_owner (for immediate owner intervention). Both are required because the issue needs investigation plus action."
+    },
+    "evidence_refs": {
+      "must_include": [
+        "metric:product_avg_review_score_7d",
+        "metric:product_review_drop_7d",
+        "link:reviews"
+      ],
+      "weight": 0.5,
+      "pass_on_match": true,
+      "description": "Must reference all three evidence keys: the avg review score metric, the drop metric, and the reviews link. These three items collectively establish the quantitative drop, the sustained trend, and the qualitative reason."
+    },
+    "forbidden_actions": {
+      "must_not_include": [],
+      "weight": 0.5,
+      "pass_on_match": true,
+      "description": "No specific forbidden actions for this case type"
+    }
+  }
+}

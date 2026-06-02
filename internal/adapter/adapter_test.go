@@ -41,16 +41,6 @@ func TestFeishuAdapter_DryRunTrue(t *testing.T) {
 	}
 }
 
-type mockFeishuClient struct{}
-
-func (m *mockFeishuClient) getTenantAccessToken() (string, error) {
-	return "mock_token", nil
-}
-
-func (m *mockFeishuClient) sendMessage(chatID, content, msgType string) (string, error) {
-	return "mock_msg_id", nil
-}
-
 func TestFeishuAdapter_EmptyWebhook(t *testing.T) {
 	ctx := context.Background()
 	adapter := NewFeishuAdapter(FeishuConfig{

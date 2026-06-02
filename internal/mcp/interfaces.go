@@ -50,7 +50,7 @@ type GovernanceService interface {
 type ReviewService interface {
 	ApproveProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
 	RejectProposal(ctx context.Context, proposalID, reviewerID, feedback string) (*review.ReviewRecord, error)
-	CancelProposal(ctx context.Context, proposalID, reason string) error
+	CancelProposal(ctx context.Context, proposalID, reviewerID, reason string) error
 	GetProposalByID(ctx context.Context, proposalID string) (*action.ActionProposal, error)
 	ListReviewRecords(ctx context.Context, proposalID string, limit, offset int) ([]review.ReviewRecord, int, error)
 }
@@ -158,6 +158,15 @@ type LinkResult struct {
 	Objects    []ObjectContext `json:"objects"`
 }
 
+// ProposeActionTrace carries optional trace metadata for proposal creation.
+type ProposeActionTrace struct {
+	DecisionID   string // pre-created LLM decision ID
+	CaseID       string // case_id extracted from decision_json
+	EvidenceRefs string // JSON array string of evidence reference IDs
+	ContextHash  string
+	RecipeID     string
+}
+
 // ActionResult holds the result of executing an action on an object.
 type ActionResult struct {
 	Success    bool                   `json:"success"`
@@ -174,7 +183,7 @@ type OntologyService interface {
 	GetObjectMetrics(ctx context.Context, objectType, objectID string) (map[string]float64, error)
 	GetLinkedObjects(ctx context.Context, objectType, objectID, linkName string, maxDepth int) (*LinkedObjectsResult, error)
 	ExecuteAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
-	ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}) (*ActionResult, error)
+	ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}, trace ProposeActionTrace) (*ActionResult, error)
 }
 
 // BuildContextService defines the interface for building recipe-driven contexts.

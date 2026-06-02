@@ -1,0 +1,10 @@
+{
+    "name": "baxi-operations",
+    "version": "1.0.0",
+    "description": "Baxi operations platform integration for Pi Agent - action, governance, outbox, pipeline, review, status, schema",
+    "main": "index.ts",
+    "dependencies": {
+        "@earendil-works/pi-coding-agent": "^0.78.0",
+        "typebox": "^1.1.39"
+    }
+}

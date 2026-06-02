@@ -1,6 +1,8 @@
 package mcp
 
 import (
+	"os"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mark3labs/mcp-go/server"
 
@@ -30,6 +32,26 @@ type Server struct {
 	linkResolver           *ontology.LinkResolver
 	actionBindingValidator *ontology.ActionBindingValidator
 	objectTypesV2          map[string]*ontology.ObjectTypeV2
+	recipes                map[string]*ontology.ContextRecipe
+
+	// mcpUserID is the authenticated identity of the MCP caller, used for
+	// review/approve/execute operations. Set from BAXI_MCP_USER_ID env var.
+	// This prevents callers from fabricating arbitrary reviewer identities.
+	mcpUserID string
+	// mcpRole is the caller's role, used for allowed_by authorization checks.
+	// Set from BAXI_MCP_ROLE env var.
+	mcpRole string
+}
+
+func mcpUserIDFromEnv() string {
+	if v := os.Getenv("BAXI_MCP_USER_ID"); v != "" {
+		return v
+	}
+	return "mcp_system"
+}
+
+func mcpRoleFromEnv() string {
+	return os.Getenv("BAXI_MCP_ROLE")
 }
 
 func NewServer(
@@ -79,6 +101,8 @@ func NewServer(
 		schemaSvc:       schemaSvc,
 		sandboxSvc:      sandboxSvc,
 		pool:            pool,
+		mcpUserID:       mcpUserIDFromEnv(),
+		mcpRole:         mcpRoleFromEnv(),
 	}
 
 	srv.registerDecisionTools()
@@ -107,6 +131,10 @@ func (s *Server) SetActionBindingValidator(abv *ontology.ActionBindingValidator)
 
 func (s *Server) SetObjectTypesV2(ots map[string]*ontology.ObjectTypeV2) {
 	s.objectTypesV2 = ots
+}
+
+func (s *Server) SetRecipes(recipes map[string]*ontology.ContextRecipe) {
+	s.recipes = recipes
 }
 
 func (s *Server) Run() error {

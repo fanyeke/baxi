@@ -69,11 +69,24 @@ func (c *realFeishuClient) getTenantAccessToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	respBody, _ := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read tenant token response: %w", err)
+	}
 	var data map[string]any
-	_ = json.Unmarshal(respBody, &data)
+	if err := json.Unmarshal(respBody, &data); err != nil {
+		return "", fmt.Errorf("parse tenant token response: %w", err)
+	}
 
-	token, _ := data["tenant_access_token"].(string)
+	if resp.StatusCode != http.StatusOK {
+		msg, _ := data["msg"].(string)
+		return "", fmt.Errorf("feishu tenant token API error: status=%d, msg=%s", resp.StatusCode, msg)
+	}
+
+	token, ok := data["tenant_access_token"].(string)
+	if !ok || token == "" {
+		return "", fmt.Errorf("feishu tenant token response missing tenant_access_token")
+	}
 	expire := 7200
 	if e, ok := data["expire"].(float64); ok {
 		expire = int(e)

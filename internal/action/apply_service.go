@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -13,10 +14,11 @@ import (
 )
 
 var (
-	ErrNotApproved       = errors.New("proposal is not approved")
-	ErrActionNotAllowed  = errors.New("action type is not allowed")
-	ErrProposalNotFound  = errors.New("proposal not found")
-	ErrLineageIncomplete = errors.New("decision lineage incomplete: missing required lineage events")
+	ErrNotApproved            = errors.New("proposal is not approved")
+	ErrActionNotAllowed       = errors.New("action type is not allowed")
+	ErrProposalNotFound       = errors.New("proposal not found")
+	ErrLineageIncomplete      = errors.New("decision lineage incomplete: missing required lineage events")
+	ErrLiveExecutionDisabled  = errors.New("live execution disabled: set BAXI_ALLOW_LIVE_EXECUTION=true to enable")
 )
 
 // ProposalLoader retrieves action proposals by ID.
@@ -85,6 +87,11 @@ func (s *ApplyService) ExecuteProposal(ctx context.Context, pool *pgxpool.Pool, 
 	executeOpts := &ExecuteOptions{DryRun: true}
 	for _, opt := range opts {
 		opt(executeOpts)
+	}
+
+	// Env gate: live execution (dry_run=false) requires BAXI_ALLOW_LIVE_EXECUTION=true
+	if !executeOpts.DryRun && os.Getenv("BAXI_ALLOW_LIVE_EXECUTION") != "true" {
+		return nil, ErrLiveExecutionDisabled
 	}
 
 	proposal, err := s.loader.GetProposalByID(ctx, pool, proposalID)

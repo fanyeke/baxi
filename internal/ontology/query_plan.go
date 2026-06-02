@@ -50,6 +50,11 @@ func (qc *QueryCompiler) CompileObjectQuery(objectType, objectID string) (Compil
 	colNames := make([]string, 0, len(ot.Properties))
 	for name, prop := range ot.Properties {
 		if prop.Expression != "" {
+			// Skip cross-table expressions (contain ".")
+			// because the source table is not joined to the referenced table.
+			if strings.Contains(prop.Expression, ".") {
+				continue
+			}
 			cols = append(cols, prop.Expression+" AS "+name)
 		} else if prop.SourceField != "" {
 			cols = append(cols, prop.SourceField)

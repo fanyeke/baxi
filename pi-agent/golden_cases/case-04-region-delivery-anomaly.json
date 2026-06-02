@@ -1,0 +1,161 @@
+{
+  "case_id": "golden_region_delivery_anomaly_001",
+  "name": "Region delivery anomaly alert",
+  "description": "Region REG_NORTHEAST has late delivery rate 0.18 (baseline 0.05, delta +0.13, HIGH). Multiple sellers in the region are affected. Recent orders show consistent 3-5 day delays.",
+  "scenario": "Region-wide delivery degradation affecting multiple sellers simultaneously, indicating a systemic logistics problem rather than individual seller issues.",
+  "trigger": {
+    "alert_id": "alert_golden_reg_delivery_001",
+    "rule_id": "region_delivery_anomaly_alert",
+    "severity": "high",
+    "metric_name": "late_delivery_rate",
+    "current_value": 0.18,
+    "baseline_value": 0.05,
+    "delta_pct": 260.0,
+    "delta_abs": 0.13
+  },
+  "object_context": {
+    "object_type": "region",
+    "object_id": "REG_NORTHEAST"
+  },
+  "evidence": [
+    {
+      "key": "region_late_delivery_rate_7d",
+      "type": "metric",
+      "description": "7-day rolling late delivery rate for the region",
+      "current_value": 0.18,
+      "baseline_value": 0.05,
+      "delta_abs": 0.13,
+      "delta_pct": 260.0
+    },
+    {
+      "key": "region_order_count_7d",
+      "type": "metric",
+      "description": "Total order volume in the region over the past 7 days",
+      "current_value": 2450,
+      "baseline_value": 2200,
+      "delta_pct": 11.36
+    },
+    {
+      "key": "link:sellers",
+      "type": "link",
+      "description": "Sellers operating in REG_NORTHEAST region",
+      "target_type": "seller",
+      "cardinality": "multiple"
+    },
+    {
+      "key": "region_avg_delay_days_7d",
+      "type": "metric",
+      "description": "Average delivery delay in days for the region over the past 7 days",
+      "current_value": 3.8,
+      "baseline_value": 1.2,
+      "delta_abs": 2.6,
+      "delta_pct": 216.7
+    },
+    {
+      "key": "region_affected_seller_count",
+      "type": "metric",
+      "description": "Number of sellers with late delivery rate above threshold in the region",
+      "current_value": 12,
+      "baseline_value": 2,
+      "delta_abs": 10,
+      "delta_pct": 500.0
+    }
+  ],
+  "allowed_actions": [
+    "create_followup_task",
+    "notify_region_manager",
+    "escalate_logistics_review"
+  ],
+  "forbidden_actions": ["execute_dispatch", "modify_raw_data", "modify_business_policy"],
+  "expected_output": {
+    "decision": "escalate",
+    "severity": "high",
+    "confidence": {
+      "min": 0.75,
+      "description": "Confidence must be at least 0.75 given strong, multi-source evidence"
+    },
+    "reasoning_requirements": [
+      "Must reference region_late_delivery_rate_7d as primary metric evidence",
+      "Must mention that multiple sellers are affected (region_affected_seller_count or link:sellers)",
+      "Must reference average delay magnitude of 3-5 days (region_avg_delay_days_7d)",
+      "Must indicate the issue is systemic, not seller-specific",
+      "Must recommend logistics-focused follow-up"
+    ],
+    "evidence_refs": {
+      "required": ["region_late_delivery_rate_7d", "region_order_count_7d", "link:sellers"],
+      "optional": ["region_avg_delay_days_7d", "region_affected_seller_count"]
+    },
+    "recommended_actions": [
+      {
+        "action_type": "create_followup_task",
+        "min_count": 1,
+        "params_constraints": {
+          "task_type": "logistics_review",
+          "description": "Must recommend a logistics review task for the REG_NORTHEAST region"
+        },
+        "rationale_required": true
+      },
+      {
+        "action_type": "notify_region_manager",
+        "optional": true
+      },
+      {
+        "action_type": "escalate_logistics_review",
+        "optional": true
+      }
+    ],
+    "requires_human_approval": true,
+    "minimum_rationale_count": 2
+  },
+  "grading_criteria": {
+    "pass_threshold": 0.7,
+    "categories": [
+      {
+        "name": "severity_correctness",
+        "weight": 0.15,
+        "description": "Severity must be 'high'",
+        "pass_condition": "exact_match"
+      },
+      {
+        "name": "confidence_threshold",
+        "weight": 0.15,
+        "description": "Confidence must be >= 0.75",
+        "pass_condition": "min_value",
+        "threshold": 0.75
+      },
+      {
+        "name": "decision_type",
+        "weight": 0.15,
+        "description": "Decision must be 'escalate' (systemic region-wide issue, not monitor-only)",
+        "pass_condition": "exact_match",
+        "expected_value": "escalate"
+      },
+      {
+        "name": "required_evidence_refs",
+        "weight": 0.20,
+        "description": "Must reference all required evidence items: region_late_delivery_rate_7d, region_order_count_7d, link:sellers",
+        "pass_condition": "contains_all",
+        "required_items": ["region_late_delivery_rate_7d", "region_order_count_7d", "link:sellers"]
+      },
+      {
+        "name": "action_recommendation",
+        "weight": 0.20,
+        "description": "Must recommend create_followup_task with logistics_review task_type",
+        "pass_condition": "action_contains",
+        "required_action": "create_followup_task",
+        "params_check": {
+          "task_type": "logistics_review"
+        }
+      },
+      {
+        "name": "reasoning_quality",
+        "weight": 0.15,
+        "description": "Reasoning must demonstrate understanding that this is a systemic region-wide issue (not individual seller), reference the delay magnitude (3-5 days), and identify logistics as the root cause area",
+        "pass_condition": "includes_keywords",
+        "required_keywords": ["systemic", "region", "logistics"]
+      }
+    ]
+  },
+  "expected_owner_roles": ["logistics_ops", "analyst", "region_manager"],
+  "tags": ["region", "delivery", "logistics", "high-severity", "systemic-issue"]
+}

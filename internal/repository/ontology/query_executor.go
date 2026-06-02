@@ -24,12 +24,12 @@ type CompiledQuery struct {
 // QueryExecutor executes compiled queries against the database.
 // Uses PoolProvider pattern; returns ObjectInstance results.
 type QueryExecutor struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewQueryExecutor creates a QueryExecutor.
-func NewQueryExecutor(provider *common.PoolProvider) *QueryExecutor {
-	return &QueryExecutor{PoolProvider: provider}
+func NewQueryExecutor(provider common.Querier) *QueryExecutor {
+	return &QueryExecutor{Querier: provider}
 }
 
 // ExecuteQuery runs a compiled query and returns results as ObjectInstances.

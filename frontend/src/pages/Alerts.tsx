@@ -22,13 +22,13 @@ export default function Alerts() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">告警中心</h1>
       <div className="flex gap-2">
-        <select className="px-3 py-1 border rounded text-sm" value={severity} onChange={e => setSeverity(e.target.value)}>
+        <select className="px-3 py-1 border rounded text-sm" aria-label="告警等级" value={severity} onChange={e => setSeverity(e.target.value)}>
           <option value="">全部等级</option>
           <option value="high">高</option>
           <option value="medium">中</option>
           <option value="low">低</option>
         </select>
-        <select className="px-3 py-1 border rounded text-sm" value={status} onChange={e => setStatus(e.target.value)}>
+        <select className="px-3 py-1 border rounded text-sm" aria-label="告警状态" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">全部状态</option>
           <option value="new">新</option>
           <option value="acknowledged">已确认</option>

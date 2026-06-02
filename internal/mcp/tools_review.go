@@ -14,7 +14,6 @@ func (s *Server) registerReviewTools() {
 		"approve_proposal",
 		mcp.WithDescription("Approve an action proposal"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to approve")),
-		mcp.WithString("reviewer_id", mcp.Required(), mcp.Description("The ID of the reviewer")),
 		mcp.WithString("feedback", mcp.Description("Optional feedback for the approval")),
 	)
 	s.server.AddTool(approveTool, s.handleApproveProposal)
@@ -24,7 +23,6 @@ func (s *Server) registerReviewTools() {
 		"reject_proposal",
 		mcp.WithDescription("Reject an action proposal"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to reject")),
-		mcp.WithString("reviewer_id", mcp.Required(), mcp.Description("The ID of the reviewer")),
 		mcp.WithString("feedback", mcp.Description("Optional feedback for the rejection")),
 	)
 	s.server.AddTool(rejectTool, s.handleRejectProposal)
@@ -66,22 +64,12 @@ func (s *Server) handleApproveProposal(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError("proposal_id is required"), nil
 	}
 
-	reviewerID, ok := args["reviewer_id"].(string)
-	if !ok || reviewerID == "" {
-		return mcp.NewToolResultError("reviewer_id is required"), nil
-	}
-
-	// Validate reviewer_id format to prevent identity spoofing
-	if !isValidReviewerID(reviewerID) {
-		return mcp.NewToolResultError("reviewer_id must be non-empty and contain only alphanumeric characters, hyphens, and underscores"), nil
-	}
-
 	feedback := ""
 	if v, ok := args["feedback"].(string); ok {
 		feedback = v
 	}
 
-	record, err := s.reviewSvc.ApproveProposal(ctx, proposalID, reviewerID, feedback)
+	record, err := s.reviewSvc.ApproveProposal(ctx, proposalID, s.mcpUserID, feedback)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to approve proposal: %v", err)), nil
 	}
@@ -106,22 +94,12 @@ func (s *Server) handleRejectProposal(ctx context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError("proposal_id is required"), nil
 	}
 
-	reviewerID, ok := args["reviewer_id"].(string)
-	if !ok || reviewerID == "" {
-		return mcp.NewToolResultError("reviewer_id is required"), nil
-	}
-
-	// Validate reviewer_id format to prevent identity spoofing
-	if !isValidReviewerID(reviewerID) {
-		return mcp.NewToolResultError("reviewer_id must be non-empty and contain only alphanumeric characters, hyphens, and underscores"), nil
-	}
-
 	feedback := ""
 	if v, ok := args["feedback"].(string); ok {
 		feedback = v
 	}
 
-	record, err := s.reviewSvc.RejectProposal(ctx, proposalID, reviewerID, feedback)
+	record, err := s.reviewSvc.RejectProposal(ctx, proposalID, s.mcpUserID, feedback)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to reject proposal: %v", err)), nil
 	}
@@ -151,7 +129,7 @@ func (s *Server) handleCancelProposal(ctx context.Context, req mcp.CallToolReque
 		reason = v
 	}
 
-	if err := s.reviewSvc.CancelProposal(ctx, proposalID, reason); err != nil {
+	if err := s.reviewSvc.CancelProposal(ctx, proposalID, s.mcpUserID, reason); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to cancel proposal: %v", err)), nil
 	}
 
@@ -236,23 +214,9 @@ func (s *Server) handleListReviewRecords(ctx context.Context, req mcp.CallToolRe
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{
-		"items": items,
-		"total": total,
-		"limit": limit,
+		"items":  items,
+		"total":  total,
+		"limit":  limit,
 		"offset": offset,
 	})
-}
-
-// isValidReviewerID validates that a reviewer ID contains only alphanumeric
-// characters, hyphens, and underscores, and is non-empty.
-func isValidReviewerID(id string) bool {
-	if id == "" {
-		return false
-	}
-	for _, r := range id {
-		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_') {
-			return false
-		}
-	}
-	return true
 }

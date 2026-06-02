@@ -50,6 +50,9 @@ type LLMDecisionRow struct {
 	Status           *string
 	FallbackReason   *string
 	ValidationErrors *json.RawMessage
+	RecipeID         *string
+	ContextHash      *string
+	Severity         *string
 }
 
 // ActionProposalRow represents a single row from ai.action_proposal.
@@ -69,6 +72,8 @@ type ActionProposalRow struct {
 	RequiresHumanReview bool
 	ContextHash         *string // Phase 2: links proposal to the exact LLM context used
 	ActionSchemaVersion *string // Phase 4: links proposal to the action schema version
+	EvidenceRefs        *string // JSON array of evidence reference IDs
+	RecipeID            *string // recipe that triggered this decision
 }
 
 // CaseFilter holds optional WHERE clause filters for listing decision cases.
@@ -85,12 +90,12 @@ type CaseFilter struct {
 // Repository provides data access for ai.decision_case, ai.llm_decision,
 // and ai.action_proposal tables.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new decision Repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(querier common.Querier) *Repository {
+	return &Repository{Querier: querier}
 }
 
 // CreateCase inserts a new row into ai.decision_case.
@@ -117,7 +122,7 @@ func (r *Repository) CreateCase(ctx context.Context, row *DecisionCaseRow) error
 		)
 	`
 
-	_, err := r.PoolProvider.Pool().Exec(ctx, query,
+	_, err := r.Exec(ctx, query,
 		row.CaseID,
 		row.AlertID,
 		row.CaseType,
@@ -274,7 +279,7 @@ func (r *Repository) UpdateCaseStatus(
 		WHERE case_id = $5
 	`
 
-	res, err := r.PoolProvider.Pool().Exec(ctx, query, status, contextJSON, contextHash, governanceSnapshot, caseID)
+	res, err := r.Exec(ctx, query, status, contextJSON, contextHash, governanceSnapshot, caseID)
 	if err != nil {
 		return fmt.Errorf("update ai.decision_case status: %w", err)
 	}
@@ -389,15 +394,17 @@ func (r *Repository) CreateDecision(ctx context.Context, row *LLMDecisionRow) er
 		INSERT INTO ai.llm_decision (
 			decision_id, case_id, model_version, prompt_hash,
 			output_json, confidence, created_at,
-			status, fallback_reason, validation_errors
+			status, fallback_reason, validation_errors,
+			recipe_id, context_hash, severity
 		) VALUES (
 			$1, $2, $3, $4,
 			$5, $6, $7,
-			$8, $9, $10
+			$8, $9, $10,
+			$11, $12, $13
 		)
 	`
 
-	_, err := r.PoolProvider.Pool().Exec(ctx, query,
+	_, err := r.Exec(ctx, query,
 		row.DecisionID,
 		row.CaseID,
 		row.ModelVersion,
@@ -408,11 +415,47 @@ func (r *Repository) CreateDecision(ctx context.Context, row *LLMDecisionRow) er
 		row.Status,
 		row.FallbackReason,
 		row.ValidationErrors,
+		row.RecipeID,
+		row.ContextHash,
+		row.Severity,
 	)
 	if err != nil {
 		return fmt.Errorf("insert ai.llm_decision: %w", err)
 	}
 	return nil
+}
+
+// GetDecisionByID retrieves a single LLM decision by its decision_id.
+func (r *Repository) GetDecisionByID(ctx context.Context, decisionID string) (*LLMDecisionRow, error) {
+	query := `
+		SELECT decision_id, case_id, model_version, prompt_hash,
+		       output_json, confidence, created_at,
+		       status, fallback_reason, validation_errors,
+		       recipe_id, context_hash, severity
+		FROM ai.llm_decision
+		WHERE decision_id = $1
+	`
+
+	var row LLMDecisionRow
+	err := r.QueryRow(ctx, query, decisionID).Scan(
+		&row.DecisionID,
+		&row.CaseID,
+		&row.ModelVersion,
+		&row.PromptHash,
+		&row.OutputJSON,
+		&row.Confidence,
+		&row.CreatedAt,
+		&row.Status,
+		&row.FallbackReason,
+		&row.ValidationErrors,
+		&row.RecipeID,
+		&row.ContextHash,
+		&row.Severity,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query ai.llm_decision by id: %w", err)
+	}
+	return &row, nil
 }
 
 // CreateProposal inserts a new row into ai.action_proposal.
@@ -423,17 +466,19 @@ func (r *Repository) CreateProposal(ctx context.Context, row *ActionProposalRow)
 			payload, apply_status, created_at,
 			applied_at, applied_by,
 			title, description, risk_level, requires_human_review,
-			context_hash, action_schema_version
+			context_hash, action_schema_version,
+			evidence_refs, recipe_id
 		) VALUES (
 			$1, $2, $3, $4,
 			$5, $6, $7,
 			$8, $9,
 			$10, $11, $12, $13,
-			$14, $15
+			$14, $15,
+			$16, $17
 		)
 	`
 
-	_, err := r.PoolProvider.Pool().Exec(ctx, query,
+	_, err := r.Exec(ctx, query,
 		row.ProposalID,
 		row.CaseID,
 		row.DecisionID,
@@ -449,6 +494,8 @@ func (r *Repository) CreateProposal(ctx context.Context, row *ActionProposalRow)
 		row.RequiresHumanReview,
 		row.ContextHash,
 		row.ActionSchemaVersion,
+		row.EvidenceRefs,
+		row.RecipeID,
 	)
 	if err != nil {
 		return fmt.Errorf("insert ai.action_proposal: %w", err)
@@ -463,7 +510,9 @@ func (r *Repository) ListProposalsByCase(ctx context.Context, caseID string) ([]
 		SELECT proposal_id, case_id, decision_id, action_type,
 		       payload, apply_status, created_at,
 		       applied_at, applied_by,
-		       title, description, risk_level, requires_human_review
+		       title, description, risk_level, requires_human_review,
+		       context_hash, action_schema_version,
+		       evidence_refs, recipe_id
 		FROM ai.action_proposal
 		WHERE case_id = $1
 		ORDER BY created_at ASC
@@ -492,6 +541,10 @@ func (r *Repository) ListProposalsByCase(ctx context.Context, caseID string) ([]
 			&row.Description,
 			&row.RiskLevel,
 			&row.RequiresHumanReview,
+			&row.ContextHash,
+			&row.ActionSchemaVersion,
+			&row.EvidenceRefs,
+			&row.RecipeID,
 		); err != nil {
 			return nil, fmt.Errorf("scan action_proposal row: %w", err)
 		}

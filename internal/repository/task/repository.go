@@ -39,12 +39,12 @@ type TaskFilters struct {
 
 // Repository provides read-only access to ops.task.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new task Repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 // ListTasks queries ops.task with optional filters and pagination.

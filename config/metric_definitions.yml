@@ -43,3 +43,243 @@ metrics:
       metric_name: gmv_7d
     value_column: current_value
     baseline_column: ""
+
+  region_order_count_7d:
+    display_name: 最近 7 天区域订单数
+    object_type: region
+    grain: region_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: region
+      metric_name: order_count_7d
+    value_column: current_value
+    baseline_column: ""
+
+  region_late_delivery_rate_7d:
+    display_name: 最近 7 天区域延迟发货率
+    object_type: region
+    grain: region_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: region
+      metric_name: late_delivery_rate_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value > baseline_value + 0.10"
+      high: "current_value > baseline_value + 0.20"
+    llm_explanation: >
+      衡量区域近期履约稳定性。显著高于基线时，可能存在区域级物流或仓储问题。
+
+  region_gmv_7d:
+    display_name: 最近 7 天区域 GMV
+    object_type: region
+    grain: region_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: region
+      metric_name: gmv_7d
+    value_column: current_value
+    baseline_column: ""
+
+  product_gmv_7d:
+    display_name: 最近 7 天商品交易总额
+    object_type: product
+    grain: product_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: product
+      metric_name: gmv_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < baseline_value * 0.80"
+      high: "current_value < baseline_value * 0.50"
+    llm_explanation: >
+      商品近 7 天 GMV。显著低于基线时，可能表示商品流量下降或竞争加剧。
+
+  product_order_count_7d:
+    display_name: 最近 7 天订单量
+    object_type: product
+    grain: product_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: product
+      metric_name: order_count_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < baseline_value * 0.70"
+      high: "current_value < baseline_value * 0.40"
+    llm_explanation: >
+      商品近 7 天订单数。持续下降可能反映转化率问题或市场热度消退。
+
+  product_avg_review_score_7d:
+    display_name: 最近 7 天平均评分
+    object_type: product
+    grain: product_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: product
+      metric_name: avg_review_score_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < 3.5"
+      high: "current_value < 2.5"
+    llm_explanation: >
+      商品近 7 天用户平均评分（1-5）。低评分说明商品质量或描述真实性存在风险。
+
+  product_review_drop_7d:
+    display_name: 最近 7 天评分下降
+    object_type: product
+    grain: product_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: product
+      metric_name: review_drop_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < baseline_value - 0.5"
+      high: "current_value < baseline_value - 1.0"
+    llm_explanation: >
+      商品评分较基线的下降幅度。大幅下降通常由最近差评集中爆发引起，需关注品控或售后。
+
+  seller_avg_review_score_7d:
+    display_name: 最近 7 天卖家平均评分
+    object_type: seller
+    grain: seller_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: seller
+      metric_name: avg_review_score_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < 3.5"
+      high: "current_value < 2.5"
+    llm_explanation: >
+      卖家近 7 天用户平均评分（1-5）。低评分说明卖家商品质量或服务存在风险。
+
+  seller_cancel_rate_7d:
+    display_name: 最近 7 天卖家取消率
+    object_type: seller
+    grain: seller_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: seller
+      metric_name: cancel_rate_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value > baseline_value + 0.10"
+      high: "current_value > baseline_value + 0.20"
+    llm_explanation: >
+      卖家近 7 天订单取消率。显著高于基线时，可能存在库存或发货问题。
+
+  category_gmv_7d:
+    display_name: 最近 7 天品类 GMV
+    object_type: category
+    grain: category_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: category
+      metric_name: gmv_7d
+    value_column: current_value
+    baseline_column: ""
+
+  category_order_count_7d:
+    display_name: 最近 7 天品类订单数
+    object_type: category
+    grain: category_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: category
+      metric_name: order_count_7d
+    value_column: current_value
+    baseline_column: ""
+
+  category_avg_review_score_7d:
+    display_name: 最近 7 天品类平均评分
+    object_type: category
+    grain: category_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: category
+      metric_name: avg_review_score_7d
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < 3.5"
+      high: "current_value < 2.5"
+    llm_explanation: >
+      品类近 7 天平均评分。低评分可能反映品类整体质量或描述真实性问题。
+
+  customer_order_count_90d:
+    display_name: 最近 90 天客户订单数
+    object_type: customer
+    grain: customer_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: customer
+      metric_name: order_count_90d
+    value_column: current_value
+    baseline_column: ""
+
+  customer_gmv_90d:
+    display_name: 最近 90 天客户 GMV
+    object_type: customer
+    grain: customer_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: customer
+      metric_name: gmv_90d
+    value_column: current_value
+    baseline_column: ""
+
+  customer_avg_review_score:
+    display_name: 客户平均评分
+    object_type: customer
+    grain: customer_id
+    source:
+      schema: mart
+      table: metric_dimension_daily
+    filters:
+      dimension_type: customer
+      metric_name: avg_review_score
+    value_column: current_value
+    baseline_column: baseline_value
+    severity:
+      medium: "current_value < 3.5"
+      high: "current_value < 2.5"
+    llm_explanation: >
+      客户历史平均评分。低评分可能反映该客户倾向于给出差评。

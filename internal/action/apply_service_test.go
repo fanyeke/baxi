@@ -216,6 +216,22 @@ CREATE TABLE IF NOT EXISTS audit.audit_log (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS ai.llm_decision (
+    decision_id TEXT PRIMARY KEY,
+    case_id TEXT REFERENCES ai.decision_case(case_id),
+    model_version TEXT,
+    prompt_hash TEXT,
+    output_json JSONB,
+    confidence DOUBLE PRECISION,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status TEXT,
+    fallback_reason TEXT,
+    validation_errors JSONB,
+    recipe_id TEXT,
+    context_hash TEXT,
+    severity TEXT
+);
+
 CREATE TABLE IF NOT EXISTS ops.outbox_event (
     event_id TEXT PRIMARY KEY,
     source_type TEXT NOT NULL,
@@ -582,6 +598,84 @@ func TestApplyService_Integration_TransactionRolledBackOnUpdateError(t *testing.
 	_, err = svc.ExecuteProposal(ctx, pool, "prop-tx-1", "actor-tx-2", WithDryRun(false))
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrNotApproved))
+}
+
+// ──── Enhanced Write Path: dry-run gate ──────────────────────────────────────
+
+// TestExecuteProposal_DryRunGate verifies that executing a proposal with
+// dry_run=false requires the BAXI_ALLOW_LIVE_EXECUTION=true environment
+// flag to be set. Without it, the call must return an error preventing
+// live execution.
+//
+// This is an integration test because dry_run=false requires a real
+// database to execute the proposal transaction.
+//
+// TDD RED: The env var check is not yet implemented. The test expects
+// an error containing "BAXI_ALLOW_LIVE_EXECUTION" but currently the
+// code proceeds to execution (which may succeed via mock executor)
+// because no gate exists.
+func TestExecuteProposal_DryRunGate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	// Ensure the env var is NOT set — simulating a production-like
+	// environment where live execution must be explicitly allowed.
+	t.Setenv("BAXI_ALLOW_LIVE_EXECUTION", "")
+
+	pool := setupApplyServiceTestDB(t)
+	ctx := context.Background()
+
+	insertTestCase(t, pool, "case-gate-1")
+	insertTestProposal(t, pool, "prop-gate-1", "case-gate-1", "notify_owner", "approved", "Notify")
+
+	reg := setupTestRegistry(t)
+	exec := &mockExecutor{result: ExecutionResult{Success: true, DryRun: false}}
+	executors := map[string]ActionExecutor{"feishu": exec}
+
+	// Use a real ProposalLoader that reads from the DB
+	repo := review.NewReviewRepository()
+	loader := &reviewProposalAdapter{repo: repo}
+	svc := NewApplyService(reg, executors, loader, nil, nil, pool)
+
+	_, err := svc.ExecuteProposal(ctx, pool, "prop-gate-1", "actor-gate-1", WithDryRun(false))
+
+	// TDD RED: The env gate check does not exist yet, so one of the
+	// following happens:
+	//   - The executor succeeds (result.Success=true), err=nil
+	//   - Some other error occurs
+	//
+	// Once the gate is implemented, this assertion should be:
+	require.Error(t, err, "BAXI_ALLOW_LIVE_EXECUTION must be set to true for dry_run=false")
+	assert.Contains(t, err.Error(), "BAXI_ALLOW_LIVE_EXECUTION",
+		"error message must reference the missing env var")
+}
+
+// TestExecuteProposal_DryRunTrue_AlwaysAllowed verifies that dry_run=true
+// always works regardless of whether BAXI_ALLOW_LIVE_EXECUTION is set.
+// The dry-run path uses NoOpExecutor and never touches the database, so
+// it must never be blocked by the live-execution gate.
+//
+// TDD note: This test should pass even in the RED phase because the
+// dry-run path already works correctly. It exists as a regression guard
+// to ensure the live-execution gate does not inadvertently block dry runs.
+func TestExecuteProposal_DryRunTrue_AlwaysAllowed(t *testing.T) {
+	// Do NOT set BAXI_ALLOW_LIVE_EXECUTION — simulating a locked-down environment
+	t.Setenv("BAXI_ALLOW_LIVE_EXECUTION", "")
+
+	reg := setupTestRegistry(t)
+	loader := &mockProposalLoader{proposal: newTestProposal("approved", "notify_owner")}
+	svc := NewApplyService(reg, nil, loader, nil, nil, nil)
+
+	ctx := context.Background()
+
+	// WithDryRun(true) — must always be allowed
+	result, err := svc.ExecuteProposal(ctx, nil, "prop-test-001", "actor-1", WithDryRun(true))
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.True(t, result.Success, "dry_run=true must succeed even without BAXI_ALLOW_LIVE_EXECUTION")
+	assert.True(t, result.DryRun, "result must indicate it was a dry run")
 }
 
 // ---------- Compile-time checks ----------

@@ -3,8 +3,21 @@ package ontology
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 )
+
+// validSortExpr validates a SQL ORDER BY expression to prevent SQL injection.
+// Allows: column names with optional ASC/DESC (case-insensitive), comma-separated
+// multi-column sorts. Only plain spaces are allowed as separators (no tabs/newlines).
+var validSortExpr = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*([ ]+(ASC|DESC|asc|desc))?([ ]*,[ ]*[a-zA-Z_][a-zA-Z0-9_]*([ ]+(ASC|DESC|asc|desc))?)*$`)
+
+func isValidSort(sort string) bool {
+	if sort == "" {
+		return true
+	}
+	return validSortExpr.MatchString(sort)
+}
 
 // ──── Link Resolution types ──────────────────────────────────────────────────
 
@@ -164,7 +177,7 @@ func (r *LinkResolver) CompileAllLinks(ctx context.Context, source ObjectRef, op
 // compileLink generates a CompiledLink for a given source object and link definition.
 func (r *LinkResolver) compileLink(source ObjectRef, link *ObjectLinkV2, limit, offset int) (*CompiledLink, error) {
 	switch link.Strategy {
-	case "direct_key":
+	case "direct_key", "lookup":
 		return r.compileDirectKey(source, link, limit, offset)
 	case "reverse_lookup":
 		return r.compileReverseLookup(source, link, limit, offset)
@@ -266,19 +279,21 @@ func (r *LinkResolver) compileQueryRef(source ObjectRef, link *ObjectLinkV2, lim
 		return nil, fmt.Errorf("query_ref strategy requires target.key as the SQL template placeholder")
 	}
 
-	// The link's target.key holds the template with $1 as the source object ID placeholder.
+	// The link's target.key holds the template with $1 as the source object ID
+	// placeholder. We keep $1 as a pgx parameterized placeholder to prevent
+	// SQL injection from user-controlled objectID values.
 	template := link.Target.Key
-	sql := strings.ReplaceAll(template, "$1", fmt.Sprintf("'%s'", source.ObjectID))
 	sortClause := r.resolveSort(link)
 
 	// Wrap with LIMIT/OFFSET if not already in template.
+	sql := template
 	if !strings.Contains(strings.ToUpper(sql), "LIMIT") {
 		sql = fmt.Sprintf("%s%s LIMIT %d OFFSET %d", sql, sortClause, limit, offset)
 	}
 
 	return &CompiledLink{
 		SQL:         sql,
-		Args:        []any{},
+		Args:        []any{source.ObjectID},
 		LinkName:    link.Name,
 		TargetType:  link.TargetType,
 		Cardinality: link.Cardinality,
@@ -303,6 +318,12 @@ func (r *LinkResolver) resolveFields(link *ObjectLinkV2) string {
 // resolveSort returns the ORDER BY clause for a link, or empty string.
 func (r *LinkResolver) resolveSort(link *ObjectLinkV2) string {
 	if link.Sort != "" {
+		if !isValidSort(link.Sort) {
+			// Invalid sort — return empty string to prevent SQL injection.
+			// The callers (compileDirectKey, compileReverseLookup, etc.) will
+			// produce valid SQL without an ORDER BY clause.
+			return ""
+		}
 		return " ORDER BY " + link.Sort
 	}
 	return ""

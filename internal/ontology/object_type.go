@@ -10,11 +10,15 @@ const (
 	TypeRegion        = "region"
 	TypeMarketingLead = "marketing_lead"
 	TypeMetricAlert   = "metric_alert"
+	TypeReview        = "review"
+	TypePayment       = "payment"
+	TypeShipment      = "shipment"
+	TypeGlobal        = "global"
 )
 
 // AllObjectTypes returns the complete list of known AIP object type names.
-// Order is stable: customer → order → seller → product → category → region →
-// marketing_lead → metric_alert.
+// Order is stable: customer -> order -> seller -> product -> category -> region ->
+// marketing_lead -> metric_alert -> review -> payment -> shipment -> global.
 func AllObjectTypes() []string {
 	return []string{
 		TypeCustomer,
@@ -25,6 +29,10 @@ func AllObjectTypes() []string {
 		TypeRegion,
 		TypeMarketingLead,
 		TypeMetricAlert,
+		TypeReview,
+		TypePayment,
+		TypeShipment,
+		TypeGlobal,
 	}
 }
 
@@ -48,6 +56,14 @@ func ObjectTypeDisplayName(objectType string) string {
 		return "营销线索"
 	case TypeMetricAlert:
 		return "异常事件"
+	case TypeReview:
+		return "评价"
+	case TypePayment:
+		return "支付"
+	case TypeShipment:
+		return "物流"
+	case TypeGlobal:
+		return "平台全局"
 	default:
 		return objectType
 	}
@@ -57,7 +73,8 @@ func ObjectTypeDisplayName(objectType string) string {
 func KnownObjectType(name string) bool {
 	switch name {
 	case TypeCustomer, TypeOrder, TypeSeller, TypeProduct,
-		TypeCategory, TypeRegion, TypeMarketingLead, TypeMetricAlert:
+		TypeCategory, TypeRegion, TypeMarketingLead, TypeMetricAlert,
+		TypeReview, TypePayment, TypeShipment, TypeGlobal:
 		return true
 	default:
 		return false

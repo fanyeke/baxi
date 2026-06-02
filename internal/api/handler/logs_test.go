@@ -301,7 +301,3 @@ func TestHandleListAudit_ResponseFormat(t *testing.T) {
 	assert.True(t, hasItems, "response must have 'items' field")
 	assert.True(t, hasTotal, "response must have 'total' field")
 }
-
-func strPtr(s string) *string {
-	return &s
-}

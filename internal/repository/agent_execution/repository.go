@@ -13,12 +13,12 @@ import (
 
 // Repository provides data access for agent execution logs.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new agent execution repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(querier common.Querier) *Repository {
+	return &Repository{Querier: querier}
 }
 
 // AgentExecution represents a row from ai.agent_execution.
@@ -48,7 +48,7 @@ func (r *Repository) Create(ctx context.Context, exec *AgentExecution) error {
 		)
 	`
 	now := time.Now().UTC()
-	_, err := r.Pool().Exec(ctx, query,
+	_, err := r.Exec(ctx, query,
 		exec.ExecutionID,
 		exec.SessionID,
 		exec.ToolName,

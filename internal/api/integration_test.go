@@ -27,9 +27,8 @@ var allProtectedRoutes = []struct {
 	{"/api/v1/logs/recent", "/api/v1/logs/recent"},
 	{"/api/v1/logs/errors", "/api/v1/logs/errors"},
 	{"/api/v1/logs/audit", "/api/v1/logs/audit"},
-	// qoder/capabilities and qoder/context are public endpoints (no auth)
-	// {"/api/v1/qoder/capabilities", "/api/v1/qoder/capabilities"},
-	// {"/api/v1/qoder/context", "/api/v1/qoder/context"},
+	{"/api/v1/qoder/capabilities", "/api/v1/qoder/capabilities"},
+	{"/api/v1/qoder/context", "/api/v1/qoder/context"},
 }
 
 func TestAllEndpoints_Registered(t *testing.T) {

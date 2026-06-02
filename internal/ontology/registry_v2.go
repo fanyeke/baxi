@@ -235,6 +235,29 @@ func ParseContextRecipes(data []byte) (map[string]*ContextRecipe, error) {
 			gov.RedactPII = *raw.Governance.RedactPII
 		}
 
+		// Convert evidence rules
+		evidenceRules := make([]EvidenceRule, len(raw.EvidenceRules))
+		for i, er := range raw.EvidenceRules {
+			evidenceRules[i] = EvidenceRule{
+				Source:         er.Source,
+				Interpretation: er.Interpretation,
+			}
+		}
+
+		// Convert decision guidance
+		var decisionGuidance DecisionGuidance
+		if raw.DecisionGuidance != nil {
+			levels := make([]GuidanceLevel, len(raw.DecisionGuidance.Levels))
+			for j, l := range raw.DecisionGuidance.Levels {
+				levels[j] = GuidanceLevel{
+					Severity:       l.Severity,
+					Recommendation: l.Recommendation,
+					Actions:        l.Actions,
+				}
+			}
+			decisionGuidance = DecisionGuidance{Levels: levels}
+		}
+
 		recipes[name] = &ContextRecipe{
 			Name:        name,
 			Description: raw.Description,
@@ -252,8 +275,10 @@ func ParseContextRecipes(data []byte) (map[string]*ContextRecipe, error) {
 				Links:          links,
 				Actions:        raw.Include.Actions,
 			},
-			Budget: budget,
-			Governance: gov,
+			Budget:           budget,
+			Governance:       gov,
+			EvidenceRules:    evidenceRules,
+			DecisionGuidance: decisionGuidance,
 		}
 	}
 	return recipes, nil

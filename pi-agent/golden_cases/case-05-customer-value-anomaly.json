@@ -1,0 +1,164 @@
+{
+  "case_id": "golden_customer_value_anomaly_001",
+  "name": "Customer value anomaly alert",
+  "description": "Customer CUST_HIGH_VALUE has GMV dropped from 50000 to 5000 (90% drop, CRITICAL). Order count dropped from 25 to 2 in 90 days. Last order was 60 days ago indicating high churn risk.",
+  "scenario": "High-value customer showing precipitous decline in purchasing activity over 90 days. GMV down 90%, order count down 92%, and 60 days since last order. This pattern strongly indicates the customer is churning or has already churned, requiring immediate retention intervention.",
+  "trigger": {
+    "alert_id": "alert_golden_cv_001",
+    "rule_id": "customer_value_anomaly_alert",
+    "severity": "critical",
+    "metric_name": "customer_gmv_90d",
+    "current_value": 5000,
+    "baseline_value": 50000,
+    "delta_pct": -90.0,
+    "delta_abs": -45000
+  },
+  "object_context": {
+    "object_type": "customer",
+    "object_id": "CUST_HIGH_VALUE"
+  },
+  "evidence": [
+    {
+      "key": "customer_gmv_90d",
+      "type": "metric",
+      "description": "Total GMV from this customer over the past 90 days",
+      "current_value": 5000,
+      "baseline_value": 50000,
+      "delta_pct": -90.0,
+      "delta_abs": -45000
+    },
+    {
+      "key": "customer_order_count_90d",
+      "type": "metric",
+      "description": "Number of orders placed by this customer in the past 90 days",
+      "current_value": 2,
+      "baseline_value": 25,
+      "delta_pct": -92.0,
+      "delta_abs": -23
+    },
+    {
+      "key": "customer_last_order_days_ago",
+      "type": "metric",
+      "description": "Days since this customer's last order",
+      "current_value": 60,
+      "baseline_value": 7,
+      "delta_abs": 53,
+      "delta_pct": 757.0
+    },
+    {
+      "key": "link:recent_orders",
+      "type": "link",
+      "description": "Recent orders for this customer",
+      "target_type": "order",
+      "cardinality": "multiple"
+    }
+  ],
+  "allowed_actions": [
+    "notify_owner",
+    "create_followup_task",
+    "offer_retention_discount",
+    "escalate_to_manager"
+  ],
+  "forbidden_actions": ["execute_dispatch", "modify_raw_data", "modify_business_policy"],
+  "expected_output": {
+    "decision": "escalate",
+    "severity": "critical",
+    "confidence": {
+      "min": 0.85,
+      "description": "Confidence must be at least 0.85 given clear, multi-metric evidence of churn"
+    },
+    "reasoning_requirements": [
+      "Must reference customer_gmv_90d with the 90% drop from 50000 to 5000",
+      "Must reference customer_order_count_90d with the drop from 25 to 2 orders",
+      "Must mention that last order was 60 days ago indicating high churn risk",
+      "Must indicate the customer is a high-value customer at risk of churning",
+      "Must recommend immediate retention action (notify_owner or offer_retention_discount)"
+    ],
+    "evidence_refs": {
+      "required": ["customer_gmv_90d", "customer_order_count_90d", "link:recent_orders"],
+      "optional": ["customer_last_order_days_ago"]
+    },
+    "recommended_actions": [
+      {
+        "action_type": "notify_owner",
+        "min_count": 1,
+        "params_constraints": {
+          "message": "Must recommend contacting the customer urgently for retention",
+          "priority": "high"
+        },
+        "rationale_required": true
+      },
+      {
+        "action_type": "create_followup_task",
+        "optional": true,
+        "params_constraints": {
+          "task_type": "customer_retention",
+          "description": "Must create a retention follow-up task if recommended"
+        },
+        "rationale_required": true
+      },
+      {
+        "action_type": "offer_retention_discount",
+        "optional": true
+      },
+      {
+        "action_type": "escalate_to_manager",
+        "optional": true
+      }
+    ],
+    "requires_human_approval": true,
+    "minimum_rationale_count": 2
+  },
+  "grading_criteria": {
+    "pass_threshold": 0.7,
+    "categories": [
+      {
+        "name": "severity_correctness",
+        "weight": 0.15,
+        "description": "Severity must be 'critical' due to 90% GMV drop + 60 days inactivity on a high-value customer",
+        "pass_condition": "exact_match",
+        "expected_value": "critical"
+      },
+      {
+        "name": "confidence_threshold",
+        "weight": 0.15,
+        "description": "Confidence must be >= 0.85 given clear, strong, multi-evidence signals of churn",
+        "pass_condition": "min_value",
+        "threshold": 0.85
+      },
+      {
+        "name": "decision_type",
+        "weight": 0.15,
+        "description": "Decision must be 'escalate' (critical churn risk requiring immediate human intervention)",
+        "pass_condition": "exact_match",
+        "expected_value": "escalate"
+      },
+      {
+        "name": "required_evidence_refs",
+        "weight": 0.20,
+        "description": "Must reference all required evidence items: customer_gmv_90d, customer_order_count_90d, link:recent_orders",
+        "pass_condition": "contains_all",
+        "required_items": ["customer_gmv_90d", "customer_order_count_90d", "link:recent_orders"]
+      },
+      {
+        "name": "action_recommendation",
+        "weight": 0.20,
+        "description": "Must recommend notify_owner with urgent retention message",
+        "pass_condition": "action_contains",
+        "required_action": "notify_owner",
+        "params_check": {
+          "priority": "high"
+        }
+      },
+      {
+        "name": "reasoning_quality",
+        "weight": 0.15,
+        "description": "Reasoning must demonstrate understanding that this is a high-value customer churn risk, reference the 90% GMV drop and 60-day inactivity, and recommend immediate retention",
+        "pass_condition": "includes_keywords",
+        "required_keywords": ["churn", "retention", "90%", "60 days", "high-value"]
+      }
+    ]
+  },
+  "expected_owner_roles": ["customer_retention", "admin", "manager"],
+  "tags": ["customer", "value-anomaly", "churn-risk", "critical-severity", "retention"]
+}

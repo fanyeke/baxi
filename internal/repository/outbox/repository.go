@@ -16,12 +16,12 @@ import (
 // This is separate from internal/outbox/repository.go (which handles writes) to avoid
 // coupling the pipeline's write repository with the API's read repository.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 }
 
 // NewRepository creates a new Outbox repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 // OutboxRow represents a single row from ops.outbox_event for read queries.

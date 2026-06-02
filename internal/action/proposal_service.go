@@ -26,6 +26,9 @@ type ActionProposal struct {
 	RequiresHumanReview bool                   `json:"requires_human_review"`
 	ApplyStatus         string                 `json:"apply_status"`
 	CreatedAt           time.Time              `json:"created_at"`
+	EvidenceRefs        []string               `json:"evidence_refs,omitempty"`
+	ContextHash         string                 `json:"context_hash,omitempty"`
+	RecipeID            string                 `json:"recipe_id,omitempty"`
 }
 
 // ProposalRepository defines the interface for action proposal storage operations.
@@ -106,6 +109,21 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 		}
 
 		// Phase 6: all proposals require human review
+
+		var evidenceRefsJSON *string
+		if len(dec.EvidenceRefs) > 0 {
+			raw, err := json.Marshal(dec.EvidenceRefs)
+			if err == nil {
+				s := string(raw)
+				evidenceRefsJSON = &s
+			}
+		}
+
+		var recipeIDPtr *string
+		if dec.RecipeID != "" {
+			recipeIDPtr = &dec.RecipeID
+		}
+
 		row := &repository.ActionProposalRow{
 			ProposalID:          proposalID,
 			CaseID:              caseID,
@@ -120,6 +138,8 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 			RequiresHumanReview: true,
 			ContextHash:         &contextHash,
 			ActionSchemaVersion: &schemaVersion,
+			EvidenceRefs:        evidenceRefsJSON,
+			RecipeID:            recipeIDPtr,
 		}
 
 		if err := s.repo.CreateProposal(ctx, s.pool, row); err != nil {
@@ -181,6 +201,18 @@ func rowToProposal(row *repository.ActionProposalRow) *ActionProposal {
 		var payload map[string]interface{}
 		if err := json.Unmarshal(*row.Payload, &payload); err == nil {
 			p.Payload = payload
+		}
+	}
+	if row.ContextHash != nil {
+		p.ContextHash = *row.ContextHash
+	}
+	if row.RecipeID != nil {
+		p.RecipeID = *row.RecipeID
+	}
+	if row.EvidenceRefs != nil {
+		var refs []string
+		if err := json.Unmarshal([]byte(*row.EvidenceRefs), &refs); err == nil {
+			p.EvidenceRefs = refs
 		}
 	}
 

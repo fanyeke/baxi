@@ -1,0 +1,10 @@
+{
+    "name": "baxi-sandbox",
+    "version": "1.0.0",
+    "description": "Baxi sandbox compare & ontology tools for Pi Agent",
+    "main": "index.ts",
+    "dependencies": {
+        "@earendil-works/pi-coding-agent": "^0.76.0",
+        "typebox": "^0.34.0"
+    }
+}

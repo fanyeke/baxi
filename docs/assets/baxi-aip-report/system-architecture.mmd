@@ -1,0 +1,45 @@
+flowchart LR
+  CONCLUSION["结论：Baxi 已具备 AIP 骨架<br/>下一步优先收敛可信主路径"]:::conclusion
+
+  subgraph DATA["数据层"]
+    CSV["11 个 CSV<br/>1,565,259 行"] --> RAW["raw<br/>原始记录"]
+    RAW --> DWD["dwd<br/>稳定事实"]
+    DWD --> MART["mart<br/>指标聚合"]
+    MART --> OPS["ops<br/>告警 建议 任务 Outbox"]
+  end
+
+  subgraph SEMANTIC["语义与治理层"]
+    CFG["config YAML"] --> REG["Ontology Registry<br/>对象 属性 关系"]
+    GOV["Classification · Marking · Redaction<br/>Policy · Lineage · Checkpoint"] --> CTX["LLM Safe Context<br/>hash · evidence · prompt version"]
+    REG --> CTX
+  end
+
+  subgraph DECISION["决策与执行层"]
+    CTX --> PROVIDER["Rule-based / LLM"]
+    PROVIDER --> PROP["Proposal"]
+    PROP --> REVIEW["Human Review / Sandbox"]
+    REVIEW --> APPLY["Apply"]
+    APPLY --> ADAPTER["Outbox / Adapter"]
+  end
+
+  subgraph ACCESS["接入层"]
+    UI["React 控制台"] --> API["HTTP API"]
+    EXT["外部系统"] --> API
+    PI["Pi Agent"] --> MCP["MCP stdio Server"]
+    PI -. 日志 .-> API
+  end
+
+  DWD --> REG
+  MART --> REG
+  OPS --> REG
+  API --> REG
+  API --> REVIEW
+  MCP --> REG
+  MCP --> REVIEW
+  AUDIT["统一审计 Trace"] -.-> CTX
+  AUDIT -.-> PROP
+  AUDIT -.-> APPLY
+  CONCLUSION -.-> REG
+  CONCLUSION -.-> REVIEW
+
+  classDef conclusion fill:#fff3d6,stroke:#d99000,color:#17324d,stroke-width:2px;

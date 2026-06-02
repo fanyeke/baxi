@@ -5,6 +5,7 @@ package ontology
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -68,6 +69,8 @@ type tableMapping struct {
 }
 
 // objectTableMap maps each object type to its source table and columns.
+// Deprecated: Use ObjectTypeV2.Source instead. Will be removed in a future release.
+// GODEPRECATED
 var objectTableMap = map[string]tableMapping{
 	"customer": {
 		Schema: "dwd", Table: "order_level", PrimaryKey: "customer_unique_id",
@@ -263,13 +266,13 @@ type V2CompilerFilters struct {
 // When a V2QueryCompiler is set, queries for v2-aware object types use the compiled
 // SQL instead of the hardcoded objectTableMap.
 type Repository struct {
-	*common.PoolProvider
+	common.Querier
 	v2Compiler V2QueryCompiler
 }
 
 // NewRepository creates a new ontology Repository.
-func NewRepository(provider *common.PoolProvider) *Repository {
-	return &Repository{PoolProvider: provider}
+func NewRepository(provider common.Querier) *Repository {
+	return &Repository{Querier: provider}
 }
 
 // SetV2Compiler sets the v2 query compiler for schema-driven query compilation.
@@ -294,6 +297,8 @@ func (r *Repository) QueryByObjectType(ctx context.Context, objectType string, f
 		if err == nil {
 			return r.execV2SearchObjects(ctx, compiled, filters.Limit, filters.Offset)
 		}
+		slog.Warn("v2 CompileSearchObjects failed, falling back to v1 objectTableMap",
+			"object_type", objectType, "error", err)
 	}
 
 	// Fall back to v1 hardcoded mapping.
@@ -390,6 +395,8 @@ func (r *Repository) GetObjectByID(ctx context.Context, objectType, objectID str
 		if err == nil {
 			return r.execV2GetObject(ctx, compiled)
 		}
+		slog.Warn("v2 CompileGetObject failed, falling back to v1 objectTableMap",
+			"object_type", objectType, "error", err)
 	}
 
 	// Fall back to v1 hardcoded mapping.
@@ -445,6 +452,8 @@ func (r *Repository) GetObjectMetrics(ctx context.Context, objectType, objectID 
 		if err == nil {
 			return r.execV2ObjectMetrics(ctx, compiled)
 		}
+		slog.Warn("v2 CompileObjectMetrics failed, falling back to v1 objectTableMap",
+			"object_type", objectType, "error", err)
 	}
 
 	// Fall back to v1 hardcoded mapping.
