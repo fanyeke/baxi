@@ -4,6 +4,12 @@
 **Branch**: `002-ontology-v2-productionization`  
 **Spec**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)  
 **Generated**: 2026-06-02
+**Last Updated**: 2026-06-02 (safety fixes applied)
+
+> **Note**: Tasks T027-T031 were completed with a stricter approach than originally specified:
+> - `execute_action` was changed to **pure dry-run validation only** (no proposal creation, no ApplyService calls)
+> - `ApplyService.ExecuteProposal` now **strictly requires** `apply_status == "approved"` (removed risk-adaptive auto-approval)
+> - Three regression tests added to prevent future unsafe auto-execution
 
 ---
 
@@ -11,9 +17,9 @@
 
 **Goal**: Verify current codebase state and confirm no blocking issues.
 
-- [ ] T001 Verify current branch is `002-ontology-v2-productionization` and working tree is clean
-- [ ] T002 Run `go test ./...` to establish baseline; document any pre-existing failures
-- [ ] T003 Verify `config/context_recipes.yml` and `config/metric_definitions.yml` exist and parse correctly
+- [x] T001 Verify current branch is `002-ontology-v2-productionization` and working tree is clean
+- [x] T002 Run `go test ./...` to establish baseline; document any pre-existing failures
+- [x] T003 Verify `config/context_recipes.yml` and `config/metric_definitions.yml` exist and parse correctly
 
 ---
 
@@ -21,9 +27,9 @@
 
 **Goal**: Prepare interfaces and shared structures used by multiple user stories.
 
-- [ ] T004 [P] Add `ProposeAction` method to `OntologyService` interface in `internal/mcp/interfaces.go`
-- [ ] T005 [P] Add `dry_run` parameter to `execute_action` tool definition in `internal/mcp/tools_ontology.go`
-- [ ] T006 Add `MockBuildContextService` implementation for `server_test.go` in `internal/mcp/server_test.go`
+- [x] T004 [P] Add `ProposeAction` method to `OntologyService` interface in `internal/mcp/interfaces.go`
+- [x] T005 [P] Add `dry_run` parameter to `execute_action` tool definition in `internal/mcp/tools_ontology.go`
+- [x] T006 Add `MockBuildContextService` implementation for `server_test.go` in `internal/mcp/server_test.go`
 
 ---
 
@@ -33,13 +39,13 @@
 
 **Independent Test**: Start baxi-mcp, call `build_context(CASE_001, seller_late_delivery_alert)`, verify response contains `context_hash`, `evidence`, `object_context`, `allowed_actions`, `governance`, `redaction_summary`.
 
-- [ ] T007 Load `config/context_recipes.yml` at startup in `cmd/baxi-mcp/main.go` using `ontology.LoadContextRecipes(path)`
-- [ ] T008 Load `config/metric_definitions.yml` at startup in `cmd/baxi-mcp/main.go` using `ontology.LoadMetricDefinitions(path)`
-- [ ] T009 Construct `MetricQueryResolver` from loaded metric definitions in `cmd/baxi-mcp/main.go`
-- [ ] T010 Construct `LinkExecutor` via `common.NewPoolProvider(pool)` in `cmd/baxi-mcp/main.go`
-- [ ] T011 Construct `RecipeContextBuilder` with all 7 dependencies in `cmd/baxi-mcp/main.go`
-- [ ] T012 Wire `buildContextSvc` into `mcp.NewServer(...)` call (replace `nil` with constructed builder)
-- [ ] T013 Add startup log verification: `buildContextSvc` is non-nil when v2 objects present
+- [x] T007 Load `config/context_recipes.yml` at startup in `cmd/baxi-mcp/main.go` using `ontology.LoadContextRecipes(path)`
+- [x] T008 Load `config/metric_definitions.yml` at startup in `cmd/baxi-mcp/main.go` using `ontology.LoadMetricDefinitions(path)`
+- [x] T009 Construct `MetricQueryResolver` from loaded metric definitions in `cmd/baxi-mcp/main.go`
+- [x] T010 Construct `LinkExecutor` via `common.NewPoolProvider(pool)` in `cmd/baxi-mcp/main.go`
+- [x] T011 Construct `RecipeContextBuilder` with all 7 dependencies in `cmd/baxi-mcp/main.go`
+- [x] T012 Wire `buildContextSvc` into `mcp.NewServer(...)` call (replace `nil` with constructed builder)
+- [x] T013 Add startup log verification: `buildContextSvc` is non-nil when v2 objects present
 - [ ] T014 [US1] Test `build_context` returns complete envelope with all 6 fields via manual MCP stdio call
 
 ---
@@ -50,12 +56,12 @@
 
 **Independent Test**: Start baxi-mcp, call `get_linked_objects(seller, SELLER_001, recent_orders)`, verify `objects` array with ≥1 order record.
 
-- [ ] T015 [P] Create `LinkResolver` from `v2Objects` in `cmd/baxi-mcp/main.go` using `ontology.NewLinkResolver(v2Objects)`
-- [ ] T016 Call `mcpSrv.SetLinkResolver(linkResolver)` after server creation in `cmd/baxi-mcp/main.go`
-- [ ] T017 Update `handleGetLinkedObjects` in `internal/mcp/tools_ontology.go` to check `s.linkResolver` first
-- [ ] T018 Implement v2 link query execution: compile SQL plan via `LinkResolver`, execute via `pool.Query()`, handle `one_to_many` cardinality
-- [ ] T019 Add v1 Via-model fallback in `handleGetLinkedObjects` when v2 link is not configured
-- [ ] T020 Add startup log verification: `LinkResolver` wired with N objects
+- [x] T015 [P] Create `LinkResolver` from `v2Objects` in `cmd/baxi-mcp/main.go` using `ontology.NewLinkResolver(v2Objects)`
+- [x] T016 Call `mcpSrv.SetLinkResolver(linkResolver)` after server creation in `cmd/baxi-mcp/main.go`
+- [x] T017 Update `handleGetLinkedObjects` in `internal/mcp/tools_ontology.go` to check `s.linkResolver` first
+- [x] T018 Implement v2 link query execution: compile SQL plan via `LinkResolver`, execute via `pool.Query()`, handle `one_to_many` cardinality
+- [x] T019 Add v1 Via-model fallback in `handleGetLinkedObjects` when v2 link is not configured
+- [x] T020 Add startup log verification: `LinkResolver` wired with N objects
 - [ ] T021 [US2] Test `get_linked_objects(seller, SELLER_001, recent_orders)` returns array via manual MCP stdio call
 - [ ] T022 [US2] Test v1 fallback works for object types without v2 links
 
@@ -67,17 +73,17 @@
 
 **Independent Test**: Call `propose_action` → verify `status: proposed`; call `execute_action` without approval → verify rejection; call `execute_proposal` on approved proposal with `dry_run=true` → verify simulated execution.
 
-- [ ] T023 Implement `propose_action` handler in `internal/mcp/tools_action.go`
-- [ ] T024 Add `propose_action` tool registration in `internal/mcp/tools_action.go`
-- [ ] T025 Implement validation in `propose_action`: check action binding via `ActionBindingValidator`, validate payload schema
-- [ ] T026 Implement proposal creation in `propose_action`: build `ActionProposalRow{ApplyStatus: "proposed"}`, call `repo.CreateProposal`, return `proposal_id`
-- [ ] T027 Modify `ontologyServiceAdapter.ExecuteAction` in `cmd/baxi-mcp/main.go`: change default `WithDryRun(false)` to `WithDryRun(true)`
-- [ ] T028 Modify `ontologyServiceAdapter.ExecuteAction`: change proposal `apply_status` from `"approved"` to `"proposed"`
-- [ ] T029 Modify `ontologyServiceAdapter.ExecuteAction`: remove auto-execution after proposal creation; return proposal_id only
-- [ ] T030 Tighten `ExecuteProposal` in `internal/action/apply_service.go`: remove or gate risk-adaptive auto-execution of `proposed` proposals
-- [ ] T031 Ensure `execute_proposal` rejects unapproved proposals with clear authorization error
+- [x] T023 Implement `propose_action` handler in `internal/mcp/tools_action.go`
+- [x] T024 Add `propose_action` tool registration in `internal/mcp/tools_action.go`
+- [x] T025 Implement validation in `propose_action`: check action binding via `ActionBindingValidator`, validate payload schema
+- [x] T026 Implement proposal creation in `propose_action`: build `ActionProposalRow{ApplyStatus: "proposed"}`, call `repo.CreateProposal`, return `proposal_id`
+- [x] T027 Modify `ontologyServiceAdapter.ExecuteAction` in `cmd/baxi-mcp/main.go`: change default `WithDryRun(false)` to `WithDryRun(true)`
+- [x] T028 Modify `ontologyServiceAdapter.ExecuteAction`: change proposal `apply_status` from `"approved"` to `"proposed"`
+- [x] T029 Modify `ontologyServiceAdapter.ExecuteAction`: remove auto-execution after proposal creation; return proposal_id only
+- [x] T030 Tighten `ExecuteProposal` in `internal/action/apply_service.go`: remove or gate risk-adaptive auto-execution of `proposed` proposals
+- [x] T031 Ensure `execute_proposal` rejects unapproved proposals with clear authorization error
 - [ ] T032 [US3] Test `propose_action` creates proposal with `status: proposed`
-- [ ] T033 [US3] Test `execute_action` defaults to dry-run and does not modify state
+- [x] T033 [US3] Test `execute_action` defaults to dry-run and does not modify state
 - [ ] T034 [US3] Test `execute_proposal` on unapproved proposal returns error
 
 ---
@@ -108,10 +114,10 @@
 
 **Goal**: Documentation, release readiness, and code quality.
 
-- [ ] T048 [P] Update `internal/ontology/AGENTS.md` with v2 wiring notes and productionization status
-- [ ] T049 [P] Update `docs/quickstart.md` (project root) with Ontology v2 E2E section
-- [ ] T050 [P] Update `specs/002-ontology-v2-productionization/contracts/mcp-tools.md` if any implementation deviations
-- [ ] T051 Add release checklist to `specs/002-ontology-v2-productionization/RELEASE_CHECKLIST.md`
+- [x] T048 [P] Update `internal/ontology/AGENTS.md` with v2 wiring notes and productionization status
+- [x] T049 [P] Update `docs/quickstart.md` (project root) with Ontology v2 E2E section
+- [x] T050 [P] Update `specs/002-ontology-v2-productionization/contracts/mcp-tools.md` if any implementation deviations
+- [x] T051 Add release checklist to `specs/002-ontology-v2-productionization/RELEASE_CHECKLIST.md`
 - [ ] T052 Run full test suite: `go test ./...` and `go test -tags=integration ./test/...`
 - [ ] T053 Run linter: `golangci-lint run` (or `make lint`)
 - [ ] T054 Verify all SC-001 through SC-008 are met; update spec.md status to "Complete"

@@ -1088,65 +1088,15 @@ func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, 
 		}
 	}
 
-	caseID := fmt.Sprintf("mcp-%d", time.Now().UnixNano())
-	proposalID := fmt.Sprintf("mcp-proposal-%d", time.Now().UnixNano())
-
-	payloadJSON, _ := json.Marshal(params)
-
-	_, err := a.pool.Exec(ctx,
-		`INSERT INTO ai.decision_case (case_id, status, created_at) VALUES ($1, 'closed', NOW())`, caseID)
-	if err != nil {
-		return &mcp.ActionResult{
-			Success:    false,
-			ActionType: actionType,
-			ObjectType: objectType,
-			ObjectID:   objectID,
-			Result:     map[string]interface{}{"error": fmt.Sprintf("create decision case: %v", err)},
-		}, nil
-	}
-
-	title := fmt.Sprintf("MCP execute_action: %s on %s %s", actionType, objectType, objectID)
-	_, err = a.pool.Exec(ctx,
-		`INSERT INTO ai.action_proposal (proposal_id, case_id, action_type, apply_status, title, risk_level, requires_human_review, payload, created_at)
-		 VALUES ($1, $2, $3, 'approved', $4, 'low', true, $5, NOW())`,
-		proposalID, caseID, actionType, title, payloadJSON)
-	if err != nil {
-		return &mcp.ActionResult{
-			Success:    false,
-			ActionType: actionType,
-			ObjectType: objectType,
-			ObjectID:   objectID,
-			Result:     map[string]interface{}{"error": fmt.Sprintf("create action proposal: %v", err)},
-		}, nil
-	}
-
-	result, err := a.applySvc.ExecuteProposal(ctx, a.pool, proposalID, "mcp_system", action.WithDryRun(false))
-	if err != nil {
-		return &mcp.ActionResult{
-			Success:    false,
-			ActionType: actionType,
-			ObjectType: objectType,
-			ObjectID:   objectID,
-			Result:     map[string]interface{}{"error": fmt.Sprintf("execute proposal: %v", err)},
-		}, nil
-	}
-
-	res := map[string]interface{}{
-		"proposal_id": proposalID,
-		"case_id":     caseID,
-		"message":     fmt.Sprintf("Action %q executed on %s %s", actionType, objectType, objectID),
-	}
-	if !result.Success {
-		res["message"] = fmt.Sprintf("Action %q execution failed on %s %s", actionType, objectType, objectID)
-		res["execution_error"] = result.Error
-	}
-
 	return &mcp.ActionResult{
-		Success:    result.Success,
+		Success:    true,
 		ActionType: actionType,
 		ObjectType: objectType,
 		ObjectID:   objectID,
-		Result:     res,
+		Result: map[string]interface{}{
+			"would_execute": true,
+			"message":       fmt.Sprintf("Action %q is valid for %s %s. Use propose_action to create a proposal for execution.", actionType, objectType, objectID),
+		},
 	}, nil
 }
 

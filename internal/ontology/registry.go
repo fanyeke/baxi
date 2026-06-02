@@ -294,6 +294,9 @@ func convertRawObject(raw rawObjectType) (*ObjectType, error) {
 
 	// Default allowed actions: every object can be read.
 	allowedActions := []string{"read"}
+	if len(raw.AllowedActions) > 0 {
+		allowedActions = raw.AllowedActions
+	}
 
 	// LLM access: metric_alert is read-write; everything else read-only.
 	llmAccess := defaultLLMAccess()

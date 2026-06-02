@@ -95,24 +95,8 @@ func (s *ApplyService) ExecuteProposal(ctx context.Context, pool *pgxpool.Pool, 
 		return nil, ErrProposalNotFound
 	}
 
-	if proposal.ApplyStatus != "approved" &&
-		proposal.ApplyStatus != "proposed" {
+	if proposal.ApplyStatus != "approved" {
 		return nil, ErrNotApproved
-	}
-
-	// Risk-adaptive HITL: if the proposal is still in "proposed" status and risk level is low,
-	// automatically approve and execute without human review — UNLESS the action config
-	// explicitly requires approval.
-	if proposal.ApplyStatus == "proposed" {
-		if proposal.RiskLevel != "low" {
-			return nil, ErrNotApproved
-		}
-		// Even for "low" risk, check if the action config requires approval
-		if cfg, ok := s.registry.GetActionConfig(proposal.ActionType); ok {
-			if cfg.RequiresApproval {
-				return nil, ErrNotApproved
-			}
-		}
 	}
 
 	if !s.registry.IsAllowed(proposal.ActionType) {

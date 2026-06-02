@@ -79,8 +79,9 @@ type rawObjectType struct {
 	SourceTables  []string                         `yaml:"source_tables"`
 	Grain         string                           `yaml:"grain"`
 	Properties    map[string]rawObjectProperty     `yaml:"properties"`
-	Relationships map[string]rawObjectRelationship `yaml:"relationships,omitempty"`
-	AlertFields   []string                         `yaml:"alert_fields"`
+	Relationships  map[string]rawObjectRelationship `yaml:"relationships,omitempty"`
+	AllowedActions []string                         `yaml:"allowed_actions"`
+	AlertFields    []string                         `yaml:"alert_fields"`
 }
 
 // rawObjectProperty mirrors the YAML property entry for a single field.
