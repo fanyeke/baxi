@@ -9,15 +9,29 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"go.uber.org/zap"
 )
 
 // Engine evaluates alert rules against mart.metric_daily data.
-type Engine struct{}
+type Engine struct {
+	logger *zap.Logger
+}
 
 // NewEngine creates a new alert rule Engine.
 func NewEngine() *Engine {
 	return &Engine{}
 }
+
+// WithLogger sets the logger on the Engine and returns the Engine for chaining.
+func (e *Engine) WithLogger(l *zap.Logger) *Engine {
+	e.logger = l
+	return e
+}
+
+// engineLogger is a package-level zap.Logger reference set by EvaluateGlobalRules
+// so that package-level rule evaluation functions can log errors without
+// requiring an Engine parameter.
+var engineLogger *zap.Logger
 
 // metricRow holds one day of metric_daily data.
 type metricRow struct {
@@ -36,6 +50,9 @@ type metricRow struct {
 // Dead rules (Enabled=false) are silently skipped.
 func (e *Engine) EvaluateGlobalRules(ctx context.Context, tx pgx.Tx) ([]AlertResult, error) {
 	rules := GlobalRules()
+
+	engineLogger = e.logger
+	defer func() { engineLogger = nil }()
 
 	lastDate, err := e.getLatestDate(ctx, tx)
 	if err != nil {
@@ -171,7 +188,16 @@ func evaluateGMVDrop(ctx context.Context, tx pgx.Tx, latestDate string) (*AlertR
 			"total_samples":    len(series),
 			"triggered":        true,
 		}
-		evJSON, _ := json.Marshal(evidence)
+		evJSON, marshalErr := json.Marshal(evidence)
+		if marshalErr != nil {
+			if engineLogger != nil {
+				engineLogger.Error("alert engine: failed to marshal evidence",
+					zap.String("rule_id", "gmv_drop"),
+					zap.Strings("evidence_keys", []string{"current_7d_avg", "prev_14d_avg", "current_value", "baseline_value", "change_rate", "window_7d_count", "window_14d_count", "total_samples", "triggered"}),
+					zap.Error(marshalErr))
+			}
+			evJSON = []byte("{}")
+		}
 		msg := fmt.Sprintf("GMV 7日均值较前14天均值下降超过15%% | 7d_avg=%.2f, 14d_avg=%.2f", currentAvg, prevAvg)
 
 		return &AlertResult{
@@ -238,7 +264,16 @@ func evaluateLateDeliverySpike(ctx context.Context, tx pgx.Tx, latestDate string
 			"total_samples":    totalSamples,
 			"triggered":        true,
 		}
-		evJSON, _ := json.Marshal(evidence)
+		evJSON, marshalErr := json.Marshal(evidence)
+		if marshalErr != nil {
+			if engineLogger != nil {
+				engineLogger.Error("alert engine: failed to marshal evidence",
+					zap.String("rule_id", "late_delivery_spike"),
+					zap.Strings("evidence_keys", []string{"current_value", "baseline_value", "change_rate", "window_7d_count", "window_14d_count", "total_samples", "triggered"}),
+					zap.Error(marshalErr))
+			}
+			evJSON = []byte("{}")
+		}
 		msg := fmt.Sprintf("延迟配送率超过25%% | value=%.4f, samples=%d", latestVal, totalSamples)
 
 		return &AlertResult{
@@ -300,7 +335,16 @@ func evaluateCancelRateSpike(ctx context.Context, tx pgx.Tx, latestDate string) 
 			"total_samples":    len(series),
 			"triggered":        true,
 		}
-		evJSON, _ := json.Marshal(evidence)
+		evJSON, marshalErr := json.Marshal(evidence)
+		if marshalErr != nil {
+			if engineLogger != nil {
+				engineLogger.Error("alert engine: failed to marshal evidence",
+					zap.String("rule_id", "cancel_rate_spike"),
+					zap.Strings("evidence_keys", []string{"current_7d_avg", "prev_14d_avg", "current_value", "baseline_value", "change_rate", "window_7d_count", "window_14d_count", "total_samples", "triggered"}),
+					zap.Error(marshalErr))
+			}
+			evJSON = []byte("{}")
+		}
 		msg := fmt.Sprintf("取消率变化超过50%%且当前值超过5%% | change_rate=%.4f, value=%.4f", changeRate, latestVal)
 
 		return &AlertResult{
