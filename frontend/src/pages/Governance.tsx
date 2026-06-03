@@ -8,7 +8,7 @@ import {
   useHealth,
 } from "../api/governance"
 import type {
-  CatalogAsset,
+  CatalogObject,
   Classification,
   MarkingInfo,
   LineageEdge,
@@ -79,19 +79,17 @@ function DataTable({ headers, children }: { headers: string[]; children: React.R
 function CatalogTab({ data, isLoading, error }: ReturnType<typeof useCatalog>) {
   if (isLoading) return <LoadingSkeleton type="table" count={6} />
   if (error) return <ErrorPanel title="加载失败" message={fmtError(error)} />
-  if (!data || data.assets.length === 0) return <EmptyState title="暂无数据目录" />
+  if (!data || data.objects.length === 0) return <EmptyState title="暂无数据目录" />
 
   return (
-    <DataTable headers={["资产 ID", "名称", "类型", "位置", "描述", "粒度", "状态"]}>
-      {data.assets.map((a: CatalogAsset) => (
-        <tr key={a.asset_id} className="border-t hover:bg-muted/50">
-          <td className="p-2 font-mono text-xs">{a.asset_id}</td>
-          <td className="p-2 font-medium">{a.name}</td>
-          <td className="p-2">{a.asset_type}</td>
-          <td className="p-2 font-mono text-xs">{a.location}</td>
-          <td className="p-2 text-muted-foreground max-w-[200px] truncate">{a.description ?? "—"}</td>
-          <td className="p-2">{a.grain ?? "—"}</td>
-          <td className="p-2"><SeverityBadge severity={a.status} /></td>
+    <DataTable headers={["对象类型", "来源数据集", "主键", "属性数", "链接数"]}>
+      {data.objects.map((o: CatalogObject, i: number) => (
+        <tr key={o.primary_key + i} className="border-t hover:bg-muted/50">
+          <td className="p-2 font-mono text-xs">{o.object_type}</td>
+          <td className="p-2 font-medium">{o.source_dataset}</td>
+          <td className="p-2 font-mono text-xs">{o.primary_key}</td>
+          <td className="p-2">{o.properties_count}</td>
+          <td className="p-2">{o.links_count}</td>
         </tr>
       ))}
     </DataTable>
@@ -273,7 +271,7 @@ function SummaryStats(props: {
   healthCount: number
 }) {
   const items = [
-    { label: "数据资产", value: props.catalogCount, icon: "📦" },
+    { label: "数据对象", value: props.catalogCount, icon: "📦" },
     { label: "分类规则", value: props.classCount, icon: "🏷️" },
     { label: "检查点", value: props.checkpointCount, icon: "✅" },
     { label: "健康检查", value: props.healthCount, icon: "💚" },
@@ -350,7 +348,7 @@ export default function Governance() {
       </Tabs.Root>
 
       <SummaryStats
-        catalogCount={catalog.data?.assets.length ?? 0}
+        catalogCount={catalog.data?.objects.length ?? 0}
         classCount={classQuery.data?.classifications.length ?? 0}
         checkpointCount={checkpoints.data ? Object.keys(checkpoints.data.checkpoints).length : 0}
         healthCount={health.data

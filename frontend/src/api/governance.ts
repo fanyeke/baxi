@@ -1,19 +1,23 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "./client"
 
-export interface CatalogAsset {
-  asset_id: string
-  asset_type: string
-  name: string
-  location: string
-  description?: string
-  grain?: string
-  status: string
+export interface CatalogObject {
+  object_type: string
+  source_dataset: string
+  primary_key: string
+  properties_count: number
+  links_count: number
+}
+
+export interface CatalogDataset {
+  dataset: string
+  schema: string
+  table: string
 }
 
 export interface CatalogResponse {
-  data_catalog: Record<string, unknown>
-  assets: CatalogAsset[]
+  objects: CatalogObject[]
+  datasets: CatalogDataset[]
 }
 
 export interface Classification {

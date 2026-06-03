@@ -35,17 +35,11 @@ const errorState = { data: undefined, isLoading: false, error: new Error("API Er
 const emptyState = { data: undefined, isLoading: false, error: null }
 
 const mockCatalogData = {
-  data_catalog: {},
-  assets: [
-    {
-      asset_id: "asst-001",
-      asset_type: "table",
-      name: "订单表",
-      location: "dw.orders",
-      description: "电商订单主表",
-      grain: "order",
-      status: "active",
-    },
+  objects: [
+    { object_type: "table", source_dataset: "dw.orders", primary_key: "order_id", properties_count: 15, links_count: 3 },
+  ],
+  datasets: [
+    { dataset: "orders", schema: "dw", table: "orders" },
   ],
 }
 
@@ -154,10 +148,9 @@ describe("Governance", () => {
 
     renderWithQueryClient(<Governance />)
 
-    expect(screen.getByText("asst-001")).toBeInTheDocument()
-    expect(screen.getByText("订单表")).toBeInTheDocument()
+    expect(screen.getByText("table")).toBeInTheDocument()
     expect(screen.getByText("dw.orders")).toBeInTheDocument()
-    expect(screen.getByText("active")).toBeInTheDocument()
+    expect(screen.getByText("order_id")).toBeInTheDocument()
   })
 
   it("displays data across all tabs", () => {
@@ -182,14 +175,14 @@ describe("Governance", () => {
 
     renderWithQueryClient(<Governance />)
 
-    expect(screen.getByText("订单表")).toBeInTheDocument()
+    expect(screen.getByText("table")).toBeInTheDocument()
     const ones = screen.getAllByText("1")
     expect(ones.length).toBeGreaterThanOrEqual(1)
   })
 
   it("shows empty state when no data available", () => {
     vi.mocked(useCatalog).mockReturnValue({
-      data: { assets: [], data_catalog: {} }, isLoading: false, error: null,
+      data: { objects: [], datasets: [] }, isLoading: false, error: null,
     } as never)
 
     renderWithQueryClient(<Governance />)
