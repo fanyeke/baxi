@@ -25,7 +25,7 @@ func main() {
 	case "help", "--help", "-h":
 		printHelp()
 		return
-	case "pipeline", "governance", "decision":
+	case "pipeline", "governance", "decision", "e2e":
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
 		printHelp()
@@ -68,6 +68,8 @@ func main() {
 			handleGovernance(ctx, os.Args[2:], zapLog, pool.Pool)
 		case "decision":
 			handleDecision(ctx, os.Args[2:], zapLog, pool.Pool, cfg)
+		case "e2e":
+			handleE2E(ctx, os.Args[2:], zapLog, pool.Pool, cfg)
 		}
 		cancel()
 	}()
@@ -101,6 +103,10 @@ func printHelp() {
 	fmt.Println("  decision compare             Compare decision outcomes")
 	fmt.Println("  decision replay              Replay a decision case")
 	fmt.Println("  decision evals               Run decision evaluations")
+	fmt.Println("  e2e                          Run end-to-end full-cycle test")
+	fmt.Println("  e2e --auto-fix               Auto-fix known schema/data issues")
+	fmt.Println("  e2e --live                   Enable live execution")
+	fmt.Println("  e2e --json                   Output report as JSON")
 	fmt.Println("")
 	fmt.Println("Environment:")
 	fmt.Println("  DATABASE_URL              PostgreSQL connection string (required)")
