@@ -1,4 +1,5 @@
 {
+  "response_language": "zh-CN",
   "mode": "yolo",
   "granularity": "standard",
   "parallelization": true,
