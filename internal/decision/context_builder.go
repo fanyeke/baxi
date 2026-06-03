@@ -10,14 +10,14 @@ import (
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/ontology"
+	"baxi/internal/repository"
 	decisionRepo "baxi/internal/repository/decision"
-	ontologyRepo "baxi/internal/repository/ontology"
 )
 
 // ObjectDataProvider provides object context data.
 type ObjectDataProvider interface {
 	BuildObjectContext(ctx context.Context, objectType, objectID string) (*ontology.ObjectContext, error)
-	GetMetricAlert(ctx context.Context, alertID string) (*ontologyRepo.ObjectInstance, error)
+	GetMetricAlert(ctx context.Context, alertID string) (*repository.ObjectInstance, error)
 }
 
 // ClassificationProvider provides data classification info.

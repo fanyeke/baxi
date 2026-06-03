@@ -16,7 +16,7 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 - [x] **Phase 3: Code Hygiene & Cleanup** - Remove Python/SQLite remnants, dead code, deprecated repositories (completed 2026-06-03)
 - [x] **Phase 4: Bug Fixes & Stability** - Fix silently ignored errors, marshaling failures, migration gaps, SQL injection risks (completed 2026-06-03)
 - [x] **Phase 5: Security Hardening** - Strengthen auth middleware, CORS validation, Docker Compose credentials (completed 2026-06-03)
-- [ ] **Phase 6: Integration & End-to-End Demo** - Wire frontend to backend, pass all E2E tests, run full closed-loop demo
+- [x] **Phase 6: Integration & End-to-End Demo** - Wire frontend to backend, pass all E2E tests, run full closed-loop demo (completed 2026-06-03)
 
 ## Phase Details
 
@@ -154,10 +154,10 @@ Plans:
 
 Plans:
 
-- [ ] 06-01-PLAN.md — Go 测试编译修复（proposal_service, context_builder, alert_service, outbox）
-- [ ] 06-02-PLAN.md — 前端类型对齐（Governance、Pipeline 页面）
-- [ ] 06-03-PLAN.md — 前端测试断言修复（7 个测试文件）
-- [ ] 06-04-PLAN.md — 演示验证（全测试套件 + 闭环确认）
+- [x] 06-01-PLAN.md — Go 测试编译修复（proposal_service, context_builder, alert_service, outbox）
+- [x] 06-02-PLAN.md — 前端类型对齐（Governance、Pipeline 页面）
+- [x] 06-03-PLAN.md — 前端测试断言修复（7 个测试文件）
+- [x] 06-04-PLAN.md — 演示验证（全测试套件 + 闭环确认）
 
 ## Progress
 
@@ -171,4 +171,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Code Hygiene & Cleanup | 3/3 | Complete   | 2026-06-03 |
 | 4. Bug Fixes & Stability | 2/2 | Complete   | 2026-06-03 |
 | 5. Security Hardening | 1/1 | Complete   | 2026-06-03 |
-| 6. Integration & End-to-End Demo | 0/TBD | Not started | - |
+| 6. Integration & End-to-End Demo | 4/4 | Complete   | 2026-06-03 |

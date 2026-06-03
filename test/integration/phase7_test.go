@@ -20,6 +20,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMain(m *testing.M) {
+	orig := os.Getenv("BAXI_ALLOW_LIVE_EXECUTION")
+	os.Setenv("BAXI_ALLOW_LIVE_EXECUTION", "true")
+	code := m.Run()
+	if orig == "" {
+		os.Unsetenv("BAXI_ALLOW_LIVE_EXECUTION")
+	} else {
+		os.Setenv("BAXI_ALLOW_LIVE_EXECUTION", orig)
+	}
+	os.Exit(code)
+}
+
 func migrationsDir() string {
 	dir, _ := os.Getwd()
 	for i := 0; i < 10; i++ {

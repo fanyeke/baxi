@@ -33,8 +33,8 @@ type AlertRow struct {
 	CurrentValue  *float64
 	BaselineValue *float64
 	ChangeRate    *float64
-	OwnerRole     string
-	Status        string
+	OwnerRole     *string
+	Status        *string
 	ImpactScore   *float64
 }
 

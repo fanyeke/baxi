@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,7 @@ func TestMockStep_Name(t *testing.T) {
 
 func TestMockStep_RunSuccess(t *testing.T) {
 	step := &mockStep{name: "test-step", succ: true}
-	output, err := step.Run(t.Context(), nil, StepInput{})
+	output, err := step.Run(context.Background(), nil, StepInput{})
 	assert.NoError(t, err)
 	assert.Equal(t, int64(5), output.InputCount)
 	assert.Equal(t, int64(5), output.OutputCount)
@@ -61,7 +62,7 @@ func TestMockStep_RunSuccess(t *testing.T) {
 
 func TestMockStep_RunFailure(t *testing.T) {
 	step := &mockStep{name: "failing-step", succ: false}
-	output, err := step.Run(t.Context(), nil, StepInput{})
+	output, err := step.Run(context.Background(), nil, StepInput{})
 	assert.Error(t, err)
 	assert.Nil(t, output)
 	assert.Contains(t, err.Error(), "failing-step")
@@ -71,7 +72,7 @@ func TestStepSpy_CalledTracking(t *testing.T) {
 	spy := &stepSpy{mockStep: &mockStep{name: "spy-step", succ: true}}
 	assert.False(t, spy.called)
 
-	output, err := spy.Run(t.Context(), nil, StepInput{})
+	output, err := spy.Run(context.Background(), nil, StepInput{})
 	assert.NoError(t, err)
 	assert.True(t, spy.called)
 	assert.NotNil(t, output)
@@ -79,7 +80,7 @@ func TestStepSpy_CalledTracking(t *testing.T) {
 
 func TestStepSpy_Failure(t *testing.T) {
 	spy := &stepSpy{mockStep: &mockStep{name: "spy-fail", succ: false}}
-	_, err := spy.Run(t.Context(), nil, StepInput{})
+	_, err := spy.Run(context.Background(), nil, StepInput{})
 	assert.Error(t, err)
 	assert.True(t, spy.called)
 }

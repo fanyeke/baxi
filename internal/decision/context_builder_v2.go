@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/repository"
@@ -20,6 +22,7 @@ type ContextBuilderV2 struct {
 	ontologyRepo repository.OntologyAwareRepo
 	markingSvc   governance.MarkingService
 	lineageSvc   DecisionLineageService
+	pool         *pgxpool.Pool
 	actionTypes  ActionTypeProvider
 }
 
@@ -29,6 +32,7 @@ func NewContextBuilderV2(
 	ontologyRepo repository.OntologyAwareRepo,
 	markingSvc governance.MarkingService,
 	lineageSvc DecisionLineageService,
+	pool *pgxpool.Pool,
 	actionTypes ActionTypeProvider,
 ) *ContextBuilderV2 {
 	return &ContextBuilderV2{
@@ -36,6 +40,7 @@ func NewContextBuilderV2(
 		ontologyRepo: ontologyRepo,
 		markingSvc:   markingSvc,
 		lineageSvc:   lineageSvc,
+		pool:         pool,
 		actionTypes:  actionTypes,
 	}
 }
@@ -57,7 +62,7 @@ func (b *ContextBuilderV2) BuildDecisionContext(ctx context.Context, caseID stri
 		return nil, err
 	}
 
-	objectInst, err := b.ontologyRepo.GetObjectByID(ctx, objectType, objectID)
+	objectInst, err := b.ontologyRepo.GetObjectByID(ctx, b.pool, objectType, objectID)
 	if err != nil {
 		return nil, fmt.Errorf("get object %s/%s: %w", objectType, objectID, err)
 	}
@@ -129,7 +134,7 @@ func (b *ContextBuilderV2) buildTriggerV2(ctx context.Context, caseRow *decision
 		return trigger, nil
 	}
 
-	alert, err := b.ontologyRepo.GetObjectByID(ctx, "metric_alert", *caseRow.AlertID)
+	alert, err := b.ontologyRepo.GetObjectByID(ctx, b.pool, "metric_alert", *caseRow.AlertID)
 	if err != nil {
 		return trigger, fmt.Errorf("fetch alert %s: %w", *caseRow.AlertID, err)
 	}
