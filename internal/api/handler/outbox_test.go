@@ -19,7 +19,7 @@ import (
 	"baxi/internal/action"
 	"baxi/internal/model"
 	"baxi/internal/outbox"
-	"outboxRepo outboxRepo "baxi/internal/repository/outbox""
+	outboxRepo "baxi/internal/repository/outbox"
 	"baxi/internal/service"
 )
 
@@ -86,7 +86,7 @@ func newReqWithParam(ctx context.Context, method, url, param, value string) *htt
 func newOutboxHandlerForTest(pool *pgxpool.Pool) *OutboxHandler {
 	readRepo := outboxRepo.NewRepository(nil)
 	writeRepo := outbox.NewOutboxRepository()
-	svc := service.NewOutboxService(readRepo, pool)
+	svc := service.NewOutboxService(readRepo)
 	executors := map[string]action.ActionExecutor{
 		"noop": action.NewNoOpExecutor(),
 	}
@@ -102,7 +102,7 @@ func newOutboxHandlerForTest(pool *pgxpool.Pool) *OutboxHandler {
 
 type testOutboxAdapter struct {
 	readSvc   *service.OutboxService
-	readRepo  *repository.OutboxRepository
+	readRepo  *outboxRepo.Repository
 	writeRepo *outbox.OutboxRepository
 	pool      *pgxpool.Pool
 	executors map[string]action.ActionExecutor
@@ -113,7 +113,7 @@ func (a *testOutboxAdapter) List(ctx context.Context, filters model.OutboxFilter
 }
 
 func (a *testOutboxAdapter) GetEvent(ctx context.Context, id string) (*OutboxDetailItem, error) {
-	detail, err := a.readRepo.GetDetail(ctx, a.pool, id)
+	detail, err := a.readRepo.GetDetail(ctx, id)
 	if err != nil || detail == nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (a *testOutboxAdapter) GetEvent(ctx context.Context, id string) (*OutboxDet
 }
 
 func (a *testOutboxAdapter) DispatchEvent(ctx context.Context, id string) error {
-	detail, err := a.readRepo.GetDetail(ctx, a.pool, id)
+	detail, err := a.readRepo.GetDetail(ctx, id)
 	if err != nil {
 		return err
 	}
