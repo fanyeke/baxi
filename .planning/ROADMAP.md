@@ -142,7 +142,6 @@ Plans:
   5. Full closed-loop demo works end-to-end: trigger pipeline → governance rules fire → decision created → action executed → alert sent → result visible in frontend
 
 **Plans**: 1 plan
-
 Plans:
 
 - [x] 05-01-PLAN.md — CORS scheme 验证（parseOrigins + isOriginAllowed 重构 + 单元测试）

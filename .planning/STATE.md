@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 05 plans created
-last_updated: "2026-06-03T14:39:36.502Z"
+stopped_at: Phase 06 UI-SPEC approved
+last_updated: "2026-06-03T15:31:27.960Z"
 last_activity: 2026-06-03 -- Phase 05 execution started
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 13
-  completed_plans: 12
-  percent: 67
+  completed_plans: 13
+  percent: 83
 ---
 
 # Project State: Baxi
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 Phase: 05 (security-hardening) — EXECUTING
 Plan: 1 of 1
-Status: Executing Phase 05
+Status: Ready to execute
 Last activity: 2026-06-03 -- Phase 05 execution started
 
 Progress: [░░░░░░░░░░] 0%
@@ -84,6 +84,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-03T14:38:30.941Z
-Stopped at: Phase 05 plans created
-Resume file: .planning/phases/05-security-hardening/05-01-PLAN.md
+Last session: 2026-06-03T15:13:05.618Z
+Stopped at: Phase 06 UI-SPEC approved
+Resume file: /home/zzz/project/baxi/.planning/phases/06-integration-end-to-end-demo/06-UI-SPEC.md
