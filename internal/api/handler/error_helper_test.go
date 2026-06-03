@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 
+	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 )
 
@@ -185,6 +187,103 @@ func TestWriteErrorWithDetails_OverridesDefaults(t *testing.T) {
 	assert.Equal(t, "access denied", body["message"])
 	assert.Equal(t, "custom diagnosis", body["diagnosis"])
 	assert.Equal(t, "custom action", body["suggested_action"])
+}
+
+// ──── isDatabaseConnectionError ─────────────────────────────────────────────
+
+func TestIsDatabaseConnectionError_ConnectionRefused(t *testing.T) {
+	assert.True(t, isDatabaseConnectionError(errors.New("connection refused")), "connection refused")
+	assert.True(t, isDatabaseConnectionError(errors.New("connect: connection refused")), "connect: connection refused")
+}
+
+func TestIsDatabaseConnectionError_PoolClosed(t *testing.T) {
+	assert.True(t, isDatabaseConnectionError(errors.New("pool closed")), "pool closed")
+}
+
+func TestIsDatabaseConnectionError_NilError(t *testing.T) {
+	assert.False(t, isDatabaseConnectionError(nil), "nil error")
+}
+
+func TestIsDatabaseConnectionError_Generic(t *testing.T) {
+	assert.False(t, isDatabaseConnectionError(errors.New("something else")), "generic error")
+	assert.False(t, isDatabaseConnectionError(errors.New("")), "empty error")
+}
+
+// ──── classifyError DB connection ───────────────────────────────────────────
+
+func TestClassifyError_DBConnectionError(t *testing.T) {
+	status, code := classifyError(errors.New("connection refused"))
+	assert.Equal(t, http.StatusServiceUnavailable, status)
+	assert.Equal(t, middleware.SERVICE_UNAVAILABLE, code)
+}
+
+// ──── writeValidationError ──────────────────────────────────────────────────
+
+func TestWriteValidationError(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/test", nil)
+	r = r.WithContext(context.WithValue(r.Context(), middleware.RequestIDKey, "req-123"))
+
+	fields := []dto.FieldError{
+		{Field: "source_type", Message: "source_type is required", Code: "required"},
+	}
+	writeValidationError(w, r, "Validation failed", fields)
+
+	resp := w.Result()
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	var body map[string]interface{}
+	decodeJSON(t, resp, &body)
+	assert.Equal(t, middleware.VALIDATION_FAILED, body["error_code"])
+
+	details, ok := body["details"].(map[string]interface{})
+	assert.True(t, ok, "expected details object")
+	fieldsArr, ok := details["fields"].([]interface{})
+	assert.True(t, ok, "expected details.fields array")
+	assert.Len(t, fieldsArr, 1)
+}
+
+func TestWriteValidationError_FieldDetails(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/test", nil)
+	r = r.WithContext(context.WithValue(r.Context(), middleware.RequestIDKey, "req-456"))
+
+	fields := []dto.FieldError{
+		{Field: "email", Message: "invalid email format", Code: "invalid_format"},
+		{Field: "age", Message: "age must be positive", Code: "invalid_value"},
+	}
+	writeValidationError(w, r, "Validation failed", fields)
+
+	resp := w.Result()
+	var body map[string]interface{}
+	decodeJSON(t, resp, &body)
+
+	details := body["details"].(map[string]interface{})
+	fieldsArr := details["fields"].([]interface{})
+
+	first := fieldsArr[0].(map[string]interface{})
+	assert.Equal(t, "email", first["field"])
+	assert.Equal(t, "invalid email format", first["message"])
+	assert.Equal(t, "invalid_format", first["code"])
+
+	second := fieldsArr[1].(map[string]interface{})
+	assert.Equal(t, "age", second["field"])
+	assert.Equal(t, "age must be positive", second["message"])
+	assert.Equal(t, "invalid_value", second["code"])
+}
+
+// ──── defaultDiagnosis new codes ─────────────────────────────────────────────
+
+func TestDefaultDiagnosis_NewCodes(t *testing.T) {
+	assert.NotEmpty(t, defaultDiagnosis(middleware.CONFLICT), "CONFLICT diagnosis should not be empty")
+	assert.NotEmpty(t, defaultDiagnosis(middleware.SERVICE_UNAVAILABLE), "SERVICE_UNAVAILABLE diagnosis should not be empty")
+}
+
+// ──── defaultAction new codes ─────────────────────────────────────────────────
+
+func TestDefaultAction_NewCodes(t *testing.T) {
+	assert.NotEmpty(t, defaultAction(middleware.CONFLICT), "CONFLICT action should not be empty")
+	assert.NotEmpty(t, defaultAction(middleware.SERVICE_UNAVAILABLE), "SERVICE_UNAVAILABLE action should not be empty")
 }
 
 // ──── helper ───────────────────────────────────────────────────────────────
