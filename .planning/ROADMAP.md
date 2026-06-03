@@ -13,7 +13,7 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 
 - [x] **Phase 1: Core API Completion** - Implement all 6 API endpoints returning 501, plus OpenAPI schemas (completed 2026-06-03)
 - [x] **Phase 2: Error Handling & Observability** - Replace generic 500s with proper HTTP status codes and structured error responses (completed 2026-06-03)
-- [ ] **Phase 3: Code Hygiene & Cleanup** - Remove Python/SQLite remnants, dead code, deprecated repositories
+- [x] **Phase 3: Code Hygiene & Cleanup** - Remove Python/SQLite remnants, dead code, deprecated repositories (completed 2026-06-03)
 - [ ] **Phase 4: Bug Fixes & Stability** - Fix silently ignored errors, marshaling failures, migration gaps, SQL injection risks
 - [ ] **Phase 5: Security Hardening** - Strengthen auth middleware, CORS validation, Docker Compose credentials
 - [ ] **Phase 6: Integration & End-to-End Demo** - Wire frontend to backend, pass all E2E tests, run full closed-loop demo
@@ -89,9 +89,10 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — 快速清理：pipeline 预览、Makefile、llm.go、worker.go (HYG-01, HYG-02, HYG-05, HYG-06)
-- [ ] 03-02-PLAN.md — 仓库调用方迁移 (HYG-04)
-- [ ] 03-03-PLAN.md — 最终清理：删除 shim + migration_baseline + 文档更新 (HYG-03, HYG-07)
+
+- [x] 03-01-PLAN.md — 快速清理：pipeline 预览、Makefile、llm.go、worker.go (HYG-01, HYG-02, HYG-05, HYG-06)
+- [x] 03-02-PLAN.md — 仓库调用方迁移 (HYG-04)
+- [x] 03-03-PLAN.md — 最终清理：删除 shim + migration_baseline + 文档更新 (HYG-03, HYG-07)
 
 ### Phase 4: Bug Fixes & Stability
 
@@ -146,7 +147,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Core API Completion | 4/4 | Complete   | 2026-06-03 |
 | 2. Error Handling & Observability | 3/3 | Complete   | 2026-06-03 |
-| 3. Code Hygiene & Cleanup | 0/TBD | Not started | - |
+| 3. Code Hygiene & Cleanup | 3/3 | Complete   | 2026-06-03 |
 | 4. Bug Fixes & Stability | 0/TBD | Not started | - |
 | 5. Security Hardening | 0/TBD | Not started | - |
 | 6. Integration & End-to-End Demo | 0/TBD | Not started | - |
