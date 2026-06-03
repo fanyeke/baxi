@@ -62,7 +62,10 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 
 	var req executeRequest
 	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "invalid request body: "+err.Error())
+			return
+		}
 	}
 
 	dryRun := true

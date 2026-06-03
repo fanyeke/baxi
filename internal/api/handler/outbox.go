@@ -192,9 +192,11 @@ type BatchDispatchResponse struct {
 // HandleBatchDispatch handles POST /outbox/dispatch.
 func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Request) {
 	var req dto.BatchDispatchRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		// Empty body or invalid JSON defaults to dry_run=false
-		req.DryRun = false
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "invalid request body: "+err.Error())
+			return
+		}
 	}
 
 	status := "pending"
