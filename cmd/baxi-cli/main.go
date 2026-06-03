@@ -38,10 +38,17 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// Load config
-	cfg, err := config.Load()
-	if err != nil {
-		os.Stderr.WriteString("failed to load config: " + err.Error() + "\n")
+	// Load config — pipeline, e2e, governance only need local DB; decision may need API
+	var cfg *config.Config
+	var cfgErr error
+	switch os.Args[1] {
+	case "pipeline", "e2e", "governance":
+		cfg, cfgErr = config.LoadLocal()
+	default:
+		cfg, cfgErr = config.Load()
+	}
+	if cfgErr != nil {
+		os.Stderr.WriteString("failed to load config: " + cfgErr.Error() + "\n")
 		os.Exit(1)
 	}
 

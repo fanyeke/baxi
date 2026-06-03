@@ -1,9 +1,12 @@
 package config
 
 import (
+	"bufio"
 	"errors"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // Config holds all configuration for the application.
@@ -35,8 +38,21 @@ type Config struct {
 	GitHubToken        string
 }
 
-// Load reads configuration from environment variables.
+// Load reads configuration from environment variables and optional .env file.
 func Load() (*Config, error) {
+	return loadInternal(true)
+}
+
+// LoadLocal reads configuration for commands that only need local DB access
+// (pipeline, e2e, governance). Does not require API_BEARER_TOKEN.
+func LoadLocal() (*Config, error) {
+	return loadInternal(false)
+}
+
+func loadInternal(requireAPIToken bool) (*Config, error) {
+	// Try to load .env file if present
+	_ = loadEnvFile(".env")
+
 	workerBatchSize, _ := strconv.Atoi(getEnv("WORKER_BATCH_SIZE", "10"))
 	actionApplyDryRun := true
 	if v := getEnv("ACTION_APPLY_DRY_RUN", "true"); v == "false" {
@@ -91,11 +107,57 @@ func Load() (*Config, error) {
 		return nil, errors.New("DATABASE_URL is required but not set")
 	}
 
-	if cfg.APIBearerToken == "" {
+	if requireAPIToken && cfg.APIBearerToken == "" {
 		return nil, errors.New("API_BEARER_TOKEN is required but not set")
 	}
 
 	return cfg, nil
+}
+
+// loadEnvFile loads environment variables from a .env file.
+// Does not override existing environment variables.
+func loadEnvFile(path string) error {
+	// Try relative to current directory, then try to find project root
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// Try to find .env in parent directories (up to 5 levels)
+		for i := 0; i < 5; i++ {
+			path = filepath.Join("..", path)
+			if _, err := os.Stat(path); err == nil {
+				break
+			}
+		}
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return nil // .env not found, skip silently
+		}
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		// Remove surrounding quotes if present
+		value = strings.Trim(value, `"'`)
+		// Only set if not already set in environment
+		if os.Getenv(key) == "" {
+			os.Setenv(key, value)
+		}
+	}
+	return scanner.Err()
 }
 
 func getEnv(key, defaultValue string) string {

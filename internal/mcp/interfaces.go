@@ -62,7 +62,7 @@ type ExecuteService interface {
 
 // PipelineRunner defines the interface for running pipelines.
 type PipelineRunner interface {
-	Run(ctx context.Context, config string) (string, error)
+	Run(ctx context.Context, config string, dataDir string) (string, error)
 }
 
 // SystemStatusService defines the interface for getting system status.

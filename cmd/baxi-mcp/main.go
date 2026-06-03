@@ -378,11 +378,14 @@ type pipelineRunService struct {
 	runner *pipeline.Runner
 }
 
-func (s *pipelineRunService) Run(ctx context.Context, config string) (string, error) {
+func (s *pipelineRunService) Run(ctx context.Context, config string, dataDir string) (string, error) {
+	if dataDir == "" {
+		dataDir = "./data/raw"
+	}
 	input := pipeline.RunInput{
 		RunType: "full",
 		Mode:    "mcp",
-		DataDir: "./data/raw",
+		DataDir: dataDir,
 	}
 	if config != "" {
 		input.RunType = config
