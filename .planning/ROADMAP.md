@@ -116,16 +116,17 @@ Plans:
 
 ### Phase 5: Security Hardening
 
-**Goal**: Authentication, CORS, and deployment credentials are secured for demo use
+**Goal**: CORS origin check validates the scheme explicitly (`http` vs `https`) before allowing requests
 **Depends on**: Phase 4
-**Requirements**: SEC-01, SEC-02, SEC-03
+**Requirements**: SEC-02
 **Success Criteria** (what must be TRUE):
 
-  1. Auth middleware validates JWT with claims and expiry (or supports token rotation)
-  2. CORS origin check validates the scheme explicitly (`http` vs `https`) before allowing requests
-  3. Docker Compose uses environment variables or Docker secrets for credentials — no hardcoded passwords in plain text
+   1. CORS origin check validates the scheme explicitly (`http` vs `https`) — SEC-01 (JWT/token rotation) and SEC-03 (Docker Compose credentials) skipped per D-03/D-04
+   2. Port normalization works correctly: `http://localhost` matches `http://localhost:80`, `https://example.com` matches `https://example.com:443`
+   3. Unparseable Origin headers are rejected (fail closed)
+   4. `CORS_ALLOWED_ORIGINS` comma-separated format remains unchanged
 
-**Plans**: TBD
+**Plans**: 1 plan
 
 ### Phase 6: Integration & End-to-End Demo
 
@@ -140,7 +141,11 @@ Plans:
   4. Frontend unit tests (`frontend/src/pages/__tests__/*.test.tsx`) pass cleanly
   5. Full closed-loop demo works end-to-end: trigger pipeline → governance rules fire → decision created → action executed → alert sent → result visible in frontend
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+
+- [ ] 05-01-PLAN.md — CORS scheme 验证（parseOrigins + isOriginAllowed 重构 + 单元测试）
 **UI hint**: yes
 
 ## Progress
@@ -154,5 +159,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Error Handling & Observability | 3/3 | Complete   | 2026-06-03 |
 | 3. Code Hygiene & Cleanup | 3/3 | Complete   | 2026-06-03 |
 | 4. Bug Fixes & Stability | 2/2 | Complete   | 2026-06-03 |
-| 5. Security Hardening | 0/TBD | Not started | - |
+| 5. Security Hardening | 0/1 | Planning | - |
 | 6. Integration & End-to-End Demo | 0/TBD | Not started | - |
