@@ -14,7 +14,7 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 - [x] **Phase 1: Core API Completion** - Implement all 6 API endpoints returning 501, plus OpenAPI schemas (completed 2026-06-03)
 - [x] **Phase 2: Error Handling & Observability** - Replace generic 500s with proper HTTP status codes and structured error responses (completed 2026-06-03)
 - [x] **Phase 3: Code Hygiene & Cleanup** - Remove Python/SQLite remnants, dead code, deprecated repositories (completed 2026-06-03)
-- [ ] **Phase 4: Bug Fixes & Stability** - Fix silently ignored errors, marshaling failures, migration gaps, SQL injection risks
+- [x] **Phase 4: Bug Fixes & Stability** - Fix silently ignored errors, marshaling failures, migration gaps, SQL injection risks (completed 2026-06-03)
 - [ ] **Phase 5: Security Hardening** - Strengthen auth middleware, CORS validation, Docker Compose credentials
 - [ ] **Phase 6: Integration & End-to-End Demo** - Wire frontend to backend, pass all E2E tests, run full closed-loop demo
 
@@ -111,8 +111,8 @@ Plans:
 
 Plans:
 
-- [ ] 04-01-PLAN.md — 迁移占位文件 + Feishu page_token 修复 (BUG-03, BUG-04)
-- [ ] 04-02-PLAN.md — 告警引擎 JSON marshal 修复 + Ontology SQL 注入加固 (BUG-02, BUG-05)
+- [x] 04-01-PLAN.md — 迁移占位文件 + Feishu page_token 修复 (BUG-03, BUG-04)
+- [x] 04-02-PLAN.md — 告警引擎 JSON marshal 修复 + Ontology SQL 注入加固 (BUG-02, BUG-05)
 
 ### Phase 5: Security Hardening
 
@@ -153,6 +153,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Core API Completion | 4/4 | Complete   | 2026-06-03 |
 | 2. Error Handling & Observability | 3/3 | Complete   | 2026-06-03 |
 | 3. Code Hygiene & Cleanup | 3/3 | Complete   | 2026-06-03 |
-| 4. Bug Fixes & Stability | 0/TBD | Not started | - |
+| 4. Bug Fixes & Stability | 2/2 | Complete   | 2026-06-03 |
 | 5. Security Hardening | 0/TBD | Not started | - |
 | 6. Integration & End-to-End Demo | 0/TBD | Not started | - |
