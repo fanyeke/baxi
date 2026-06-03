@@ -11,7 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	"baxi/internal/repository/common"
+	taskRepo "baxi/internal/repository/task"
 )
 
 const svcTaskTableDDL = `
@@ -76,8 +77,7 @@ func TestTaskService_ListTasks(t *testing.T) {
 	insertSvcTestTask(t, pool, "task-2", "Update seller info", "medium", "in_progress", "admin", now.Add(-1*time.Hour))
 	insertSvcTestTask(t, pool, "task-3", "Approve refund", "low", "done", "manager", now)
 
-	repo := taskRepo.NewRepository(nil)
-	repo.SetPool(pool)
+	repo := taskRepo.NewRepository(common.NewPoolProvider(pool))
 	svc := NewTaskService(repo)
 
 	t.Run("list all tasks", func(t *testing.T) {
@@ -138,8 +138,7 @@ func TestTaskService_DefaultValues(t *testing.T) {
 	`, "task-default-1", "Default priority task", now)
 	require.NoError(t, err)
 
-	repo := taskRepo.NewRepository(nil)
-	repo.SetPool(pool)
+	repo := taskRepo.NewRepository(common.NewPoolProvider(pool))
 	svc := NewTaskService(repo)
 	resp, err := svc.ListTasks(ctx, model.TaskFilters{}, 10, 0)
 	require.NoError(t, err)

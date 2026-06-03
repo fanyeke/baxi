@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	alertRepo "baxi/internal/repository/alert"
 )
 
 const svcAlertTableDDL = `
@@ -83,7 +83,7 @@ func TestAlertService_ListAlerts(t *testing.T) {
 	insertSvcTestAlert(t, pool, "alert-4", "rule-2", "high", "satisfaction", "customer", "cust-2", "new", "admin", now, float64Ptr(2.0))
 	insertSvcTestAlert(t, pool, "alert-5", "rule-3", "critical", "fraud", "order", "order-3", "new", "analyst", now, nil)
 
-	svc := NewAlertService(alertRepo.NewRepository(nil), pool)
+	svc := NewAlertService(alertRepo.NewRepository(nil))
 
 	t.Run("list all alerts", func(t *testing.T) {
 		resp, err := svc.ListAlerts(ctx, model.AlertFilters{}, "", 10, 0)
@@ -153,7 +153,7 @@ func TestAlertService_Mapping(t *testing.T) {
 	currVal := 99.5
 	insertSvcTestAlert(t, pool, "alert-map-1", "rule-x", "medium", "unit_cost", "product", "prod-1", "new", "admin", now, &currVal)
 
-	svc := NewAlertService(alertRepo.NewRepository(nil), pool)
+	svc := NewAlertService(alertRepo.NewRepository(nil))
 	resp, err := svc.ListAlerts(ctx, model.AlertFilters{}, "", 10, 0)
 	require.NoError(t, err)
 	require.Len(t, resp.Items, 1)

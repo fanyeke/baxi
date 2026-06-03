@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"baxi/internal/repository"
+	"baxi/internal/repository/common"
+	statusRepo "baxi/internal/repository/status"
 )
 
 func setupSvcStatusTestDB(t *testing.T) *pgxpool.Pool {
@@ -53,10 +54,8 @@ func TestStatusService_GetStatus(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	// Use the deprecated StatusRepository wrapper (matches service's expected type)
-	repo := statusRepo.NewRepository(nil)
-	repo.SetPool(pool)
-	svc := NewStatusService(repo, pool, "postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable")
+	repo := statusRepo.NewRepository(common.NewPoolProvider(pool))
+	svc := NewStatusService(repo, "postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable")
 
 	resp, err := svc.GetStatus(ctx)
 	require.NoError(t, err)
@@ -96,9 +95,8 @@ func TestStatusService_GetStatus_Structure(t *testing.T) {
 	pool := setupSvcStatusTestDB(t)
 	ctx := context.Background()
 
-	repo := statusRepo.NewRepository(nil)
-	repo.SetPool(pool)
-	svc := NewStatusService(repo, pool, "postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable")
+	repo := statusRepo.NewRepository(common.NewPoolProvider(pool))
+	svc := NewStatusService(repo, "postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable")
 
 	resp, err := svc.GetStatus(ctx)
 	require.NoError(t, err)

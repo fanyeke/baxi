@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	outboxRepo "baxi/internal/repository/outbox"
+	statusRepo "baxi/internal/repository/status"
+	taskRepo "baxi/internal/repository/task"
 )
 
 // ============================================================
@@ -20,14 +22,14 @@ func TestNewTaskService_NilPool(t *testing.T) {
 	repo := taskRepo.NewRepository(nil)
 	svc := NewTaskService(repo)
 	assert.NotNil(t, svc)
-	assert.Nil(t, svc.pool)
+	assert.NotNil(t, svc.repo)
 }
 
 func TestNewOutboxService_NilPool(t *testing.T) {
 	repo := outboxRepo.NewRepository(nil)
 	svc := NewOutboxService(repo)
 	assert.NotNil(t, svc)
-	assert.Nil(t, svc.pool)
+	assert.NotNil(t, svc.repo)
 }
 
 func TestNewStatusService_NilPool(t *testing.T) {
@@ -40,7 +42,6 @@ func TestNewStatusService_NilPool(t *testing.T) {
 func TestNewQoderService_NilPool(t *testing.T) {
 	svc := NewQoderService(nil)
 	assert.NotNil(t, svc)
-	assert.Nil(t, svc.contextRepo)
 	assert.Nil(t, svc.pool)
 }
 
@@ -78,7 +79,7 @@ func TestMapRowToTask_FullRow(t *testing.T) {
 	now := time.Now().UTC()
 	completedAt := now.Add(1 * time.Hour)
 
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:           "task-1",
 		TaskTitle:        "Review anomaly",
 		TaskDescription:  strPtr("Full task description"),
@@ -121,7 +122,7 @@ func TestMapRowToTask_FullRow(t *testing.T) {
 }
 
 func TestMapRowToTask_NullFields(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "task-2",
 		TaskTitle: "Minimal task",
 		CreatedAt: time.Now().UTC(),
@@ -145,7 +146,7 @@ func TestMapRowToTask_NullFields(t *testing.T) {
 }
 
 func TestMapRowToTask_EmptyPriorityDefault(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "task-3",
 		TaskTitle: "Empty priority",
 		Priority:  "",
@@ -159,7 +160,7 @@ func TestMapRowToTask_EmptyPriorityDefault(t *testing.T) {
 }
 
 func TestMapRowToTask_EmptyStatusDefault(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "task-4",
 		TaskTitle: "Empty status",
 		Status:    "",
@@ -177,7 +178,7 @@ func TestMapRowToTask_EmptyStatusDefault(t *testing.T) {
 func TestMapRowToTaskItem_FullRow(t *testing.T) {
 	now := time.Now().UTC()
 
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:           "ti-1",
 		TaskTitle:        "Fix pipeline",
 		TaskDescription:  strPtr("Task item description"),
@@ -211,7 +212,7 @@ func TestMapRowToTaskItem_FullRow(t *testing.T) {
 }
 
 func TestMapRowToTaskItem_NullFields(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "ti-2",
 		TaskTitle: "Minimal item",
 		CreatedAt: time.Now().UTC(),

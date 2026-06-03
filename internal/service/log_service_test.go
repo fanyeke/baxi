@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	logRepo "baxi/internal/repository/log"
 )
 
 const svcLogTableDDL = `
@@ -198,6 +198,8 @@ func TestLogService_ListRecent_Empty(t *testing.T) {
 	}
 
 	pool := setupSvcLogTestDB(t)
+	insertLogTestData(t, pool)
+
 	repo := logRepo.NewRepository(nil)
 	svc := NewLogService(repo)
 
@@ -248,7 +250,7 @@ func TestLogService_ListErrors_Empty(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 
-	pool := setupSvcLogTestDB(t)
+	_ = setupSvcLogTestDB(t)
 	repo := logRepo.NewRepository(nil)
 	svc := NewLogService(repo)
 
@@ -283,7 +285,7 @@ func TestLogService_ListAudit_Empty(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 
-	pool := setupSvcLogTestDB(t)
+	_ = setupSvcLogTestDB(t)
 	repo := logRepo.NewRepository(nil)
 	svc := NewLogService(repo)
 
@@ -327,7 +329,7 @@ func TestLogService_ListAll_EmptyResponseFormat(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 
-	pool := setupSvcLogTestDB(t)
+	_ = setupSvcLogTestDB(t)
 	repo := logRepo.NewRepository(nil)
 	svc := NewLogService(repo)
 
