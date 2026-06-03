@@ -200,3 +200,90 @@ func TestWriteError_AllErrorCodes(t *testing.T) {
 		})
 	}
 }
+
+// ──── New error constants ──────────────────────────────────────────────────────
+
+func TestErrorConstants_CONFLICT(t *testing.T) {
+	if CONFLICT != "CONFLICT" {
+		t.Errorf("expected CONFLICT to be \"CONFLICT\", got %q", CONFLICT)
+	}
+}
+
+func TestErrorConstants_SERVICE_UNAVAILABLE(t *testing.T) {
+	if SERVICE_UNAVAILABLE != "SERVICE_UNAVAILABLE" {
+		t.Errorf("expected SERVICE_UNAVAILABLE to be \"SERVICE_UNAVAILABLE\", got %q", SERVICE_UNAVAILABLE)
+	}
+}
+
+// ──── WriteErrorWithDetails ────────────────────────────────────────────────────
+
+func TestWriteErrorWithDetails(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(context.WithValue(r.Context(), RequestIDKey, "test-rid"))
+
+	details := map[string]interface{}{
+		"fields": []map[string]string{
+			{"field": "name", "message": "name is required"},
+		},
+	}
+	WriteErrorWithDetails(w, r, http.StatusBadRequest, VALIDATION_FAILED,
+		"Validation failed", "Check input", "Fix errors", details)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", resp.StatusCode)
+	}
+
+	var body map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+
+	if body["error_code"] != VALIDATION_FAILED {
+		t.Errorf("expected error_code %q, got %q", VALIDATION_FAILED, body["error_code"])
+	}
+
+	detailsRaw, ok := body["details"]
+	if !ok {
+		t.Fatal("expected details field in response")
+	}
+	detailsMap, ok := detailsRaw.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected details to be an object, got %T", detailsRaw)
+	}
+	fields, ok := detailsMap["fields"]
+	if !ok {
+		t.Fatal("expected details.fields in response")
+	}
+	fieldsArr, ok := fields.([]interface{})
+	if !ok {
+		t.Fatalf("expected details.fields to be an array, got %T", fields)
+	}
+	if len(fieldsArr) != 1 {
+		t.Errorf("expected 1 field error, got %d", len(fieldsArr))
+	}
+}
+
+func TestAPIError_DetailsOmitted(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r = r.WithContext(context.WithValue(r.Context(), RequestIDKey, "test-rid"))
+
+	WriteErrorWithDetails(w, r, http.StatusNotFound, NOT_FOUND,
+		"Not found", "Resource missing", "Check ID", nil)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	var body map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+
+	if _, exists := body["details"]; exists {
+		t.Error("expected details field to be omitted when nil")
+	}
+}
