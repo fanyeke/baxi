@@ -149,6 +149,17 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 6: Integration & End-to-End Demo
+
+**Plans**: 4 plans
+
+Plans:
+
+- [ ] 06-01-PLAN.md — Go 测试编译修复（proposal_service, context_builder, alert_service, outbox）
+- [ ] 06-02-PLAN.md — 前端类型对齐（Governance、Pipeline 页面）
+- [ ] 06-03-PLAN.md — 前端测试断言修复（7 个测试文件）
+- [ ] 06-04-PLAN.md — 演示验证（全测试套件 + 闭环确认）
+
 ## Progress
 
 **Execution Order:**
