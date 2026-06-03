@@ -380,7 +380,7 @@ func TestProposalService_GenerateProposals_CaseUpdateError(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
 		Severity:     "high",
@@ -408,7 +408,7 @@ func TestProposalService_GenerateProposals_RepoCreateError(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
 		Severity:     "high",
@@ -452,7 +452,7 @@ func TestGenerateProposals_RegistrySkipsInvalidPayload(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, reg, nil)
+	svc := NewProposalService(repo, updater, reg)
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
 		Severity:     "high",
@@ -502,7 +502,7 @@ func TestGenerateProposals_RegistrySchemaVersion(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, reg, nil)
+	svc := NewProposalService(repo, updater, reg)
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
 		Severity:     "high",
@@ -532,7 +532,7 @@ func TestGenerateProposals_NilPayload(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
 		Severity:     "high",

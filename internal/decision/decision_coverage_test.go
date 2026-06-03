@@ -143,7 +143,7 @@ func minimalOldBuilder() *ContextBuilder {
 			return "L1", false, true, nil
 		},
 	}
-	return NewContextBuilder(caseSvc, objectProvider, classProvider, nil, testActionTypes)
+	return NewContextBuilder(caseSvc, objectProvider, classProvider, testActionTypes)
 }
 
 // --- SwitchableContextBuilder: v3 with nil v3Builder ---
@@ -233,7 +233,7 @@ func TestSwitchableContextBuilder_V2WithPath(t *testing.T) {
 			return &governance.FieldMarking{Classification: "L1", PII: false}, nil
 		},
 	}
-	newBuilder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, nil, testActionTypes)
+	newBuilder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, testActionTypes)
 	oldBuilder := minimalOldBuilder()
 	switcher := NewSwitchableContextBuilder(oldBuilder, newBuilder, nil)
 	switcher.SwitchTo(BuilderV2)

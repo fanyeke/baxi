@@ -29,7 +29,10 @@ import (
 	"baxi/internal/pipeline/steps"
 	"baxi/internal/repository"
 	"baxi/internal/repository/common"
-	ontologyRepo "baxi/internal/repository/ontology"
+	alertRepo "baxi/internal/repository/alert"
+	decisionRepo "baxi/internal/repository/decision"
+	ontologyRepoSub "baxi/internal/repository/ontology"
+	governanceRepo "baxi/internal/repository/governance"
 	"baxi/internal/review"
 	"baxi/internal/service"
 )
@@ -60,20 +63,21 @@ func main() {
 	defer pool.Close()
 
 	// Wire decision services (same pattern as handler_factories.go)
-	decisionRepo := repository.NewDecisionRepository()
-	alertRepo := repository.NewAlertRepository()
-	caseSvc := decision.NewCaseService(decisionRepo, alertRepo, pool.Pool)
+	provider := common.NewPoolProvider(pool.Pool)
+	decisionRepo := decisionRepo.NewRepository(provider)
+	alertRepo := alertRepo.NewRepository(provider)
+	caseSvc := decision.NewCaseService(decisionRepo, alertRepo)
 
 	ontologyRepo := repository.NewOntologyRepo()
 	objectSvc := ontology.NewObjectQueryService(ontologyRepo, pool.Pool)
-	govRepo := repository.NewGovernanceRepository()
-	classSvc := governance.NewClassificationService(pool.Pool, govRepo)
+	govRepo := governanceRepo.NewRepository(provider)
+	classSvc := governance.NewClassificationService(govRepo)
 	reg, err := action.NewActionRegistry("")
 	if err != nil {
 		zapLog.Warn("failed to load action registry, using empty fallback", zap.Error(err))
 		reg = action.NewEmptyRegistry()
 	}
-	v1Builder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, pool.Pool, action.NewActionTypeProviderAdapter(reg))
+	v1Builder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, action.NewActionTypeProviderAdapter(reg))
 
 	configDir := os.Getenv("BAXI_CONFIG_DIR")
 	if configDir == "" {
@@ -88,10 +92,10 @@ func main() {
 	} else {
 		ontologyAwareRepo := ontology.NewOntologyAwareAdapter(ontologyRepo, objRegistry)
 		markingSvc := governance.NewMarkingAdapter(classSvc, objRegistry)
-		govRepoLocal := repository.NewGovernanceRepository()
-		lineageSvc := governance.NewLineageService(pool.Pool, govRepoLocal)
-		eventRepo := decision.NewPgxLineageEventRepository()
-		lineageAdapter := decision.NewDecisionLineageAdapter(lineageSvc, decisionRepo, eventRepo, pool.Pool)
+		govRepoLocal := governanceRepo.NewRepository(common.NewPoolProvider(pool.Pool))
+		lineageSvc := governance.NewLineageService(govRepoLocal)
+		eventRepo := decision.NewPgxLineageEventRepository(pool.Pool)
+		lineageAdapter := decision.NewDecisionLineageAdapter(lineageSvc, decisionRepo, eventRepo)
 		v2Builder = decision.NewContextBuilderV2(decisionRepo, ontologyAwareRepo, markingSvc, lineageAdapter, pool.Pool, action.NewActionTypeProviderAdapter(reg))
 	}
 
@@ -110,11 +114,11 @@ func main() {
 	}
 
 	decisionProvider := llm.NewRuleBasedProvider()
-	engine := decision.NewDecisionEngine(decisionProvider, decisionRepo, pool.Pool, llm.NewDBAuditLogger(pool.Pool))
-	proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg, pool.Pool)
+	engine := decision.NewDecisionEngine(decisionProvider, decisionRepo, llm.NewDBAuditLogger(pool.Pool))
+	proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg)
 
 	decisionSvc := service.NewDecisionService(caseSvc, ctxBuilder, engine, proposalSvc, pool.Pool)
-	alertSvc := service.NewAlertService(alertRepo, pool.Pool)
+	alertSvc := service.NewAlertService(alertRepo)
 	govSvc := &governanceServiceAdapter{
 		svc: service.NewGovernanceService(govRepo, pool.Pool),
 	}
@@ -153,6 +157,14 @@ func main() {
 		objRegistry, regErr = ontology.NewObjectRegistry(ctx, nil, pool.Pool, filepath.Join(configDir, "aip_object_schema.yml"))
 		if regErr != nil {
 			zapLog.Warn("failed to load object registry, ontology tools will be unavailable", zap.Error(regErr))
+		}
+	}
+
+	// Load v2 schema to enable build_context service
+	if objRegistry != nil {
+		v2SchemaPath := filepath.Join(configDir, "aip_object_schema_v2.yml")
+		if v2Err := objRegistry.LoadV2Schema(v2SchemaPath); v2Err != nil {
+			zapLog.Warn("failed to load v2 schema, build_context will be unavailable", zap.Error(v2Err))
 		}
 	}
 
@@ -271,7 +283,7 @@ func (a *decisionServiceAdapter) Decide(ctx context.Context, caseID string) ([]a
 func (a *decisionServiceAdapter) ResolveCase(ctx context.Context, caseID, resolution, comment string) error {
 	result, err := a.pool.Exec(ctx, `
 		UPDATE ai.decision_case
-		SET status = 'resolved',
+		SET status = 'closed',
 		    resolved_at = NOW(),
 		    resolution = $2,
 		    case_resolution_comment = $3
@@ -943,12 +955,12 @@ type v2CompilerAdapter struct {
 	compiler *ontology.QueryCompiler
 }
 
-func (a *v2CompilerAdapter) CompileGetObject(objectType, objectID string) (*ontologyRepo.V2CompiledQuery, error) {
+func (a *v2CompilerAdapter) CompileGetObject(objectType, objectID string) (*ontologyRepoSub.V2CompiledQuery, error) {
 	result, err := a.compiler.CompileGetObject(objectType, objectID)
 	if err != nil {
 		return nil, err
 	}
-	return &ontologyRepo.V2CompiledQuery{
+	return &ontologyRepoSub.V2CompiledQuery{
 		SQL:        result.SQL,
 		CountSQL:   result.CountSQL,
 		Args:       result.Args,
@@ -960,7 +972,7 @@ func (a *v2CompilerAdapter) CompileGetObject(objectType, objectID string) (*onto
 	}, nil
 }
 
-func (a *v2CompilerAdapter) CompileSearchObjects(objectType string, filters ontologyRepo.V2CompilerFilters) (*ontologyRepo.V2CompiledQuery, error) {
+func (a *v2CompilerAdapter) CompileSearchObjects(objectType string, filters ontologyRepoSub.V2CompilerFilters) (*ontologyRepoSub.V2CompiledQuery, error) {
 	ontologyFilters := ontology.ObjectFilters{
 		Filters: filters.Filters,
 		Limit:   filters.Limit,
@@ -972,7 +984,7 @@ func (a *v2CompilerAdapter) CompileSearchObjects(objectType string, filters onto
 	if err != nil {
 		return nil, err
 	}
-	return &ontologyRepo.V2CompiledQuery{
+	return &ontologyRepoSub.V2CompiledQuery{
 		SQL:        result.SQL,
 		CountSQL:   result.CountSQL,
 		Args:       result.Args,
@@ -984,12 +996,12 @@ func (a *v2CompilerAdapter) CompileSearchObjects(objectType string, filters onto
 	}, nil
 }
 
-func (a *v2CompilerAdapter) CompileObjectMetrics(objectType, objectID string) (*ontologyRepo.V2CompiledQuery, error) {
+func (a *v2CompilerAdapter) CompileObjectMetrics(objectType, objectID string) (*ontologyRepoSub.V2CompiledQuery, error) {
 	result, err := a.compiler.CompileObjectMetrics(objectType, objectID)
 	if err != nil {
 		return nil, err
 	}
-	return &ontologyRepo.V2CompiledQuery{
+	return &ontologyRepoSub.V2CompiledQuery{
 		SQL:        result.SQL,
 		CountSQL:   result.CountSQL,
 		Args:       result.Args,
@@ -1129,8 +1141,8 @@ func (a *ontologyServiceAdapter) ExecuteAction(ctx context.Context, objectType, 
 	}, nil
 }
 
-func newLinkExecutor(provider *common.PoolProvider) *ontologyRepo.LinkExecutor {
-	return ontologyRepo.NewLinkExecutor(provider)
+func newLinkExecutor(provider *common.PoolProvider) *ontologyRepoSub.LinkExecutor {
+	return ontologyRepoSub.NewLinkExecutor(provider)
 }
 
 func (a *ontologyServiceAdapter) ProposeAction(ctx context.Context, objectType, objectID, actionType string, params map[string]interface{}, trace mcp.ProposeActionTrace) (*mcp.ActionResult, error) {

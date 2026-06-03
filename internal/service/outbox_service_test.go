@@ -77,7 +77,7 @@ func TestOutboxService_List(t *testing.T) {
 	insertSvcTestEvent(t, pool, "evt-2", "task", "scheduler", "task-1", "email", "dispatched", 1, &now, now.Add(-1*time.Hour))
 	insertSvcTestEvent(t, pool, "evt-3", "alert", "rule_engine", "rule-2", "manual", "skipped", 2, &now, now)
 
-	svc := NewOutboxService(repository.NewOutboxRepository(), pool)
+	svc := NewOutboxService(outboxRepo.NewRepository(nil), pool)
 
 	t.Run("no filters returns all items ordered by created_at DESC", func(t *testing.T) {
 		resp, err := svc.List(ctx, model.OutboxFilters{}, 10, 0)
@@ -135,7 +135,7 @@ func TestOutboxService_List_Empty(t *testing.T) {
 	pool := setupSvcOutboxTestDB(t)
 	ctx := context.Background()
 
-	svc := NewOutboxService(repository.NewOutboxRepository(), pool)
+	svc := NewOutboxService(outboxRepo.NewRepository(nil), pool)
 	resp, err := svc.List(ctx, model.OutboxFilters{}, 10, 0)
 	require.NoError(t, err)
 	assert.Equal(t, 0, resp.Total)

@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	alertRepo "baxi/internal/repository/alert"
 )
 
 var allowedSorts = map[string]bool{
@@ -17,12 +15,11 @@ var allowedSorts = map[string]bool{
 }
 
 type AlertService struct {
-	repo *repository.AlertRepository
-	pool *pgxpool.Pool
+	repo *alertRepo.Repository
 }
 
-func NewAlertService(repo *repository.AlertRepository, pool *pgxpool.Pool) *AlertService {
-	return &AlertService{repo: repo, pool: pool}
+func NewAlertService(repo *alertRepo.Repository) *AlertService {
+	return &AlertService{repo: repo}
 }
 
 func (s *AlertService) ListAlerts(
@@ -36,7 +33,7 @@ func (s *AlertService) ListAlerts(
 	}
 
 	rows, total, err := s.repo.ListAlerts(
-		ctx, s.pool,
+		ctx,
 		filters.Severity, filters.Status, filters.ObjectType, filters.RuleID,
 		sort, limit, offset,
 	)
@@ -46,6 +43,14 @@ func (s *AlertService) ListAlerts(
 
 	items := make([]model.Alert, len(rows))
 	for i, row := range rows {
+		ownerRole := ""
+		if row.OwnerRole != nil {
+			ownerRole = *row.OwnerRole
+		}
+		status := ""
+		if row.Status != nil {
+			status = *row.Status
+		}
 		items[i] = model.Alert{
 			EventID:       row.AlertID,
 			RuleID:        row.RuleID,
@@ -57,8 +62,8 @@ func (s *AlertService) ListAlerts(
 			CurrentValue:  row.CurrentValue,
 			BaselineValue: row.BaselineValue,
 			ChangeRate:    row.ChangeRate,
-			OwnerRole:     row.OwnerRole,
-			Status:        row.Status,
+			OwnerRole:     ownerRole,
+			Status:        status,
 			ImpactScore:   row.ImpactScore,
 		}
 	}

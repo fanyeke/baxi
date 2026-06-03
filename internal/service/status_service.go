@@ -4,29 +4,26 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	statusRepo "baxi/internal/repository/status"
 )
 
 const apiVersion = "0.6.0"
 
 // StatusService aggregates table counts and pipeline run info for the status endpoint.
 type StatusService struct {
-	repo  *repository.StatusRepository
-	pool  *pgxpool.Pool
+	repo  *statusRepo.Repository
 	dbURL string
 }
 
 // NewStatusService creates a new StatusService.
-func NewStatusService(repo *repository.StatusRepository, pool *pgxpool.Pool, dbURL string) *StatusService {
-	return &StatusService{repo: repo, pool: pool, dbURL: dbURL}
+func NewStatusService(repo *statusRepo.Repository, dbURL string) *StatusService {
+	return &StatusService{repo: repo, dbURL: dbURL}
 }
 
 // GetStatus assembles the full StatusResponse from repository data.
 func (s *StatusService) GetStatus(ctx context.Context) (*model.StatusResponse, error) {
-	tableCounts, err := s.repo.GetTableCounts(ctx, s.pool)
+	tableCounts, err := s.repo.GetTableCounts(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get table counts: %w", err)
 	}
@@ -42,7 +39,7 @@ func (s *StatusService) GetStatus(ctx context.Context) (*model.StatusResponse, e
 		Tables: tables,
 	}
 
-	lastRun, err := s.repo.GetLastPipelineRun(ctx, s.pool)
+	lastRun, err := s.repo.GetLastPipelineRun(ctx)
 	if err != nil {
 		// If no pipeline runs exist, return nil for last_pipeline_run
 		lastRun = nil

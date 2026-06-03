@@ -5,33 +5,30 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	outboxRepo "baxi/internal/repository/outbox"
 )
 
 // OutboxService handles business logic for outbox event operations.
 type OutboxService struct {
-	repo *repository.OutboxRepository
-	pool *pgxpool.Pool
+	repo *outboxRepo.Repository
 }
 
 // NewOutboxService creates a new OutboxService.
-func NewOutboxService(repo *repository.OutboxRepository, pool *pgxpool.Pool) *OutboxService {
-	return &OutboxService{repo: repo, pool: pool}
+func NewOutboxService(repo *outboxRepo.Repository) *OutboxService {
+	return &OutboxService{repo: repo}
 }
 
 // List returns paginated outbox events matching the given filters.
 // Maps repository rows to model types and returns a backward-compatible response.
 func (s *OutboxService) List(ctx context.Context, filters model.OutboxFilters, limit, offset int) (*model.OutboxListResponse, error) {
-	repoFilters := repository.OutboxFilters{
+	repoFilters := outboxRepo.OutboxFilters{
 		Status:    filters.Status,
 		Channel:   filters.Channel,
 		EventType: filters.EventType,
 	}
 
-	rows, total, err := s.repo.ListOutboxEvents(ctx, s.pool, repoFilters, limit, offset)
+	rows, total, err := s.repo.ListOutboxEvents(ctx, repoFilters, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list outbox events: %w", err)
 	}

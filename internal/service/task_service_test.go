@@ -76,9 +76,9 @@ func TestTaskService_ListTasks(t *testing.T) {
 	insertSvcTestTask(t, pool, "task-2", "Update seller info", "medium", "in_progress", "admin", now.Add(-1*time.Hour))
 	insertSvcTestTask(t, pool, "task-3", "Approve refund", "low", "done", "manager", now)
 
-	repo := repository.NewTaskRepository()
+	repo := taskRepo.NewRepository(nil)
 	repo.SetPool(pool)
-	svc := NewTaskService(repo, pool)
+	svc := NewTaskService(repo)
 
 	t.Run("list all tasks", func(t *testing.T) {
 		resp, err := svc.ListTasks(ctx, model.TaskFilters{}, 10, 0)
@@ -138,9 +138,9 @@ func TestTaskService_DefaultValues(t *testing.T) {
 	`, "task-default-1", "Default priority task", now)
 	require.NoError(t, err)
 
-	repo := repository.NewTaskRepository()
+	repo := taskRepo.NewRepository(nil)
 	repo.SetPool(pool)
-	svc := NewTaskService(repo, pool)
+	svc := NewTaskService(repo)
 	resp, err := svc.ListTasks(ctx, model.TaskFilters{}, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, resp.Items, 1)

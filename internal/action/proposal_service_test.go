@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"baxi/internal/llm"
-	"baxi/internal/repository"
+	decisionRepo "baxi/internal/repository/decision"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,15 +17,15 @@ import (
 // --- Mocks ---
 
 type mockProposalRepo struct {
-	createProposalFn      func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error
-	listProposalsByCaseFn func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error)
+	createProposalFn      func(ctx context.Context, pool *pgxpool.Pool, row *decisionRepo.ActionProposalRow) error
+	listProposalsByCaseFn func(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error)
 }
 
-func (m *mockProposalRepo) CreateProposal(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+func (m *mockProposalRepo) CreateProposal(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 	return m.createProposalFn(ctx, pool, row)
 }
 
-func (m *mockProposalRepo) ListProposalsByCase(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error) {
+func (m *mockProposalRepo) ListProposalsByCase(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error) {
 	return m.listProposalsByCaseFn(ctx, pool, caseID)
 }
 
@@ -32,7 +33,7 @@ type mockCaseUpdater struct {
 	updateCaseStatusFn func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
 }
 
-func (m *mockCaseUpdater) UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+func (m *mockCaseUpdater) UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
 	return m.updateCaseStatusFn(ctx, pool, caseID, status, contextJSON, contextHash, governanceSnapshot)
 }
 
@@ -47,10 +48,10 @@ func TestGenerateProposals_CreatesProposalsFromDecision(t *testing.T) {
 	caseID := "dc_test_123"
 	decisionID := "de_test_456"
 
-	var savedProposals []repository.ActionProposalRow
+	var savedProposals []decisionRepo.ActionProposalRow
 
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			savedProposals = append(savedProposals, *row)
 			return nil
 		},
@@ -67,7 +68,7 @@ func TestGenerateProposals_CreatesProposalsFromDecision(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
@@ -137,7 +138,7 @@ func TestGenerateProposals_CreatesProposalsFromDecision(t *testing.T) {
 
 func TestGenerateProposals_AllProposalsRequireHumanReview(t *testing.T) {
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			assert.True(t, row.RequiresHumanReview, "all proposals must require human review")
 			return nil
 		},
@@ -149,7 +150,7 @@ func TestGenerateProposals_AllProposalsRequireHumanReview(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "optimize",
@@ -174,7 +175,7 @@ func TestGenerateProposals_AllProposalsRequireHumanReview(t *testing.T) {
 
 func TestGenerateProposals_AllProposalsHaveApplyStatusProposed(t *testing.T) {
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			assert.Equal(t, "proposed", row.ApplyStatus)
 			return nil
 		},
@@ -186,7 +187,7 @@ func TestGenerateProposals_AllProposalsHaveApplyStatusProposed(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "investigate",
@@ -210,7 +211,7 @@ func TestGenerateProposals_UpdatesCaseStatus(t *testing.T) {
 	decisionID := "dec-status-update"
 
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			return nil
 		},
 	}
@@ -225,7 +226,7 @@ func TestGenerateProposals_UpdatesCaseStatus(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "monitor_only",
@@ -245,7 +246,7 @@ func TestGenerateProposals_UpdatesCaseStatus(t *testing.T) {
 
 func TestGenerateProposals_EmptyDecisionReturnsEmptyList(t *testing.T) {
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			t.Fatal("CreateProposal should not be called for empty decision")
 			return nil
 		},
@@ -257,7 +258,7 @@ func TestGenerateProposals_EmptyDecisionReturnsEmptyList(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType:       "monitor_only",
@@ -285,7 +286,7 @@ func TestListProposals_ReturnsProposalsForCase(t *testing.T) {
 	riskLevel := "high"
 	payloadRaw := json.RawMessage(`{"channel":"email"}`)
 
-	rows := []repository.ActionProposalRow{
+	rows := []decisionRepo.ActionProposalRow{
 		{
 			ProposalID:          "ap_001",
 			CaseID:              caseID,
@@ -315,7 +316,7 @@ func TestListProposals_ReturnsProposalsForCase(t *testing.T) {
 	}
 
 	repo := &mockProposalRepo{
-		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]repository.ActionProposalRow, error) {
+		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]decisionRepo.ActionProposalRow, error) {
 			assert.Equal(t, caseID, cid)
 			return rows, nil
 		},
@@ -347,8 +348,8 @@ func TestListProposals_ReturnsProposalsForCase(t *testing.T) {
 
 func TestListProposals_EmptyCaseReturnsEmptyList(t *testing.T) {
 	repo := &mockProposalRepo{
-		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error) {
-			return []repository.ActionProposalRow{}, nil
+		listProposalsByCaseFn: func(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error) {
+			return []decisionRepo.ActionProposalRow{}, nil
 		},
 	}
 
@@ -392,7 +393,7 @@ func TestGenerateProposals_TruncatesLongTitle(t *testing.T) {
 	}
 
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			assert.True(t, len(row.Title) <= 200, "title must be <= 200 chars, got %d", len(row.Title))
 			return nil
 		},
@@ -404,7 +405,7 @@ func TestGenerateProposals_TruncatesLongTitle(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 
 	decision := &llm.DecisionOutput{
 		DecisionType: "intervention",
@@ -447,7 +448,7 @@ func TestProposeAction_WithEvidenceRefs(t *testing.T) {
 
 	// Build a row representing what a fully-populated proposal looks like
 	// when the enhanced write path is wired through GenerateProposals.
-	row := &repository.ActionProposalRow{
+	row := &decisionRepo.ActionProposalRow{
 		ProposalID:          "ap-evidence-001",
 		CaseID:              "case-evidence-001",
 		DecisionID:          &decisionID,
@@ -481,17 +482,17 @@ func TestProposeAction_WithEvidenceRefs(t *testing.T) {
 	assert.True(t, proposal.RequiresHumanReview)
 
 	// Simulate storage → retrieval round-trip via mock repo
-	var savedRow *repository.ActionProposalRow
+	var savedRow *decisionRepo.ActionProposalRow
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, r *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, r *decisionRepo.ActionProposalRow) error {
 			savedRow = r
 			return nil
 		},
-		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error) {
+		listProposalsByCaseFn: func(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error) {
 			if savedRow == nil {
-				return []repository.ActionProposalRow{}, nil
+				return []decisionRepo.ActionProposalRow{}, nil
 			}
-			return []repository.ActionProposalRow{*savedRow}, nil
+			return []decisionRepo.ActionProposalRow{*savedRow}, nil
 		},
 	}
 
@@ -501,7 +502,7 @@ func TestProposeAction_WithEvidenceRefs(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 	listCtx := context.Background()
 
 	// Use GenerateProposals to store a proposal (passing contextHash).
@@ -566,7 +567,7 @@ func TestProposeAction_WithoutTraceFields(t *testing.T) {
 
 	// Build a row WITHOUT any of the new trace fields (simulating a
 	// legacy caller that has not been updated to the enhanced write path)
-	row := &repository.ActionProposalRow{
+	row := &decisionRepo.ActionProposalRow{
 		ProposalID:          "ap-legacy-001",
 		CaseID:              "case-legacy-001",
 		DecisionID:          &decisionID,
@@ -601,7 +602,7 @@ func TestProposeAction_WithoutTraceFields(t *testing.T) {
 
 	// Simulate a GenerateProposals call without a context hash
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, r *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, r *decisionRepo.ActionProposalRow) error {
 			assert.Nil(t, r.EvidenceRefs, "evidence_refs must be nil when not provided")
 			assert.Nil(t, r.RecipeID, "recipe_id must be nil when not provided")
 			// legacy callers pass empty context hash
@@ -609,8 +610,8 @@ func TestProposeAction_WithoutTraceFields(t *testing.T) {
 			assert.Empty(t, *r.ContextHash)
 			return nil
 		},
-		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error) {
-			return []repository.ActionProposalRow{*row}, nil
+		listProposalsByCaseFn: func(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error) {
+			return []decisionRepo.ActionProposalRow{*row}, nil
 		},
 	}
 
@@ -620,7 +621,7 @@ func TestProposeAction_WithoutTraceFields(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, updater, nil, nil)
+	svc := NewProposalService(repo, updater, nil)
 	ctx := context.Background()
 
 	// Legacy path: empty contextHash (but not nil — Go string is ""
@@ -690,7 +691,7 @@ func TestLLMDecision_CreateAndRetrieve(t *testing.T) {
 	contextHash := "ctx-snapshot-abc"
 	severity := "high"
 
-	row := &repository.LLMDecisionRow{
+	row := &decisionRepo.LLMDecisionRow{
 		DecisionID:   "llm-dec-001",
 		CaseID:       "case-llm-001",
 		ModelVersion: &modelVersion,

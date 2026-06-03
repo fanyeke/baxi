@@ -27,6 +27,12 @@ import (
 	"baxi/internal/repository"
 	"baxi/internal/repository/agent_execution"
 	"baxi/internal/repository/common"
+	alertRepo "baxi/internal/repository/alert"
+	decisionRepo "baxi/internal/repository/decision"
+	governanceRepo "baxi/internal/repository/governance"
+	logRepo "baxi/internal/repository/log"
+	outboxRepo "baxi/internal/repository/outbox"
+	statusRepo "baxi/internal/repository/status"
 	"baxi/internal/repository/mcp_call"
 	"baxi/internal/review"
 	"baxi/internal/service"
@@ -36,9 +42,10 @@ import (
 func (s *Server) outboxHandler() *handler.OutboxHandler {
 	s.handlerMu.Lock()
 	if s.outboxHandlerVal == nil {
-		repo := repository.NewOutboxRepository()
+		provider := common.NewPoolProvider(s.pool)
+		repo := outboxRepo.NewRepository(provider)
 		writeRepo := outbox.NewOutboxRepository()
-		svc := service.NewOutboxService(repo, s.pool)
+		svc := service.NewOutboxService(repo)
 		adapter := &outboxServiceAdapter{
 			readSvc:   svc,
 			readRepo:  repo,
@@ -85,7 +92,8 @@ func (s *Server) actionExecutors() map[string]action.ActionExecutor {
 func (s *Server) governanceHandler() *handler.GovernanceHandler {
 	s.handlerMu.Lock()
 	if s.governanceHandlerVal == nil {
-		repo := repository.NewGovernanceRepository()
+		provider := common.NewPoolProvider(s.pool)
+		repo := governanceRepo.NewRepository(provider)
 		svc := service.NewGovernanceService(repo, s.pool)
 		s.governanceHandlerVal = handler.NewGovernanceHandler(svc, svc)
 	}
@@ -97,8 +105,7 @@ func (s *Server) governanceHandler() *handler.GovernanceHandler {
 func (s *Server) qoderHandler() *handler.QoderHandler {
 	s.handlerMu.Lock()
 	if s.qoderHandlerVal == nil {
-		ctxRepo := repository.NewContextRepository()
-		svc := service.NewQoderService(ctxRepo, s.pool)
+		svc := service.NewQoderService(s.pool)
 		s.qoderHandlerVal = handler.NewQoderHandler(svc)
 	}
 	s.handlerMu.Unlock()
@@ -109,12 +116,13 @@ func (s *Server) qoderHandler() *handler.QoderHandler {
 func (s *Server) statusHandler() *handler.StatusHandler {
 	s.handlerMu.Lock()
 	if s.statusHandlerVal == nil {
-		repo := repository.NewStatusRepository()
+		provider := common.NewPoolProvider(s.pool)
+		repo := statusRepo.NewRepository(provider)
 		dbURL := ""
 		if s.pool != nil {
 			dbURL = redactConnString(s.pool.Config().ConnString())
 		}
-		svc := service.NewStatusService(repo, s.pool, dbURL)
+		svc := service.NewStatusService(repo, dbURL)
 		s.statusHandlerVal = handler.NewStatusHandler(svc)
 	}
 	s.handlerMu.Unlock()
@@ -125,8 +133,9 @@ func (s *Server) statusHandler() *handler.StatusHandler {
 func (s *Server) logHandler() *handler.LogHandler {
 	s.handlerMu.Lock()
 	if s.logHandlerVal == nil {
-		repo := repository.NewLogRepository()
-		svc := service.NewLogService(repo, s.pool)
+		provider := common.NewPoolProvider(s.pool)
+		repo := logRepo.NewRepository(provider)
+		svc := service.NewLogService(repo)
 		s.logHandlerVal = handler.NewLogHandler(svc)
 	}
 	s.handlerMu.Unlock()
@@ -151,8 +160,9 @@ func (s *Server) agentLogHandler() *handler.AgentLogHandler {
 func (s *Server) alertHandler() *handler.AlertHandler {
 	s.handlerMu.Lock()
 	if s.alertHandlerVal == nil {
-		repo := repository.NewAlertRepository()
-		svc := service.NewAlertService(repo, s.pool)
+		provider := common.NewPoolProvider(s.pool)
+		repo := alertRepo.NewRepository(provider)
+		svc := service.NewAlertService(repo)
 		s.alertHandlerVal = handler.NewAlertHandler(svc)
 	}
 	s.handlerMu.Unlock()
@@ -207,20 +217,20 @@ func (s *Server) diagnosisHandler() *handler.DiagnosisHandler {
 func (s *Server) decisionHandler() *handler.DecisionHandler {
 	s.handlerMu.Lock()
 	if s.decisionHandlerVal == nil {
-		decisionRepo := repository.NewDecisionRepository()
-		alertRepo := repository.NewAlertRepository()
-		caseSvc := decision.NewCaseService(decisionRepo, alertRepo, s.pool)
+		decisionRepo := decisionRepo.NewRepository(common.NewPoolProvider(s.pool))
+		alertRepo := alertRepo.NewRepository(common.NewPoolProvider(s.pool))
+		caseSvc := decision.NewCaseService(decisionRepo, alertRepo)
 
 		ontologyRepo := repository.NewOntologyRepo()
 		objectSvc := ontology.NewObjectQueryService(ontologyRepo, s.pool)
-		govRepo := repository.NewGovernanceRepository()
-		classSvc := governance.NewClassificationService(s.pool, govRepo)
+		govRepo := governanceRepo.NewRepository(common.NewPoolProvider(s.pool))
+		classSvc := governance.NewClassificationService(govRepo)
 		reg, err := action.NewActionRegistry("")
 		if err != nil {
 			log.Printf("WARNING: failed to load action registry: %v, using empty fallback", err)
 			reg = action.NewEmptyRegistry()
 		}
-		var ctxBuilder service.ContextBuilder = decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool, action.NewActionTypeProviderAdapter(reg))
+		var ctxBuilder service.ContextBuilder = decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, action.NewActionTypeProviderAdapter(reg))
 
 		// Wire up V2 ContextBuilder when feature flag is enabled.
 		flags := feature.LoadFlags()
@@ -231,12 +241,12 @@ func (s *Server) decisionHandler() *handler.DecisionHandler {
 			} else {
 				ontologyAwareRepo := ontology.NewOntologyAwareAdapter(ontologyRepo, objRegistry)
 				markingSvc := governance.NewMarkingAdapter(classSvc, objRegistry)
-				lineageSvc := governance.NewLineageService(s.pool, govRepo)
-				eventRepo := decision.NewPgxLineageEventRepository()
-				lineageAdapter := decision.NewDecisionLineageAdapter(lineageSvc, decisionRepo, eventRepo, s.pool)
+				lineageSvc := governance.NewLineageService(govRepo)
+				eventRepo := decision.NewPgxLineageEventRepository(s.pool)
+				lineageAdapter := decision.NewDecisionLineageAdapter(lineageSvc, decisionRepo, eventRepo)
 				v2Builder := decision.NewContextBuilderV2(decisionRepo, ontologyAwareRepo, markingSvc, lineageAdapter, s.pool, action.NewActionTypeProviderAdapter(reg))
 				ctxBuilder = decision.NewSwitchableContextBuilder(
-					decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, s.pool, action.NewActionTypeProviderAdapter(reg)),
+					decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, action.NewActionTypeProviderAdapter(reg)),
 					v2Builder,
 					flags,
 				)
@@ -254,9 +264,9 @@ func (s *Server) decisionHandler() *handler.DecisionHandler {
 				log.Printf("WARNING: failed to create LLM provider: %v, falling back to rule-based", err)
 			}
 		}
-		engine := decision.NewDecisionEngine(decisionProvider, decisionRepo, s.pool, llm.NewDBAuditLogger(s.pool))
+		engine := decision.NewDecisionEngine(decisionProvider, decisionRepo, llm.NewDBAuditLogger(s.pool))
 
-		proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg, s.pool)
+		proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg)
 
 		replayRepo := eval.NewPGReplayRepository(s.pool)
 		auditLogger := llm.NewDBAuditLogger(s.pool)
@@ -403,7 +413,7 @@ func (a *reviewHandlerSvc) GetReviewByProposal(ctx context.Context, proposalID s
 
 type outboxServiceAdapter struct {
 	readSvc   *service.OutboxService
-	readRepo  *repository.OutboxRepository
+	readRepo  *outboxRepo.Repository
 	writeRepo *outbox.OutboxRepository
 	pool      *pgxpool.Pool
 	executors map[string]action.ActionExecutor
@@ -414,7 +424,7 @@ func (a *outboxServiceAdapter) List(ctx context.Context, filters model.OutboxFil
 }
 
 func (a *outboxServiceAdapter) GetEvent(ctx context.Context, id string) (*handler.OutboxDetailItem, error) {
-	detail, err := a.readRepo.GetDetail(ctx, a.pool, id)
+	detail, err := a.readRepo.GetDetail(ctx, id)
 	if err != nil || detail == nil {
 		return nil, err
 	}
@@ -437,7 +447,7 @@ func (a *outboxServiceAdapter) GetEvent(ctx context.Context, id string) (*handle
 }
 
 func (a *outboxServiceAdapter) DispatchEvent(ctx context.Context, id string) error {
-	detail, err := a.readRepo.GetDetail(ctx, a.pool, id)
+	detail, err := a.readRepo.GetDetail(ctx, id)
 	if err != nil {
 		return err
 	}

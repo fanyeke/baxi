@@ -101,7 +101,7 @@ func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -176,7 +176,7 @@ func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -241,7 +241,7 @@ func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestContextBuilder_BuildLLMSafeContext_GeneratesHash(t *testing.T) {
 		ForbiddenActions: []string{"execute_dispatch", "modify_raw_data", "write_dwd", "write_mart"},
 	}
 
-	builder := NewContextBuilder(nil, nil, nil, nil, nil)
+	builder := NewContextBuilder(nil, nil, nil, nil)
 	llmCtx, err := builder.BuildLLMSafeContext(context.Background(), decisionCtx)
 
 	assert.NoError(t, err)
@@ -348,7 +348,7 @@ func TestContextBuilder_BuildDecisionContext_RedactedFieldsInGovernance(t *testi
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -385,7 +385,7 @@ func TestContextBuilder_BuildDecisionContext_CaseNotFound(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, nil, nil, nil, nil)
+	builder := NewContextBuilder(caseSvc, nil, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-missing")
 
 	assert.Error(t, err)
@@ -428,7 +428,7 @@ func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -462,7 +462,7 @@ func TestContextBuilder_BuildDecisionContext_AlertError(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, nil, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.Error(t, err)

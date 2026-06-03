@@ -150,7 +150,7 @@ func TestContextBuilderV2_BuildDecisionContext_WithTriggerData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, lineageSvc, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, lineageSvc, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -222,7 +222,7 @@ func TestContextBuilderV2_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -282,7 +282,7 @@ func TestContextBuilderV2_BuildDecisionContext_PopulatesLineage(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, lineageSvc, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, lineageSvc, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -330,7 +330,7 @@ func TestContextBuilderV2_BuildDecisionContext_LineageErrorNonFatal(t *testing.T
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, lineageSvc, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, lineageSvc, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -345,7 +345,7 @@ func TestContextBuilderV2_BuildDecisionContext_CaseNotFound(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, nil, nil, nil, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, nil, nil, nil, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-missing")
 
 	assert.Error(t, err)
@@ -372,7 +372,7 @@ func TestContextBuilderV2_BuildDecisionContext_ObjectNotFound(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, nil, nil, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, nil, nil, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.Error(t, err)
@@ -412,7 +412,7 @@ func TestContextBuilderV2_BuildDecisionContext_AlertError(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, nil, nil, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, nil, nil, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.Error(t, err)
@@ -459,7 +459,7 @@ func TestContextBuilderV2_BuildDecisionContext_GovernanceData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -506,7 +506,7 @@ func TestContextBuilderV2_BuildDecisionContext_MarkingFallback(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, nil, testActionTypes)
+	builder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, testActionTypes)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -543,8 +543,8 @@ func TestSwitchableContextBuilder_DelegatesToOldByDefault(t *testing.T) {
 		},
 	}
 
-	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, testActionTypes)
-	newBuilder := NewContextBuilderV2(nil, nil, nil, nil, nil, testActionTypes)
+	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, testActionTypes)
+	newBuilder := NewContextBuilderV2(nil, nil, nil, nil, testActionTypes)
 
 	flags := &feature.FeatureFlags{NewContextBuilder: false}
 	switcher := NewSwitchableContextBuilder(oldBuilder, newBuilder, flags)
@@ -585,8 +585,8 @@ func TestSwitchableContextBuilder_DelegatesToNewWhenFlagOn(t *testing.T) {
 		},
 	}
 
-	oldBuilder := NewContextBuilder(nil, nil, nil, nil, testActionTypes)
-	newBuilder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, nil, testActionTypes)
+	oldBuilder := NewContextBuilder(nil, nil, nil, testActionTypes)
+	newBuilder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, testActionTypes)
 
 	flags := &feature.FeatureFlags{NewContextBuilder: true}
 	switcher := NewSwitchableContextBuilder(oldBuilder, newBuilder, flags)
@@ -627,7 +627,7 @@ func TestSwitchableContextBuilder_NilFlagsDelegatesToOld(t *testing.T) {
 		},
 	}
 
-	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, testActionTypes)
+	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, testActionTypes)
 	switcher := NewSwitchableContextBuilder(oldBuilder, nil, nil)
 
 	decisionCtx, err := switcher.BuildDecisionContext(context.Background(), "dc-1")

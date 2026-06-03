@@ -19,7 +19,7 @@ import (
 	"baxi/internal/action"
 	"baxi/internal/model"
 	"baxi/internal/outbox"
-	"baxi/internal/repository"
+	"outboxRepo outboxRepo "baxi/internal/repository/outbox""
 	"baxi/internal/service"
 )
 
@@ -84,7 +84,7 @@ func newReqWithParam(ctx context.Context, method, url, param, value string) *htt
 }
 
 func newOutboxHandlerForTest(pool *pgxpool.Pool) *OutboxHandler {
-	readRepo := repository.NewOutboxRepository()
+	readRepo := outboxRepo.NewRepository(nil)
 	writeRepo := outbox.NewOutboxRepository()
 	svc := service.NewOutboxService(readRepo, pool)
 	executors := map[string]action.ActionExecutor{

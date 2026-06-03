@@ -54,7 +54,7 @@ func TestStatusService_GetStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use the deprecated StatusRepository wrapper (matches service's expected type)
-	repo := repository.NewStatusRepository()
+	repo := statusRepo.NewRepository(nil)
 	repo.SetPool(pool)
 	svc := NewStatusService(repo, pool, "postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable")
 
@@ -96,7 +96,7 @@ func TestStatusService_GetStatus_Structure(t *testing.T) {
 	pool := setupSvcStatusTestDB(t)
 	ctx := context.Background()
 
-	repo := repository.NewStatusRepository()
+	repo := statusRepo.NewRepository(nil)
 	repo.SetPool(pool)
 	svc := NewStatusService(repo, pool, "postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable")
 

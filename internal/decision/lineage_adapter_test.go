@@ -12,7 +12,7 @@ import (
 // ──── NewDecisionLineageAdapter ─────────────────────────────────────────
 
 func TestNewDecisionLineageAdapter(t *testing.T) {
-	adapter := NewDecisionLineageAdapter(nil, nil, nil, nil)
+	adapter := NewDecisionLineageAdapter(nil, nil, nil)
 	assert.NotNil(t, adapter)
 	assert.Nil(t, adapter.lineageSvc)
 	assert.Nil(t, adapter.caseRepo)

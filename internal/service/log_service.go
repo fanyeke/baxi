@@ -10,26 +10,23 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	logRepo "baxi/internal/repository/log"
 )
 
 // LogService handles business logic for log-related operations.
 type LogService struct {
-	repo *repository.LogRepository
-	pool *pgxpool.Pool
+	repo *logRepo.Repository
 }
 
 // NewLogService creates a new LogService.
-func NewLogService(repo *repository.LogRepository, pool *pgxpool.Pool) *LogService {
-	return &LogService{repo: repo, pool: pool}
+func NewLogService(repo *logRepo.Repository) *LogService {
+	return &LogService{repo: repo}
 }
 
 // ListRecent retrieves a combined view of recent logs from multiple tables.
 func (s *LogService) ListRecent(ctx context.Context, limit, offset int) (*model.LogListResponse, error) {
-	rows, total, err := s.repo.ListRecentLogs(ctx, s.pool, limit, offset)
+	rows, total, err := s.repo.ListRecentLogs(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list recent logs: %w", err)
 	}
@@ -50,7 +47,7 @@ func (s *LogService) ListRecent(ctx context.Context, limit, offset int) (*model.
 
 // ListErrors retrieves error logs from error_log and failed pipeline step runs.
 func (s *LogService) ListErrors(ctx context.Context, limit, offset int) (*model.LogListResponse, error) {
-	rows, total, err := s.repo.ListErrorLogs(ctx, s.pool, limit, offset)
+	rows, total, err := s.repo.ListErrorLogs(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list error logs: %w", err)
 	}
@@ -71,7 +68,7 @@ func (s *LogService) ListErrors(ctx context.Context, limit, offset int) (*model.
 
 // ListAudit retrieves business audit trail entries.
 func (s *LogService) ListAudit(ctx context.Context, limit, offset int) (*model.LogListResponse, error) {
-	rows, total, err := s.repo.ListAuditLogs(ctx, s.pool, limit, offset)
+	rows, total, err := s.repo.ListAuditLogs(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list audit logs: %w", err)
 	}
