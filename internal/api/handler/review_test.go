@@ -115,7 +115,7 @@ func TestReviewHandler_HandleApprove_400_MissingReviewerID(t *testing.T) {
 	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Equal(t, "reviewer_id is required", resp["message"])
+	assert.Equal(t, "validation failed", resp["message"])
 }
 
 func TestReviewHandler_HandleApprove_400_InvalidJSON(t *testing.T) {

@@ -122,6 +122,57 @@ func TestDefaultAction_AllCases(t *testing.T) {
 	}
 }
 
+func TestClassifyError_DBConnectionError_Wrapped(t *testing.T) {
+	wrapped := errors.Join(errors.New("connection refused"), errors.New("query failed"))
+	status, code := classifyError(wrapped)
+	assert.Equal(t, http.StatusServiceUnavailable, status)
+	assert.Equal(t, middleware.SERVICE_UNAVAILABLE, code)
+}
+
+// ──── writeDatabaseError ─────────────────────────────────────────────────────
+
+func TestWriteDatabaseError_ConnectionRefused(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/test", nil)
+	writeDatabaseError(w, r, errors.New("connection refused"), "db unavailable")
+
+	resp := w.Result()
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, "5", resp.Header.Get("Retry-After"))
+
+	var body map[string]interface{}
+	decodeJSON(t, resp, &body)
+	assert.Equal(t, middleware.SERVICE_UNAVAILABLE, body["error_code"])
+}
+
+func TestWriteDatabaseError_NonDBError(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/test", nil)
+	writeDatabaseError(w, r, errors.New("constraint violation"), "db error")
+
+	resp := w.Result()
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+
+	var body map[string]interface{}
+	decodeJSON(t, resp, &body)
+	assert.Equal(t, middleware.INTERNAL_ERROR, body["error_code"])
+}
+
+// ──── writeServiceError DB connection ─────────────────────────────────────────
+
+func TestWriteServiceError_DBConnection(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/test", nil)
+	writeServiceError(w, r, errors.New("connection refused"), "service unavailable")
+
+	resp := w.Result()
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+
+	var body map[string]interface{}
+	decodeJSON(t, resp, &body)
+	assert.Equal(t, middleware.SERVICE_UNAVAILABLE, body["error_code"])
+}
+
 // ──── writeError ───────────────────────────────────────────────────────────
 
 func TestWriteError_FormatsErrorResponse(t *testing.T) {

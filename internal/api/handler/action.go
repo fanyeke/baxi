@@ -89,7 +89,7 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusForbidden, middleware.FORBIDDEN, err.Error())
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *ActionHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "proposal not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 	if proposal == nil {

@@ -172,7 +172,7 @@ func TestDecisionHandler_CreateCase_400_MissingFields(t *testing.T) {
 			var body map[string]interface{}
 			err := json.NewDecoder(w.Body).Decode(&body)
 			require.NoError(t, err)
-			assert.Contains(t, body["message"].(string), "required")
+			assert.Equal(t, "validation failed", body["message"].(string))
 		})
 	}
 }

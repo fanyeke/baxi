@@ -67,7 +67,7 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 
 	resp, err := h.svc.List(r.Context(), filters, pagination.Limit, pagination.Offset)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -89,7 +89,9 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 		case isNotFound(err):
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 		case isInvalidState(err):
-		writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
+			writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
+		default:
+			writeServiceError(w, r, err, "internal server error")
 		}
 		return
 	}
@@ -115,7 +117,7 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -126,7 +128,7 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 
 	err = h.svc.CancelEvent(r.Context(), eventID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -147,7 +149,11 @@ func (h *OutboxHandler) HandleGetDetail(w http.ResponseWriter, r *http.Request) 
 
 	event, err := h.svc.GetEvent(r.Context(), eventID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		if isNotFound(err) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
+			return
+		}
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 	if event == nil {
@@ -210,7 +216,7 @@ func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Reque
 
 	resp, err := h.svc.List(r.Context(), filters, 1000, 0)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to list pending events")
+		writeServiceError(w, r, err, "failed to list pending events")
 		return
 	}
 

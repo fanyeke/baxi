@@ -55,7 +55,7 @@ func (h *SandboxHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 	sandboxID, err := h.svc.CreateSandbox(r.Context(), req.CaseID, req.Data)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to create sandbox")
+		writeServiceError(w, r, err, "failed to create sandbox")
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *SandboxHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	sb, err := h.svc.GetSandbox(r.Context(), sandboxID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to get sandbox")
+		writeServiceError(w, r, err, "failed to get sandbox")
 		return
 	}
 	if sb == nil {
@@ -83,7 +83,7 @@ func (h *SandboxHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 func (h *SandboxHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	sandboxes, err := h.svc.ListSandboxes(r.Context())
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to list sandboxes")
+		writeServiceError(w, r, err, "failed to list sandboxes")
 		return
 	}
 
@@ -117,7 +117,7 @@ func (h *SandboxHandler) HandleAddProposal(w http.ResponseWriter, r *http.Reques
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "sandbox not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to add proposal to sandbox")
+		writeServiceError(w, r, err, "failed to add proposal to sandbox")
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *SandboxHandler) HandleCompare(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "sandbox not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to compare sandboxes")
+		writeServiceError(w, r, err, "failed to compare sandboxes")
 		return
 	}
 

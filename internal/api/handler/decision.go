@@ -68,7 +68,7 @@ func (h *DecisionHandler) CreateCase(w http.ResponseWriter, r *http.Request) {
 
 	c, err := h.svc.CreateCaseFromAlert(r.Context(), req.SourceID, "api_user")
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *DecisionHandler) GetCase(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -132,7 +132,7 @@ func (h *DecisionHandler) ListCases(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ListCases(r.Context(), filter)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -159,13 +159,13 @@ func (h *DecisionHandler) BuildContext(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
 	decCtx, err := h.svc.BuildContext(r.Context(), caseID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -190,7 +190,7 @@ func (h *DecisionHandler) Decide(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -209,7 +209,7 @@ func (h *DecisionHandler) ListProposals(w http.ResponseWriter, r *http.Request) 
 
 	proposals, err := h.svc.ListProposals(r.Context(), caseID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -286,7 +286,7 @@ func (h *DecisionHandler) DecideLLM(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -309,7 +309,7 @@ func (h *DecisionHandler) Compare(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -386,7 +386,7 @@ func (h *DecisionHandler) Replay(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusServiceUnavailable, middleware.SERVICE_UNAVAILABLE, "replay service not available")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -421,7 +421,7 @@ func (h *DecisionHandler) ListLLMDecisions(w http.ResponseWriter, r *http.Reques
 
 	result, err := h.svc.ListLLMDecisions(r.Context(), caseID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -434,7 +434,7 @@ func (h *DecisionHandler) ListEvals(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ListEvals(r.Context(), caseID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 

@@ -96,7 +96,7 @@ func (h *ReviewHandler) handleReviewAction(w http.ResponseWriter, r *http.Reques
 			writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *ReviewHandler) HandleGetReview(w http.ResponseWriter, r *http.Request) 
 
 	record, err := h.svc.GetReviewByProposal(r.Context(), proposalID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 	if record == nil {

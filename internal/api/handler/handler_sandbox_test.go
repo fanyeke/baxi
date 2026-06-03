@@ -316,7 +316,7 @@ func TestSandboxHandler_AddProposal_MissingProposalID(t *testing.T) {
 func TestSandboxHandler_AddProposal_SandboxNotFound(t *testing.T) {
 	svc := &mockSandboxService{
 		addProposalToSBFn: func(ctx context.Context, sandboxID, proposalID string) error {
-			return errors.New("sandbox nonexistent not found")
+			return review.ErrSandboxNotFound
 		},
 	}
 	h := NewSandboxHandler(svc)
@@ -404,7 +404,7 @@ func TestSandboxHandler_Compare_MissingSecondParam(t *testing.T) {
 func TestSandboxHandler_Compare_SandboxNotFound(t *testing.T) {
 	svc := &mockSandboxService{
 		compareSandboxesFn: func(ctx context.Context, sandboxID1, sandboxID2 string) (*review.ComparisonResult, error) {
-			return nil, errors.New("sandbox nonexistent not found")
+			return nil, review.ErrSandboxNotFound
 		},
 	}
 	h := NewSandboxHandler(svc)
