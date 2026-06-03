@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -34,6 +36,12 @@ type Client struct {
 	httpClient  *http.Client
 	accessToken string
 	tokenExpiry time.Time
+	logger      *zap.Logger
+}
+
+// SetLogger sets the zap logger for the Client.
+func (c *Client) SetLogger(l *zap.Logger) {
+	c.logger = l
 }
 
 // NewClient creates a new Feishu API client.
@@ -121,7 +129,15 @@ func (c *Client) ListRecords(tableID string, pageSize int, filterConfig map[stri
 		if !hasMore {
 			break
 		}
-		pageToken, _ = data["page_token"].(string)
+		var pageTokenOk bool
+		pageToken, pageTokenOk = data["page_token"].(string)
+		if !pageTokenOk {
+			if c.logger != nil {
+				c.logger.Error("feishu page_token type assertion failed, stopping pagination",
+					zap.String("table_id", tableID))
+			}
+			break
+		}
 	}
 	return allRecords, nil
 }
