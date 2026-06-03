@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/ontology"
-	"baxi/internal/repository"
 	governanceRepo "baxi/internal/repository/governance"
 )
 
@@ -313,7 +312,7 @@ func TestPriorityToLevel_All(t *testing.T) {
 // ──── filterByRole additional test ──────────────────────────────────────────
 
 func TestFilterByRole_NoMatchResult(t *testing.T) {
-	policies := []repository.AccessPolicyRow{
+	policies := []governanceRepo.AccessPolicyRow{
 		{PrincipalPattern: "admin", Effect: "allow"},
 		{PrincipalPattern: "analyst", Effect: "allow"},
 	}
@@ -322,31 +321,11 @@ func TestFilterByRole_NoMatchResult(t *testing.T) {
 	assert.Empty(t, filtered)
 }
 
-// ──── deprecatedLineageAdapter tests ────────────────────────────────────────
-
-func TestConvertLineageRow(t *testing.T) {
-	input := repository.DataLineageRow{
-		SourceTable:         "src",
-		SourceColumn:        "col1",
-		TargetTable:         "tgt",
-		TargetColumn:        "col2",
-		TransformationLogic: "direct",
-		Confidence:          0.95,
-	}
-	result := convertLineageRow(input)
-	assert.Equal(t, "src", result.SourceTable)
-	assert.Equal(t, "col1", result.SourceColumn)
-	assert.Equal(t, "tgt", result.TargetTable)
-	assert.Equal(t, "col2", result.TargetColumn)
-	assert.Equal(t, "direct", result.TransformationLogic)
-	assert.InDelta(t, 0.95, result.Confidence, 0.001)
-}
-
 // ──── NewClassificationService ──────────────────────────────────────────────
 
 func TestNewClassificationService_NilPool(t *testing.T) {
-	repo := repository.NewGovernanceRepository()
-	svc := NewClassificationService(nil, repo)
+	repo := governanceRepo.NewRepository(nil)
+	svc := NewClassificationService(repo)
 	assert.NotNil(t, svc)
 }
 

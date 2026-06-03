@@ -45,7 +45,7 @@ func NewRecipeContextBuilder(
 }
 
 func (b *RecipeContextBuilder) BuildEnvelope(ctx context.Context, caseID string, recipeID string) (*llm.LLMSafeContextEnvelope, error) {
-	caseRow, err := b.caseSvc.GetCaseByID(ctx, b.pool, caseID)
+	caseRow, err := b.caseSvc.GetCaseByID(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch case %s: %w", caseID, err)
 	}

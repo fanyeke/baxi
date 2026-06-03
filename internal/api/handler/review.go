@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 	"baxi/internal/review"
@@ -79,7 +80,9 @@ func (h *ReviewHandler) handleReviewAction(w http.ResponseWriter, r *http.Reques
 	}
 
 	if req.ReviewerID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "reviewer_id is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "reviewer_id", Message: "reviewer_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -90,10 +93,10 @@ func (h *ReviewHandler) handleReviewAction(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		if errors.Is(err, review.ErrInvalidState) {
-			writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, err.Error())
+			writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -106,7 +109,7 @@ func (h *ReviewHandler) HandleGetReview(w http.ResponseWriter, r *http.Request) 
 
 	record, err := h.svc.GetReviewByProposal(r.Context(), proposalID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 	if record == nil {

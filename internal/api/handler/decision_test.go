@@ -18,16 +18,22 @@ import (
 	"baxi/internal/action"
 	"baxi/internal/api/dto"
 	"baxi/internal/decision"
+	"baxi/internal/eval"
 	"baxi/internal/llm"
 )
 
 type mockDecisionService struct {
-	createCaseFn    func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
-	getCaseFn       func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
-	listCasesFn     func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
-	buildContextFn  func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
-	decideFn        func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
-	listProposalsFn func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	createCaseFn       func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
+	getCaseFn          func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
+	listCasesFn        func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
+	buildContextFn     func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
+	decideFn           func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	listProposalsFn    func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	decideLLMFn        func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	listLLMDecisionsFn func(ctx context.Context, caseID string) (interface{}, error)
+	listEvalsFn        func(ctx context.Context, caseID string) (interface{}, error)
+	compareFn          func(ctx context.Context, caseID string) (*eval.DecisionComparison, error)
+	replayFn           func(ctx context.Context, caseID string, dryRun bool) (*eval.ReplayResult, error)
 }
 
 func (m *mockDecisionService) CreateCaseFromAlert(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error) {
@@ -70,6 +76,41 @@ func (m *mockDecisionService) ListProposals(ctx context.Context, caseID string) 
 		return m.listProposalsFn(ctx, caseID)
 	}
 	return nil, errors.New("unexpected call to ListProposals")
+}
+
+func (m *mockDecisionService) DecideLLM(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error) {
+	if m.decideLLMFn != nil {
+		return m.decideLLMFn(ctx, caseID)
+	}
+	return m.Decide(ctx, caseID)
+}
+
+func (m *mockDecisionService) ListLLMDecisions(ctx context.Context, caseID string) (interface{}, error) {
+	if m.listLLMDecisionsFn != nil {
+		return m.listLLMDecisionsFn(ctx, caseID)
+	}
+	return []interface{}{}, nil
+}
+
+func (m *mockDecisionService) ListEvals(ctx context.Context, caseID string) (interface{}, error) {
+	if m.listEvalsFn != nil {
+		return m.listEvalsFn(ctx, caseID)
+	}
+	return []interface{}{}, nil
+}
+
+func (m *mockDecisionService) Compare(ctx context.Context, caseID string) (*eval.DecisionComparison, error) {
+	if m.compareFn != nil {
+		return m.compareFn(ctx, caseID)
+	}
+	return nil, errors.New("unexpected call to Compare")
+}
+
+func (m *mockDecisionService) Replay(ctx context.Context, caseID string, dryRun bool) (*eval.ReplayResult, error) {
+	if m.replayFn != nil {
+		return m.replayFn(ctx, caseID, dryRun)
+	}
+	return nil, errors.New("unexpected call to Replay")
 }
 
 func TestDecisionHandler_CreateCase_201(t *testing.T) {
@@ -131,7 +172,7 @@ func TestDecisionHandler_CreateCase_400_MissingFields(t *testing.T) {
 			var body map[string]interface{}
 			err := json.NewDecoder(w.Body).Decode(&body)
 			require.NoError(t, err)
-			assert.Contains(t, body["message"].(string), "required")
+			assert.Equal(t, "validation failed", body["message"].(string))
 		})
 	}
 }

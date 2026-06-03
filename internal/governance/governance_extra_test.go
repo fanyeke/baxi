@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/ontology"
-	"baxi/internal/repository"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 func TestResolveLevel_AllCases_Extra(t *testing.T) {
@@ -194,7 +194,7 @@ func TestNewMarkingAdapterWithInterfaces_Extra(t *testing.T) {
 }
 
 func TestFilterByRole_WithMultiplePolicies_Extra(t *testing.T) {
-	policies := []repository.AccessPolicyRow{
+	policies := []governanceRepo.AccessPolicyRow{
 		{PolicyName: "p1", PrincipalPattern: "admin", Effect: "allow"},
 		{PolicyName: "p2", PrincipalPattern: "admin", Effect: "deny"},
 		{PolicyName: "p3", PrincipalPattern: "viewer", Effect: "allow"},
@@ -207,14 +207,14 @@ func TestFilterByRole_WithMultiplePolicies_Extra(t *testing.T) {
 }
 
 func TestMatchesResource_PrefixWildcard_Extra(t *testing.T) {
-	p := repository.AccessPolicyRow{ResourcePattern: "dwd_*"}
+	p := governanceRepo.AccessPolicyRow{ResourcePattern: "dwd_*"}
 	assert.True(t, matchesResource(p, "dwd_orders"))
 	assert.True(t, matchesResource(p, "dwd_customers"))
 	assert.False(t, matchesResource(p, "raw_orders"))
 }
 
 func TestMatchesAction_SuffixWildcard_Extra(t *testing.T) {
-	p := repository.AccessPolicyRow{Action: "read*"}
+	p := governanceRepo.AccessPolicyRow{Action: "read*"}
 	assert.True(t, matchesAction(p, "read"))
 	assert.True(t, matchesAction(p, "readonly"))
 	assert.True(t, matchesAction(p, "read_data"))

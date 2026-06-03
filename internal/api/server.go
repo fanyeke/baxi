@@ -13,7 +13,8 @@ import (
 
 	"baxi/internal/api/handler"
 	"baxi/internal/config"
-	"baxi/internal/repository"
+	"baxi/internal/repository/common"
+	taskRepo "baxi/internal/repository/task"
 	"baxi/internal/service"
 )
 
@@ -57,7 +58,7 @@ func New(logger *zap.Logger, pool *pgxpool.Pool, cfg *config.Config) *Server {
 		logger:             logger,
 		pool:               pool,
 		cfg:                cfg,
-		taskSvc:            service.NewTaskService(repository.NewTaskRepository(), pool),
+		taskSvc:            service.NewTaskService(taskRepo.NewRepository(common.NewPoolProvider(pool))),
 		bearerToken:        os.Getenv("API_BEARER_TOKEN"),
 		corsAllowedOrigins: os.Getenv("CORS_ALLOWED_ORIGINS"),
 	}

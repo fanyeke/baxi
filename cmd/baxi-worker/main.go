@@ -53,13 +53,6 @@ func main() {
 	}
 	defer pool.Close()
 
-	w := worker.New(zapLog, pool.Pool)
-	go func() {
-		if err := w.Run(ctx); err != nil {
-			zapLog.Fatal("worker error", zap.Error(err))
-		}
-	}()
-
 	pollInterval, err := time.ParseDuration(cfg.WorkerTickInterval)
 	if err != nil {
 		zapLog.Warn("invalid WORKER_TICK_INTERVAL, using default 30s", zap.Error(err))

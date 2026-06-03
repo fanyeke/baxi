@@ -15,6 +15,10 @@ import (
 	"baxi/internal/llm"
 	"baxi/internal/ontology"
 	"baxi/internal/repository"
+	"baxi/internal/repository/common"
+	alertRepo "baxi/internal/repository/alert"
+	decisionRepo "baxi/internal/repository/decision"
+	governanceRepo "baxi/internal/repository/governance"
 	"baxi/internal/service"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -62,9 +66,9 @@ func handleDecisionCreate(ctx context.Context, args []string, log *zap.Logger, p
 		os.Exit(1)
 	}
 
-	decisionRepo := repository.NewDecisionRepository()
-	alertRepo := repository.NewAlertRepository()
-	caseSvc := decision.NewCaseService(decisionRepo, alertRepo, pool)
+	decisionRepo := decisionRepo.NewRepository(common.NewPoolProvider(pool))
+	alertRepo := alertRepo.NewRepository(common.NewPoolProvider(pool))
+	caseSvc := decision.NewCaseService(decisionRepo, alertRepo)
 
 	c, err := caseSvc.CreateCaseFromAlert(ctx, *alertID, "cli")
 	if err != nil {
@@ -88,12 +92,12 @@ func handleDecisionContext(ctx context.Context, args []string, log *zap.Logger, 
 		os.Exit(1)
 	}
 
-	decisionRepo := repository.NewDecisionRepository()
+	decisionRepo := decisionRepo.NewRepository(common.NewPoolProvider(pool))
 	objectSvc := ontology.NewObjectQueryService(repository.NewOntologyRepo(), pool)
-	classSvc := governance.NewClassificationService(pool, repository.NewGovernanceRepository())
+	classSvc := governance.NewClassificationService(governanceRepo.NewRepository(common.NewPoolProvider(pool)))
 
 	reg, _ := action.NewActionRegistry("")
-	ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, pool, action.NewActionTypeProviderAdapter(reg))
+	ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, action.NewActionTypeProviderAdapter(reg))
 
 	dc, err := ctxBuilder.BuildDecisionContext(ctx, *caseID)
 	if err != nil {
@@ -117,14 +121,14 @@ func handleDecisionDecide(ctx context.Context, args []string, log *zap.Logger, p
 		os.Exit(1)
 	}
 
-	decisionRepo := repository.NewDecisionRepository()
-	alertRepo := repository.NewAlertRepository()
+	decisionRepo := decisionRepo.NewRepository(common.NewPoolProvider(pool))
+	alertRepo := alertRepo.NewRepository(common.NewPoolProvider(pool))
 
-	caseSvc := decision.NewCaseService(decisionRepo, alertRepo, pool)
+	caseSvc := decision.NewCaseService(decisionRepo, alertRepo)
 	objectSvc := ontology.NewObjectQueryService(repository.NewOntologyRepo(), pool)
-	classSvc := governance.NewClassificationService(pool, repository.NewGovernanceRepository())
+	classSvc := governance.NewClassificationService(governanceRepo.NewRepository(common.NewPoolProvider(pool)))
 	reg, _ := action.NewActionRegistry("")
-	ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, pool, action.NewActionTypeProviderAdapter(reg))
+	ctxBuilder := decision.NewContextBuilder(decisionRepo, objectSvc, classSvc, action.NewActionTypeProviderAdapter(reg))
 	promptReg, _ := llm.NewPromptRegistry()
 	factory := llm.NewProviderFactory(cfg, promptReg)
 	provider, providerErr := factory.CreateProvider()
@@ -132,8 +136,8 @@ func handleDecisionDecide(ctx context.Context, args []string, log *zap.Logger, p
 		stdlog.Printf("WARNING: failed to create LLM provider: %v, falling back to rule-based", providerErr)
 		provider = llm.NewRuleBasedProvider()
 	}
-	engine := decision.NewDecisionEngine(provider, decisionRepo, pool, llm.NewDBAuditLogger(pool))
-	proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg, pool)
+	engine := decision.NewDecisionEngine(provider, decisionRepo, llm.NewDBAuditLogger(pool))
+	proposalSvc := action.NewProposalService(decisionRepo, decisionRepo, reg)
 
 	svc := service.NewDecisionService(caseSvc, ctxBuilder, engine, proposalSvc, pool)
 
@@ -162,9 +166,9 @@ func handleDecisionList(ctx context.Context, args []string, log *zap.Logger, poo
 		log.Fatal("failed to parse decision list flags", zap.Error(err))
 	}
 
-	decisionRepo := repository.NewDecisionRepository()
-	alertRepo := repository.NewAlertRepository()
-	caseSvc := decision.NewCaseService(decisionRepo, alertRepo, pool)
+	decisionRepo := decisionRepo.NewRepository(common.NewPoolProvider(pool))
+	alertRepo := alertRepo.NewRepository(common.NewPoolProvider(pool))
+	caseSvc := decision.NewCaseService(decisionRepo, alertRepo)
 
 	filter := decision.CaseFilter{
 		Status:   strPtr(*status),

@@ -7,22 +7,20 @@ import (
 	"time"
 
 	"baxi/internal/llm"
-	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 )
 
 // DecisionEngineRepository defines the storage interface for the decision engine.
 type DecisionEngineRepository interface {
-	CreateDecision(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error
-	UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
-	GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
+	CreateDecision(ctx context.Context, row *decisionRepo.LLMDecisionRow) error
+	UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
+	GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
 }
 
 // DecisionEngine orchestrates decision generation with validation and rule-based fallback.
 type DecisionEngine struct {
 	provider    llm.DecisionProvider
 	repo        DecisionEngineRepository
-	pool        *pgxpool.Pool
 	fallback    llm.DecisionProvider
 	auditLogger llm.LLMAuditLogger
 	recorder    SnapshotRecorder
@@ -31,12 +29,11 @@ type DecisionEngine struct {
 
 // NewDecisionEngine creates a new DecisionEngine with the given primary provider and repository.
 // The fallback is automatically set to a RuleBasedProvider.
-func NewDecisionEngine(provider llm.DecisionProvider, repo DecisionEngineRepository, pool *pgxpool.Pool, auditLogger llm.LLMAuditLogger) *DecisionEngine {
+func NewDecisionEngine(provider llm.DecisionProvider, repo DecisionEngineRepository, auditLogger llm.LLMAuditLogger) *DecisionEngine {
 	repair, _ := llm.NewRepairPromptRenderer()
 	return &DecisionEngine{
 		provider:    provider,
 		repo:        repo,
-		pool:        pool,
 		fallback:    llm.NewRuleBasedProvider(),
 		auditLogger: auditLogger,
 		recorder:    NewNoopSnapshotRecorder(),
@@ -268,7 +265,7 @@ func (e *DecisionEngine) saveDecision(ctx context.Context, caseID string, output
 	}
 
 	statusStr := status
-	row := &repository.LLMDecisionRow{
+	row := &decisionRepo.LLMDecisionRow{
 		DecisionID:       GenerateDecisionID(),
 		CaseID:           caseID,
 		OutputJSON:       outputJSON,
@@ -279,11 +276,11 @@ func (e *DecisionEngine) saveDecision(ctx context.Context, caseID string, output
 		ValidationErrors: validationErrorsJSON,
 	}
 
-	return e.repo.CreateDecision(ctx, e.pool, row)
+	return e.repo.CreateDecision(ctx, row)
 }
 
 func (e *DecisionEngine) updateCaseStatus(ctx context.Context, caseID string, status string) error {
-	return e.repo.UpdateCaseStatus(ctx, e.pool, caseID, status, nil, nil, nil)
+	return e.repo.UpdateCaseStatus(ctx, caseID, status, nil, nil, nil)
 }
 
 // BuildLLMSafeContext maps a DecisionContext to an LLMSafeContext.

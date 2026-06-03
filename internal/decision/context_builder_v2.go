@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 )
 
 // ContextBuilderV2 builds governed LLM-safe decision contexts using the new
@@ -46,7 +48,7 @@ func NewContextBuilderV2(
 // BuildDecisionContext constructs a full DecisionContext for the given case ID
 // using the new ontology-aware repo, marking service, and lineage service.
 func (b *ContextBuilderV2) BuildDecisionContext(ctx context.Context, caseID string) (*DecisionContext, error) {
-	caseRow, err := b.caseSvc.GetCaseByID(ctx, b.pool, caseID)
+	caseRow, err := b.caseSvc.GetCaseByID(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch case %s: %w", caseID, err)
 	}
@@ -123,7 +125,7 @@ func (b *ContextBuilderV2) BuildDecisionContext(ctx context.Context, caseID stri
 }
 
 // buildTriggerV2 fetches alert data using OntologyAwareRepo and builds TriggerInfo.
-func (b *ContextBuilderV2) buildTriggerV2(ctx context.Context, caseRow *repository.DecisionCaseRow, severity string) (TriggerInfo, error) {
+func (b *ContextBuilderV2) buildTriggerV2(ctx context.Context, caseRow *decisionRepo.DecisionCaseRow, severity string) (TriggerInfo, error) {
 	trigger := TriggerInfo{
 		Severity: severity,
 	}

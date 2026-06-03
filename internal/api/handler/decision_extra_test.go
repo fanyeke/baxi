@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -67,7 +68,11 @@ func TestDecideLLM_Success(t *testing.T) {
 }
 
 func TestListEvals_InternalError(t *testing.T) {
-	svc := &mockDecisionService{}
+	svc := &mockDecisionService{
+		listEvalsFn: func(ctx context.Context, caseID string) (interface{}, error) {
+			return nil, errors.New("database error")
+		},
+	}
 	h := NewDecisionHandler(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/decisions/cases/case-1/evals", nil)

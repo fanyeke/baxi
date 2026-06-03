@@ -69,7 +69,7 @@ describe("DecisionReview", () => {
   it("shows error panel when cases fail to load", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("Network error"))
     renderWithQueryClient(<DecisionReview />)
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("Failed to load")).toBeInTheDocument()
   })
 
   it("renders proposals with data", async () => {
@@ -252,7 +252,7 @@ describe("DecisionReview", () => {
     await user.type(searchInput, "NONEXISTENT")
 
     expect(screen.queryByText("notify_owner")).not.toBeInTheDocument()
-    expect(screen.getByText("暂无决策案例")).toBeInTheDocument()
+    expect(screen.getByText("No cases found")).toBeInTheDocument()
   })
 
   it("shows empty state when no proposals match filter", async () => {

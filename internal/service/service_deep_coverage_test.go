@@ -235,7 +235,7 @@ func TestGovernanceService_GetCheckpoints_NilPool(t *testing.T) {
 // ──── QoderService: GetContext with nil pool (already tested but more) ──
 
 func TestQoderService_GetContext_NilPool_Basic(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	// Test that the service can be created and basic methods work
 	assert.NotNil(t, svc)
 }

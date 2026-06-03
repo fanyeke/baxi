@@ -11,7 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	"baxi/internal/repository/common"
+	governanceRepo "baxi/internal/repository/governance"
 	"baxi/internal/testutil"
 )
 
@@ -120,8 +121,9 @@ func TestClassificationService_GetClassification_Known(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	insertClassification(t, pool, "customer.email", "pii", 0.9)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	level, err := svc.GetClassification(context.Background(), "customer.email")
 	require.NoError(t, err)
@@ -134,8 +136,9 @@ func TestClassificationService_GetClassification_Unknown(t *testing.T) {
 	}
 
 	pool := setupGovServiceDB(t)
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	level, err := svc.GetClassification(context.Background(), "unknown.field")
 	require.NoError(t, err)
@@ -150,8 +153,9 @@ func TestClassificationService_GetClassification_Sensitive(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	insertClassification(t, pool, "order.revenue", "sensitive", 0.8)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	level, err := svc.GetClassification(context.Background(), "order.revenue")
 	require.NoError(t, err)
@@ -166,8 +170,9 @@ func TestClassificationService_GetFieldMarking_Found(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	insertClassification(t, pool, "customer.email", "pii", 0.95)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	level, isPII, llmAllowed, err := svc.GetFieldMarking(context.Background(), "customer", "email")
 	require.NoError(t, err)
@@ -182,8 +187,9 @@ func TestClassificationService_GetFieldMarking_NotFound(t *testing.T) {
 	}
 
 	pool := setupGovServiceDB(t)
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	level, isPII, llmAllowed, err := svc.GetFieldMarking(context.Background(), "product", "price")
 	require.NoError(t, err)
@@ -200,8 +206,9 @@ func TestClassificationService_GetFieldMarking_PublicInternal(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	insertClassification(t, pool, "product.name", "public_internal", 0.1)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	level, isPII, llmAllowed, err := svc.GetFieldMarking(context.Background(), "product", "name")
 	require.NoError(t, err)
@@ -219,8 +226,9 @@ func TestClassificationService_GetAll(t *testing.T) {
 	insertClassification(t, pool, "a.field", "internal", 0.5)
 	insertClassification(t, pool, "b.field", "pii", 0.9)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewClassificationService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewClassificationService(govRepo)
 
 	rows, err := svc.GetAll(context.Background())
 	require.NoError(t, err)
@@ -239,8 +247,9 @@ func TestLineageService_GetLineage_BothDirections(t *testing.T) {
 	insertLineage(t, pool, "dwd.order_level", "order_id", "mart.metric_daily", "order_id", 0.9)
 	insertLineage(t, pool, "dwd.order_level", "customer_id", "mart.metric_dimension_daily", "customer_id", 0.8)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewLineageService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewLineageService(govRepo)
 
 	result, err := svc.GetLineage(ctx, "dwd.order_level")
 	require.NoError(t, err)
@@ -261,8 +270,9 @@ func TestLineageService_GetUpstream(t *testing.T) {
 	insertLineage(t, pool, "raw.orders", "id", "dwd.order_level", "order_id", 1.0)
 	insertLineage(t, pool, "raw.customers", "id", "dwd.order_level", "customer_id", 1.0)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewLineageService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewLineageService(govRepo)
 
 	upstream, err := svc.GetUpstream(ctx, "dwd.order_level")
 	require.NoError(t, err)
@@ -281,8 +291,9 @@ func TestLineageService_GetDownstream(t *testing.T) {
 
 	insertLineage(t, pool, "dwd.order_level", "order_id", "mart.metric_daily", "order_id", 1.0)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewLineageService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewLineageService(govRepo)
 
 	downstream, err := svc.GetDownstream(ctx, "dwd.order_level")
 	require.NoError(t, err)
@@ -298,8 +309,9 @@ func TestLineageService_GetLineage_NoResults(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	ctx := context.Background()
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewLineageService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewLineageService(govRepo)
 
 	result, err := svc.GetLineage(ctx, "nonexistent.table")
 	require.NoError(t, err)
@@ -318,8 +330,9 @@ func TestLineageService_GetAll(t *testing.T) {
 	insertLineage(t, pool, "a", "c1", "b", "c1", 1.0)
 	insertLineage(t, pool, "b", "c1", "c", "c1", 0.8)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewLineageService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewLineageService(govRepo)
 
 	rows, err := svc.GetAll(ctx)
 	require.NoError(t, err)
@@ -336,8 +349,9 @@ func TestAccessPolicyService_CheckAccess_Allow(t *testing.T) {
 
 	insertAccessPolicy(t, pool, "allow-order-read", "order", "read", "analyst", "allow")
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "read")
 	assert.Equal(t, model.AccessAllowed, decision)
@@ -353,8 +367,9 @@ func TestAccessPolicyService_CheckAccess_MatchingPolicy(t *testing.T) {
 
 	insertAccessPolicy(t, pool, "deny-order-delete", "order", "delete", "analyst", "allow")
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "delete")
 	assert.Equal(t, model.AccessAllowed, decision)
@@ -368,8 +383,9 @@ func TestAccessPolicyService_CheckAccess_DefaultDeny(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	ctx := context.Background()
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	decision := svc.CheckAccess(ctx, "viewer", "order", "read")
 	assert.Equal(t, model.AccessDenied, decision)
@@ -385,8 +401,9 @@ func TestAccessPolicyService_CheckAccess_WrongRole(t *testing.T) {
 
 	insertAccessPolicy(t, pool, "admin-only", "order", "read", "admin", "allow")
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "read")
 	assert.Equal(t, model.AccessDenied, decision)
@@ -402,8 +419,9 @@ func TestAccessPolicyService_CheckAccess_WildcardResource(t *testing.T) {
 
 	insertAccessPolicy(t, pool, "allow-all", "*", "read", "analyst", "allow")
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "product", "read")
 	assert.Equal(t, model.AccessAllowed, decision)
@@ -425,8 +443,9 @@ func TestAccessPolicyService_CheckAccess_Conditional(t *testing.T) {
 	`, "conditional-policy", "order", "read", "analyst", "allow", `{"time": {"before": "2025-01-01"}}`)
 	require.NoError(t, err)
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	decision := svc.CheckAccess(ctx, "analyst", "order", "read")
 	assert.Equal(t, model.AccessConditional, decision)
@@ -442,8 +461,9 @@ func TestAccessPolicyService_GetAll(t *testing.T) {
 
 	insertAccessPolicy(t, pool, "policy-1", "*", "read", "admin", "allow")
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewAccessPolicyService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewAccessPolicyService(govRepo)
 
 	policies, err := svc.GetAll(ctx)
 	require.NoError(t, err)
@@ -458,8 +478,9 @@ func TestCheckpointService_RequiresCheckpoint_SensitiveAction(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	ctx := context.Background()
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewCheckpointService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewCheckpointService(govRepo)
 
 	assert.True(t, svc.RequiresCheckpoint(ctx, "execute_dispatch"))
 	assert.True(t, svc.RequiresCheckpoint(ctx, "modify_business_policy"))
@@ -474,8 +495,9 @@ func TestCheckpointService_RequiresCheckpoint_NonSensitive(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	ctx := context.Background()
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewCheckpointService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewCheckpointService(govRepo)
 
 	assert.False(t, svc.RequiresCheckpoint(ctx, "view_dashboard"))
 	assert.False(t, svc.RequiresCheckpoint(ctx, "export_report"))
@@ -489,8 +511,9 @@ func TestCheckpointService_GetRules_HasBuiltins(t *testing.T) {
 	pool := setupGovServiceDB(t)
 	ctx := context.Background()
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewCheckpointService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewCheckpointService(govRepo)
 
 	rules := svc.GetRules(ctx)
 	assert.Len(t, rules, 3)
@@ -513,8 +536,9 @@ func TestCheckpointService_GetRules_WithConfigSnapshot(t *testing.T) {
 
 	insertConfigSnapshot(t, pool, "checkpoint_rules.yml")
 
-	govRepo := &repository.GovernanceRepository{}
-	svc := NewCheckpointService(pool, govRepo)
+	provider := common.NewPoolProvider(pool)
+	govRepo := governanceRepo.NewRepository(provider)
+	svc := NewCheckpointService(govRepo)
 
 	rules := svc.GetRules(ctx)
 	assert.NotEmpty(t, rules)

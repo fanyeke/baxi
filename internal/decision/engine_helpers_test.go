@@ -11,17 +11,17 @@ import (
 // ──── providerName ──────────────────────────────────────────────────────
 
 func TestProviderName_RuleBased(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	assert.Equal(t, "rule_based", engine.providerName())
 }
 
 func TestProviderName_OpenAI(t *testing.T) {
-	engine := NewDecisionEngine(&llm.OpenAICompatibleProvider{}, nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(&llm.OpenAICompatibleProvider{}, nil, &llm.NoOpAuditLogger{})
 	assert.Equal(t, "openai", engine.providerName())
 }
 
 func TestProviderName_Unknown(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	// Use nil provider to test default case
 	engine.provider = nil
 	assert.Equal(t, "unknown", engine.providerName())
@@ -30,7 +30,7 @@ func TestProviderName_Unknown(t *testing.T) {
 // ──── modelName ─────────────────────────────────────────────────────────
 
 func TestModelName_RuleBased(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	// RuleBasedProvider doesn't implement ModelName(), so returns ""
 	assert.Equal(t, "", engine.modelName())
 }
@@ -38,12 +38,12 @@ func TestModelName_RuleBased(t *testing.T) {
 // ──── fallbackProviderName ──────────────────────────────────────────────
 
 func TestFallbackProviderName_RuleBased(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	assert.Equal(t, "rule_based", engine.fallbackProviderName())
 }
 
 func TestFallbackProviderName_Unknown(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	// Use nil fallback to test default case
 	engine.fallback = nil
 	assert.Equal(t, "unknown", engine.fallbackProviderName())
@@ -52,7 +52,7 @@ func TestFallbackProviderName_Unknown(t *testing.T) {
 // ──── WithSnapshotRecorder ──────────────────────────────────────────────
 
 func TestWithSnapshotRecorder(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	result := engine.WithSnapshotRecorder(NewNoopSnapshotRecorder())
 	assert.Same(t, engine, result)
 }
@@ -60,7 +60,7 @@ func TestWithSnapshotRecorder(t *testing.T) {
 // ──── WithRepairRenderer ────────────────────────────────────────────────
 
 func TestWithRepairRenderer(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	renderer, err := llm.NewRepairPromptRenderer()
 	assert.NoError(t, err)
 	result := engine.WithRepairRenderer(renderer)
@@ -68,7 +68,7 @@ func TestWithRepairRenderer(t *testing.T) {
 }
 
 func TestWithRepairRenderer_Nil(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	result := engine.WithRepairRenderer(nil)
 	assert.Same(t, engine, result)
 }
@@ -83,7 +83,7 @@ func TestNoopSnapshotRecorder(t *testing.T) {
 // ──── NewDecisionEngine ─────────────────────────────────────────────────
 
 func TestNewDecisionEngine_NilDeps(t *testing.T) {
-	engine := NewDecisionEngine(nil, nil, nil, nil)
+	engine := NewDecisionEngine(nil, nil, nil)
 	assert.NotNil(t, engine)
 	assert.Nil(t, engine.provider)
 	assert.Nil(t, engine.repo)
@@ -92,7 +92,7 @@ func TestNewDecisionEngine_NilDeps(t *testing.T) {
 
 func TestNewDecisionEngine_WithProvider(t *testing.T) {
 	provider := llm.NewRuleBasedProvider()
-	engine := NewDecisionEngine(provider, nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(provider, nil, &llm.NoOpAuditLogger{})
 	assert.NotNil(t, engine)
 	assert.NotNil(t, engine.provider)
 }
@@ -180,7 +180,7 @@ func (m *mockSnapshotRecorder) RecordEvent(ctx context.Context, record LineageEv
 }
 
 func TestDecisionEngine_WithMockSnapshotRecorder(t *testing.T) {
-	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, nil, &llm.NoOpAuditLogger{})
+	engine := NewDecisionEngine(llm.NewRuleBasedProvider(), nil, &llm.NoOpAuditLogger{})
 	result := engine.WithSnapshotRecorder(&mockSnapshotRecorder{})
 	assert.NotNil(t, result)
 }

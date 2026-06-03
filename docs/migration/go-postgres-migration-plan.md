@@ -15,7 +15,7 @@ Raw CSV → DWD → Metrics → Alerts → Recommendations → Tasks → Outbox 
 - **Freeze tag**: `v0.5.3-python-sqlite-freeze`
 - **Legacy branch**: `legacy/python-sqlite`
 - **Migration branch**: `migration/go-postgres`
-- **Baseline directory**: `migration_baseline/`
+- **Baseline directory**: `migration_baseline/` (removed — migration complete; baseline data stored in PostgreSQL)
 
 ## 3. Non-Goals for Phase 0
 

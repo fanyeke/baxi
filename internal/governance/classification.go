@@ -4,21 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	"baxi/internal/repository"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 // ClassificationService provides data classification lookup and level mapping.
 // Classification levels: pii→L3, sensitive→L3, internal→L2, public_internal→L1, derived_sensitive→L2
 type ClassificationService struct {
-	pool *pgxpool.Pool
-	repo *repository.GovernanceRepository
+	repo *governanceRepo.Repository
 }
 
 // NewClassificationService creates a new ClassificationService.
-func NewClassificationService(pool *pgxpool.Pool, repo *repository.GovernanceRepository) *ClassificationService {
-	return &ClassificationService{pool: pool, repo: repo}
+func NewClassificationService(repo *governanceRepo.Repository) *ClassificationService {
+	return &ClassificationService{repo: repo}
 }
 
 // ResolveLevel maps a classification level name to its canonical label.
@@ -39,7 +36,7 @@ func ResolveLevel(level string) string {
 // GetClassification looks up the classification level for a field path.
 // Returns the default classification "internal" (L2) for unknown fields.
 func (s *ClassificationService) GetClassification(ctx context.Context, fieldPath string) (string, error) {
-	row, err := s.repo.GetByFieldPath(ctx, s.pool, fieldPath)
+	row, err := s.repo.GetByFieldPath(ctx, fieldPath)
 	if err != nil {
 		// Return default classification for unknown fields
 		return ResolveLevel("internal"), nil
@@ -50,7 +47,7 @@ func (s *ClassificationService) GetClassification(ctx context.Context, fieldPath
 // GetFieldMarking returns classification details for a specific object_type and property.
 // Loads all classifications and filters locally.
 func (s *ClassificationService) GetFieldMarking(ctx context.Context, objectType, property string) (string, bool, bool, error) {
-	classifications, err := s.repo.GetDataClassifications(ctx, s.pool)
+	classifications, err := s.repo.GetDataClassifications(ctx)
 	if err != nil {
 		return ResolveLevel("internal"), false, false, fmt.Errorf("load classifications: %w", err)
 	}
@@ -69,6 +66,6 @@ func (s *ClassificationService) GetFieldMarking(ctx context.Context, objectType,
 }
 
 // GetAll returns all data classifications from the database.
-func (s *ClassificationService) GetAll(ctx context.Context) ([]repository.DataClassificationRow, error) {
-	return s.repo.GetDataClassifications(ctx, s.pool)
+func (s *ClassificationService) GetAll(ctx context.Context) ([]governanceRepo.DataClassificationRow, error) {
+	return s.repo.GetDataClassifications(ctx)
 }

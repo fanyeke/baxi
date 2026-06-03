@@ -5,35 +5,32 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 // AccessPolicyService provides role-based access policy evaluation.
 // Default policy: deny-all unless explicitly granted.
 type AccessPolicyService struct {
-	pool *pgxpool.Pool
-	repo *repository.GovernanceRepository
+	repo *governanceRepo.Repository
 }
 
 // NewAccessPolicyService creates a new AccessPolicyService.
-func NewAccessPolicyService(pool *pgxpool.Pool, repo *repository.GovernanceRepository) *AccessPolicyService {
-	return &AccessPolicyService{pool: pool, repo: repo}
+func NewAccessPolicyService(repo *governanceRepo.Repository) *AccessPolicyService {
+	return &AccessPolicyService{repo: repo}
 }
 
 // CheckAccess evaluates whether a user role can perform an action on an object type.
 // Returns ALLOW if an explicit allow policy matches, DENY otherwise (default deny).
 func (s *AccessPolicyService) CheckAccess(ctx context.Context, userRole, objectType, action string) model.AccessDecision {
-	policies, err := s.repo.GetAccessPoliciesByRole(ctx, s.pool, userRole)
+	policies, err := s.repo.GetAccessPoliciesByRole(ctx, userRole)
 	if err != nil {
 		return model.AccessDenied
 	}
 
 	if len(policies) == 0 {
 		// Fallback: load all policies and filter in-memory
-		allPolicies, err := s.repo.GetAccessPolicies(ctx, s.pool)
+		allPolicies, err := s.repo.GetAccessPolicies(ctx)
 		if err != nil {
 			return model.AccessDenied
 		}
@@ -76,26 +73,26 @@ func (s *AccessPolicyService) CheckAccess(ctx context.Context, userRole, objectT
 }
 
 // GetAll returns all access policies from the database.
-func (s *AccessPolicyService) GetAll(ctx context.Context) ([]repository.AccessPolicyRow, error) {
-	return s.repo.GetAccessPolicies(ctx, s.pool)
+func (s *AccessPolicyService) GetAll(ctx context.Context) ([]governanceRepo.AccessPolicyRow, error) {
+	return s.repo.GetAccessPolicies(ctx)
 }
 
 // filterByRole filters a slice of policies to those matching the given role.
-func filterByRole(policies []repository.AccessPolicyRow, role string) []repository.AccessPolicyRow {
-	var filtered []repository.AccessPolicyRow
+func filterByRole(policies []governanceRepo.AccessPolicyRow, role string) []governanceRepo.AccessPolicyRow {
+	var filtered []governanceRepo.AccessPolicyRow
 	for _, p := range policies {
 		if p.PrincipalPattern == role {
 			filtered = append(filtered, p)
 		}
 	}
 	if filtered == nil {
-		filtered = []repository.AccessPolicyRow{}
+		filtered = []governanceRepo.AccessPolicyRow{}
 	}
 	return filtered
 }
 
 // matchesResource checks if a policy's resource pattern matches the object type.
-func matchesResource(p repository.AccessPolicyRow, objectType string) bool {
+func matchesResource(p governanceRepo.AccessPolicyRow, objectType string) bool {
 	if p.ResourcePattern == "*" || p.ResourcePattern == "" {
 		return true
 	}
@@ -111,7 +108,7 @@ func matchesResource(p repository.AccessPolicyRow, objectType string) bool {
 }
 
 // matchesAction checks if a policy applies to the given action.
-func matchesAction(p repository.AccessPolicyRow, action string) bool {
+func matchesAction(p governanceRepo.AccessPolicyRow, action string) bool {
 	if p.Action == "*" || p.Action == "" {
 		return true
 	}

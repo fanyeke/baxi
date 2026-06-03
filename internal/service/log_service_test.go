@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	logRepo "baxi/internal/repository/log"
 )
 
 const svcLogTableDDL = `
@@ -158,8 +158,8 @@ func TestLogService_ListRecent(t *testing.T) {
 	pool := setupSvcLogTestDB(t)
 	insertLogTestData(t, pool)
 
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	resp, err := svc.ListRecent(context.Background(), 10, 0)
 	require.NoError(t, err)
@@ -198,8 +198,10 @@ func TestLogService_ListRecent_Empty(t *testing.T) {
 	}
 
 	pool := setupSvcLogTestDB(t)
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	insertLogTestData(t, pool)
+
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	resp, err := svc.ListRecent(context.Background(), 10, 0)
 	require.NoError(t, err)
@@ -215,8 +217,8 @@ func TestLogService_ListErrors(t *testing.T) {
 	pool := setupSvcLogTestDB(t)
 	insertLogTestData(t, pool)
 
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	resp, err := svc.ListErrors(context.Background(), 10, 0)
 	require.NoError(t, err)
@@ -248,9 +250,9 @@ func TestLogService_ListErrors_Empty(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 
-	pool := setupSvcLogTestDB(t)
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	_ = setupSvcLogTestDB(t)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	resp, err := svc.ListErrors(context.Background(), 10, 0)
 	require.NoError(t, err)
@@ -266,8 +268,8 @@ func TestLogService_ListAudit(t *testing.T) {
 	pool := setupSvcLogTestDB(t)
 	insertLogTestData(t, pool)
 
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	resp, err := svc.ListAudit(context.Background(), 10, 0)
 	require.NoError(t, err)
@@ -283,9 +285,9 @@ func TestLogService_ListAudit_Empty(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 
-	pool := setupSvcLogTestDB(t)
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	_ = setupSvcLogTestDB(t)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	resp, err := svc.ListAudit(context.Background(), 10, 0)
 	require.NoError(t, err)
@@ -301,8 +303,8 @@ func TestLogService_ListRecent_Pagination(t *testing.T) {
 	pool := setupSvcLogTestDB(t)
 	insertLogTestData(t, pool)
 
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	// Get with limit 1
 	resp, err := svc.ListRecent(context.Background(), 1, 0)
@@ -327,9 +329,9 @@ func TestLogService_ListAll_EmptyResponseFormat(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 
-	pool := setupSvcLogTestDB(t)
-	repo := repository.NewLogRepository()
-	svc := NewLogService(repo, pool)
+	_ = setupSvcLogTestDB(t)
+	repo := logRepo.NewRepository(nil)
+	svc := NewLogService(repo)
 
 	tests := []struct {
 		name string
@@ -470,7 +472,7 @@ func TestLogService_ReadLogErrors(t *testing.T) {
 	content := strings.Join(lines, "\n") + "\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 
 	// No filter
 	entries, err := svc.ReadLogErrors(path, nil, 10)
@@ -487,7 +489,7 @@ func TestLogService_ReadLogErrors(t *testing.T) {
 }
 
 func TestLogService_ReadLogErrors_MissingFile(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadLogErrors("/nonexistent/error.log", nil, 10)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
@@ -504,7 +506,7 @@ func TestLogService_ReadLogErrors_LimitCap(t *testing.T) {
 	content := strings.Join(lines, "\n") + "\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadLogErrors(path, nil, 1000)
 	require.NoError(t, err)
 	assert.Len(t, entries, 10) // capped at 500 but we only have 10
@@ -522,7 +524,7 @@ func TestLogService_ReadLogRecent(t *testing.T) {
 	content := strings.Join(lines, "\n") + "\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadLogRecent(path, 2)
 	require.NoError(t, err)
 	assert.Len(t, entries, 2)
@@ -535,7 +537,7 @@ func TestLogService_ReadLogRecent_ZeroLimit(t *testing.T) {
 	path := filepath.Join(dir, "api.log")
 	require.NoError(t, os.WriteFile(path, []byte(`{"msg":"x"}`+"\n"), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadLogRecent(path, 0)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
@@ -552,7 +554,7 @@ func TestLogService_ReadAuditLogs(t *testing.T) {
 		"2024-01-01T00:00:00Z,ob-3,pending,queue\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 
 	// No filter
 	entries, err := svc.ReadAuditLogs(path, nil, nil, 10)
@@ -593,7 +595,7 @@ func TestLogService_ReadAuditLogs(t *testing.T) {
 }
 
 func TestLogService_ReadAuditLogs_MissingFile(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadAuditLogs("/nonexistent/audit.csv", nil, nil, 10)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
@@ -604,7 +606,7 @@ func TestLogService_ReadAuditLogs_EmptyCSV(t *testing.T) {
 	path := filepath.Join(dir, "empty.csv")
 	require.NoError(t, os.WriteFile(path, []byte(""), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadAuditLogs(path, nil, nil, 10)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
@@ -620,7 +622,7 @@ func TestLogService_ReadAuditLogs_Limit(t *testing.T) {
 	}
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadAuditLogs(path, nil, nil, 5)
 	require.NoError(t, err)
 	assert.Len(t, entries, 5)
@@ -636,7 +638,7 @@ func TestLogService_ReadAuditLogs_LimitCap(t *testing.T) {
 	}
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadAuditLogs(path, nil, nil, 1000)
 	require.NoError(t, err)
 	assert.Len(t, entries, 10) // capped at 500 but we only have 10

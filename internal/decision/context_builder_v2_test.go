@@ -9,6 +9,7 @@ import (
 	"baxi/internal/governance"
 	"baxi/internal/ontology"
 	"baxi/internal/repository"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 )
@@ -85,12 +86,12 @@ func (m *mockDecisionLineageService) RecordDataSnapshot(ctx context.Context, rec
 
 func TestContextBuilderV2_BuildDecisionContext_WithTriggerData(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-42"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -168,12 +169,12 @@ func TestContextBuilderV2_BuildDecisionContext_WithTriggerData(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-42"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -241,11 +242,11 @@ func TestContextBuilderV2_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_PopulatesLineage(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			severity := "medium"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -293,11 +294,11 @@ func TestContextBuilderV2_BuildDecisionContext_PopulatesLineage(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_LineageErrorNonFatal(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			severity := "low"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -340,7 +341,7 @@ func TestContextBuilderV2_BuildDecisionContext_LineageErrorNonFatal(t *testing.T
 
 func TestContextBuilderV2_BuildDecisionContext_CaseNotFound(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, errors.New("case not found")
 		},
 	}
@@ -355,10 +356,10 @@ func TestContextBuilderV2_BuildDecisionContext_CaseNotFound(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_ObjectNotFound(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -382,12 +383,12 @@ func TestContextBuilderV2_BuildDecisionContext_ObjectNotFound(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_AlertError(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -422,11 +423,11 @@ func TestContextBuilderV2_BuildDecisionContext_AlertError(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_GovernanceData(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			severity := "medium"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -476,10 +477,10 @@ func TestContextBuilderV2_BuildDecisionContext_GovernanceData(t *testing.T) {
 
 func TestContextBuilderV2_BuildDecisionContext_MarkingFallback(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -516,10 +517,10 @@ func TestContextBuilderV2_BuildDecisionContext_MarkingFallback(t *testing.T) {
 
 func TestSwitchableContextBuilder_DelegatesToOldByDefault(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -543,7 +544,7 @@ func TestSwitchableContextBuilder_DelegatesToOldByDefault(t *testing.T) {
 		},
 	}
 
-	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, testActionTypes)
+	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, testActionTypes)
 	newBuilder := NewContextBuilderV2(nil, nil, nil, nil, nil, testActionTypes)
 
 	flags := &feature.FeatureFlags{NewContextBuilder: false}
@@ -558,10 +559,10 @@ func TestSwitchableContextBuilder_DelegatesToOldByDefault(t *testing.T) {
 
 func TestSwitchableContextBuilder_DelegatesToNewWhenFlagOn(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -585,7 +586,7 @@ func TestSwitchableContextBuilder_DelegatesToNewWhenFlagOn(t *testing.T) {
 		},
 	}
 
-	oldBuilder := NewContextBuilder(nil, nil, nil, nil, testActionTypes)
+	oldBuilder := NewContextBuilder(nil, nil, nil, testActionTypes)
 	newBuilder := NewContextBuilderV2(caseSvc, ontologyRepo, markingSvc, nil, nil, testActionTypes)
 
 	flags := &feature.FeatureFlags{NewContextBuilder: true}
@@ -600,10 +601,10 @@ func TestSwitchableContextBuilder_DelegatesToNewWhenFlagOn(t *testing.T) {
 
 func TestSwitchableContextBuilder_NilFlagsDelegatesToOld(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -627,7 +628,7 @@ func TestSwitchableContextBuilder_NilFlagsDelegatesToOld(t *testing.T) {
 		},
 	}
 
-	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, testActionTypes)
+	oldBuilder := NewContextBuilder(caseSvc, objectProvider, classProvider, testActionTypes)
 	switcher := NewSwitchableContextBuilder(oldBuilder, nil, nil)
 
 	decisionCtx, err := switcher.BuildDecisionContext(context.Background(), "dc-1")

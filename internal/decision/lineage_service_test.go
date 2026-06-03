@@ -8,34 +8,33 @@ import (
 	"testing"
 	"time"
 
-	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/stretchr/testify/assert"
 )
 
 // --- Mocks ---
 
 type mockLineageEventRepo struct {
-	createLineageEventFn     func(ctx context.Context, pool *pgxpool.Pool, event *DecisionLineageEvent) error
-	getLineageEventsByCaseFn func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]DecisionLineageEvent, error)
-	createDataSnapshotFn     func(ctx context.Context, pool *pgxpool.Pool, snapshot *DecisionDataSnapshot) error
-	getDataSnapshotsByCaseFn func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]DecisionDataSnapshot, error)
+	createLineageEventFn     func(ctx context.Context, event *DecisionLineageEvent) error
+	getLineageEventsByCaseFn func(ctx context.Context, caseID string) ([]DecisionLineageEvent, error)
+	createDataSnapshotFn     func(ctx context.Context, snapshot *DecisionDataSnapshot) error
+	getDataSnapshotsByCaseFn func(ctx context.Context, caseID string) ([]DecisionDataSnapshot, error)
 }
 
-func (m *mockLineageEventRepo) CreateLineageEvent(ctx context.Context, pool *pgxpool.Pool, event *DecisionLineageEvent) error {
-	return m.createLineageEventFn(ctx, pool, event)
+func (m *mockLineageEventRepo) CreateLineageEvent(ctx context.Context, event *DecisionLineageEvent) error {
+	return m.createLineageEventFn(ctx, event)
 }
 
-func (m *mockLineageEventRepo) GetLineageEventsByCase(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]DecisionLineageEvent, error) {
-	return m.getLineageEventsByCaseFn(ctx, pool, caseID)
+func (m *mockLineageEventRepo) GetLineageEventsByCase(ctx context.Context, caseID string) ([]DecisionLineageEvent, error) {
+	return m.getLineageEventsByCaseFn(ctx, caseID)
 }
 
-func (m *mockLineageEventRepo) CreateDataSnapshot(ctx context.Context, pool *pgxpool.Pool, snapshot *DecisionDataSnapshot) error {
-	return m.createDataSnapshotFn(ctx, pool, snapshot)
+func (m *mockLineageEventRepo) CreateDataSnapshot(ctx context.Context, snapshot *DecisionDataSnapshot) error {
+	return m.createDataSnapshotFn(ctx, snapshot)
 }
 
-func (m *mockLineageEventRepo) GetDataSnapshotsByCase(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]DecisionDataSnapshot, error) {
-	return m.getDataSnapshotsByCaseFn(ctx, pool, caseID)
+func (m *mockLineageEventRepo) GetDataSnapshotsByCase(ctx context.Context, caseID string) ([]DecisionDataSnapshot, error) {
+	return m.getDataSnapshotsByCaseFn(ctx, caseID)
 }
 
 // --- Compile-time interface checks ---
@@ -49,7 +48,6 @@ func createTestLineageAdapter(eventRepo LineageEventRepository) *DecisionLineage
 		lineageSvc: nil,
 		caseRepo:   nil,
 		eventRepo:  eventRepo,
-		pool:       nil,
 	}
 }
 
@@ -101,11 +99,11 @@ func TestGetDecisionLineage_ReturnsFullChain(t *testing.T) {
 	}
 
 	eventRepo := &mockLineageEventRepo{
-		getLineageEventsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionLineageEvent, error) {
+		getLineageEventsByCaseFn: func(ctx context.Context, cid string) ([]DecisionLineageEvent, error) {
 			assert.Equal(t, caseID, cid)
 			return events, nil
 		},
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			assert.Equal(t, caseID, cid)
 			return snapshots, nil
 		},
@@ -127,10 +125,10 @@ func TestGetDecisionLineage_EmptyResults(t *testing.T) {
 	caseID := "dc_empty"
 
 	eventRepo := &mockLineageEventRepo{
-		getLineageEventsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionLineageEvent, error) {
+		getLineageEventsByCaseFn: func(ctx context.Context, cid string) ([]DecisionLineageEvent, error) {
 			return nil, nil
 		},
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			return nil, nil
 		},
 	}
@@ -147,10 +145,10 @@ func TestGetDecisionLineage_EmptyResults(t *testing.T) {
 
 func TestGetDecisionLineage_EventsError(t *testing.T) {
 	eventRepo := &mockLineageEventRepo{
-		getLineageEventsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionLineageEvent, error) {
+		getLineageEventsByCaseFn: func(ctx context.Context, cid string) ([]DecisionLineageEvent, error) {
 			return nil, errors.New("database error")
 		},
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			t.Fatal("should not be called when events fail")
 			return nil, nil
 		},
@@ -166,10 +164,10 @@ func TestGetDecisionLineage_EventsError(t *testing.T) {
 
 func TestGetDecisionLineage_SnapshotsError(t *testing.T) {
 	eventRepo := &mockLineageEventRepo{
-		getLineageEventsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionLineageEvent, error) {
+		getLineageEventsByCaseFn: func(ctx context.Context, cid string) ([]DecisionLineageEvent, error) {
 			return []DecisionLineageEvent{}, nil
 		},
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			return nil, errors.New("database error")
 		},
 	}
@@ -189,8 +187,8 @@ func TestGetContextLineage_WithConfigVersions(t *testing.T) {
 	objectType := "seller"
 
 	caseRepo := &mockCaseRepoForLineage{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) (*repository.DecisionCaseRow, error) {
-			return &repository.DecisionCaseRow{
+		getCaseByIDFn: func(ctx context.Context, cid string) (*decisionRepo.DecisionCaseRow, error) {
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:                caseID,
 				ObjectType:            &objectType,
 				AlertRulesVersion:     strPtr("v1.2.0"),
@@ -211,7 +209,7 @@ func TestGetContextLineage_WithConfigVersions(t *testing.T) {
 	}
 
 	eventRepo := &mockLineageEventRepo{
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			return snapshots, nil
 		},
 	}
@@ -220,7 +218,7 @@ func TestGetContextLineage_WithConfigVersions(t *testing.T) {
 		lineageSvc: nil,
 		caseRepo:   nil,
 		eventRepo:  eventRepo,
-		pool:       nil,
+
 	}
 
 	ctx, err := adapter.GetContextLineageWithCaseRepo(context.Background(), caseID, caseRepo)
@@ -239,15 +237,15 @@ func TestGetContextLineage_EmptyConfigVersions(t *testing.T) {
 	caseID := "dc_ctx_2"
 
 	caseRepo := &mockCaseRepoForLineage{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) (*repository.DecisionCaseRow, error) {
-			return &repository.DecisionCaseRow{
+		getCaseByIDFn: func(ctx context.Context, cid string) (*decisionRepo.DecisionCaseRow, error) {
+			return &decisionRepo.DecisionCaseRow{
 				CaseID: caseID,
 			}, nil
 		},
 	}
 
 	eventRepo := &mockLineageEventRepo{
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			return nil, nil
 		},
 	}
@@ -256,7 +254,7 @@ func TestGetContextLineage_EmptyConfigVersions(t *testing.T) {
 		lineageSvc: nil,
 		caseRepo:   nil,
 		eventRepo:  eventRepo,
-		pool:       nil,
+
 	}
 
 	ctx, err := adapter.GetContextLineageWithCaseRepo(context.Background(), caseID, caseRepo)
@@ -271,7 +269,7 @@ func TestGetContextLineage_EmptyConfigVersions(t *testing.T) {
 
 func TestGetContextLineage_CaseNotFound(t *testing.T) {
 	caseRepo := &mockCaseRepoForLineage{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, cid string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, errors.New("case not found")
 		},
 	}
@@ -280,7 +278,7 @@ func TestGetContextLineage_CaseNotFound(t *testing.T) {
 		lineageSvc: nil,
 		caseRepo:   nil,
 		eventRepo:  nil,
-		pool:       nil,
+
 	}
 
 	ctx, err := adapter.GetContextLineageWithCaseRepo(context.Background(), "nonexistent", caseRepo)
@@ -292,13 +290,13 @@ func TestGetContextLineage_CaseNotFound(t *testing.T) {
 
 func TestGetContextLineage_SnapshotsError(t *testing.T) {
 	caseRepo := &mockCaseRepoForLineage{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) (*repository.DecisionCaseRow, error) {
-			return &repository.DecisionCaseRow{CaseID: "dc_1"}, nil
+		getCaseByIDFn: func(ctx context.Context, cid string) (*decisionRepo.DecisionCaseRow, error) {
+			return &decisionRepo.DecisionCaseRow{CaseID: "dc_1"}, nil
 		},
 	}
 
 	eventRepo := &mockLineageEventRepo{
-		getDataSnapshotsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]DecisionDataSnapshot, error) {
+		getDataSnapshotsByCaseFn: func(ctx context.Context, cid string) ([]DecisionDataSnapshot, error) {
 			return nil, errors.New("snapshot query failed")
 		},
 	}
@@ -307,7 +305,7 @@ func TestGetContextLineage_SnapshotsError(t *testing.T) {
 		lineageSvc: nil,
 		caseRepo:   nil,
 		eventRepo:  eventRepo,
-		pool:       nil,
+
 	}
 
 	ctx, err := adapter.GetContextLineageWithCaseRepo(context.Background(), "dc_1", caseRepo)
@@ -323,7 +321,7 @@ func TestRecordDecisionLineage_Success(t *testing.T) {
 	var capturedEvent *DecisionLineageEvent
 
 	eventRepo := &mockLineageEventRepo{
-		createLineageEventFn: func(ctx context.Context, pool *pgxpool.Pool, event *DecisionLineageEvent) error {
+		createLineageEventFn: func(ctx context.Context, event *DecisionLineageEvent) error {
 			capturedEvent = event
 			return nil
 		},
@@ -355,7 +353,7 @@ func TestRecordDecisionLineage_Success(t *testing.T) {
 
 func TestRecordDecisionLineage_DBError(t *testing.T) {
 	eventRepo := &mockLineageEventRepo{
-		createLineageEventFn: func(ctx context.Context, pool *pgxpool.Pool, event *DecisionLineageEvent) error {
+		createLineageEventFn: func(ctx context.Context, event *DecisionLineageEvent) error {
 			return errors.New("insert failed")
 		},
 	}
@@ -389,7 +387,7 @@ func TestRecordDecisionLineage_AllEventTypes(t *testing.T) {
 		t.Run(string(et), func(t *testing.T) {
 			var capturedEvent *DecisionLineageEvent
 			eventRepo := &mockLineageEventRepo{
-				createLineageEventFn: func(ctx context.Context, pool *pgxpool.Pool, event *DecisionLineageEvent) error {
+				createLineageEventFn: func(ctx context.Context, event *DecisionLineageEvent) error {
 					capturedEvent = event
 					return nil
 				},
@@ -413,7 +411,7 @@ func TestRecordDataSnapshot_Success(t *testing.T) {
 	var capturedSnapshot *DecisionDataSnapshot
 
 	eventRepo := &mockLineageEventRepo{
-		createDataSnapshotFn: func(ctx context.Context, pool *pgxpool.Pool, snapshot *DecisionDataSnapshot) error {
+		createDataSnapshotFn: func(ctx context.Context, snapshot *DecisionDataSnapshot) error {
 			capturedSnapshot = snapshot
 			return nil
 		},
@@ -443,7 +441,7 @@ func TestRecordDataSnapshot_Success(t *testing.T) {
 
 func TestRecordDataSnapshot_DBError(t *testing.T) {
 	eventRepo := &mockLineageEventRepo{
-		createDataSnapshotFn: func(ctx context.Context, pool *pgxpool.Pool, snapshot *DecisionDataSnapshot) error {
+		createDataSnapshotFn: func(ctx context.Context, snapshot *DecisionDataSnapshot) error {
 			return errors.New("insert failed")
 		},
 	}
@@ -472,7 +470,7 @@ func TestRecordDataSnapshot_AllSnapshotTypes(t *testing.T) {
 		t.Run(string(st), func(t *testing.T) {
 			var capturedSnapshot *DecisionDataSnapshot
 			eventRepo := &mockLineageEventRepo{
-				createDataSnapshotFn: func(ctx context.Context, pool *pgxpool.Pool, snapshot *DecisionDataSnapshot) error {
+				createDataSnapshotFn: func(ctx context.Context, snapshot *DecisionDataSnapshot) error {
 					capturedSnapshot = snapshot
 					return nil
 				},
@@ -523,15 +521,15 @@ func TestGenerateDataSnapshotID_Uniqueness(t *testing.T) {
 }
 
 type mockCaseRepoForLineage struct {
-	getCaseByIDFn func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
+	getCaseByIDFn func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
 }
 
-func (m *mockCaseRepoForLineage) GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
-	return m.getCaseByIDFn(ctx, pool, caseID)
+func (m *mockCaseRepoForLineage) GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
+	return m.getCaseByIDFn(ctx, caseID)
 }
 
 func (a *DecisionLineageAdapter) GetContextLineageWithCaseRepo(ctx context.Context, caseID string, caseRepo *mockCaseRepoForLineage) (*ContextLineage, error) {
-	caseRow, err := caseRepo.GetCaseByID(ctx, a.pool, caseID)
+	caseRow, err := caseRepo.GetCaseByID(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("get case %s: %w", caseID, err)
 	}
@@ -561,7 +559,7 @@ func (a *DecisionLineageAdapter) GetContextLineageWithCaseRepo(ctx context.Conte
 		configVersions["action_registry_hash"] = *caseRow.ActionRegistryHash
 	}
 
-	snapshots, err := a.eventRepo.GetDataSnapshotsByCase(ctx, a.pool, caseID)
+	snapshots, err := a.eventRepo.GetDataSnapshotsByCase(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("get data snapshots for case %s: %w", caseID, err)
 	}

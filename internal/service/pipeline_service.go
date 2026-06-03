@@ -10,6 +10,9 @@ import (
 	"baxi/internal/model"
 )
 
+// goPipelineCommand is the Go CLI command used for pipeline execution.
+const goPipelineCommand = "go run ./cmd/baxi-cli pipeline run"
+
 // pipelineDefinition holds metadata for a pipeline type.
 type pipelineDefinition struct {
 	Script      string
@@ -73,11 +76,7 @@ func (s *PipelineService) PreviewPipelineRun(pipelineType string) *model.Pipelin
 		}
 	}
 
-	scriptPath := filepath.Join("scripts", pipe.Script)
-	command := fmt.Sprintf("python3 %s", scriptPath)
-	if pipe.Args != "" {
-		command = fmt.Sprintf("%s %s", command, pipe.Args)
-	}
+	command := goPipelineCommand
 
 	return &model.PipelinePreview{
 		Command:           command,

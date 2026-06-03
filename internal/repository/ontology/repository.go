@@ -224,8 +224,10 @@ func resolveLimit(requested int) (int, error) {
 	return requested, nil
 }
 
+// fullTableName returns the sanitized schema-qualified table name.
+// GODEPRECATED: use V2 compiler instead
 func (m tableMapping) fullTableName() string {
-	return m.Schema + "." + m.Table
+	return pgx.Identifier{m.Schema, m.Table}.Sanitize()
 }
 
 // ──── V2 Compiler interface ───────────────────────────────────────────────────
@@ -333,6 +335,7 @@ func (r *Repository) QueryByObjectType(ctx context.Context, objectType string, f
 	}
 
 	// Fall back to v1 hardcoded mapping.
+	// GODEPRECATED: V1 path uses hardcoded objectTableMap; migrate to V2 compiler
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
@@ -343,6 +346,7 @@ func (r *Repository) QueryByObjectType(ctx context.Context, objectType string, f
 		return nil, fmt.Errorf("role %q does not have access to %s.%s", role, mapping.Schema, mapping.Table)
 	}
 
+	// GODEPRECATED: use V2 compiler instead
 	tableName := mapping.fullTableName()
 	cols := strings.Join(mapping.Columns, ", ")
 
@@ -434,6 +438,7 @@ func (r *Repository) GetObjectByID(ctx context.Context, objectType, objectID str
 	}
 
 	// Fall back to v1 hardcoded mapping.
+	// GODEPRECATED: V1 path uses hardcoded objectTableMap; migrate to V2 compiler
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
@@ -444,6 +449,7 @@ func (r *Repository) GetObjectByID(ctx context.Context, objectType, objectID str
 		return nil, fmt.Errorf("role %q does not have access to %s.%s", role, mapping.Schema, mapping.Table)
 	}
 
+	// GODEPRECATED: use V2 compiler instead
 	tableName := mapping.fullTableName()
 	cols := strings.Join(mapping.Columns, ", ")
 	pk := sanitizeIdent(mapping.PrimaryKey)
@@ -494,6 +500,7 @@ func (r *Repository) GetObjectMetrics(ctx context.Context, objectType, objectID 
 	}
 
 	// Fall back to v1 hardcoded mapping.
+	// GODEPRECATED: V1 path uses hardcoded objectTableMap; migrate to V2 compiler
 	mapping, ok := objectTableMap[objectType]
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
@@ -507,6 +514,7 @@ func (r *Repository) GetObjectMetrics(ctx context.Context, objectType, objectID 
 	metrics := make(map[string]float64)
 
 	if aggMetrics, hasMetrics := metricColumns[objectType]; hasMetrics {
+		// GODEPRECATED: use V2 compiler instead
 		tableName := mapping.fullTableName()
 		pk := sanitizeIdent(mapping.PrimaryKey)
 
@@ -574,12 +582,14 @@ func (r *Repository) SearchObjects(ctx context.Context, objectType string, filte
 	if !ok {
 		return nil, fmt.Errorf("unknown object type: %s", objectType)
 	}
+	// GODEPRECATED: V1 path uses hardcoded objectTableMap; migrate to V2 compiler
 
 	role := resolveRole(ctx)
 	if !tableAccessible(role, mapping.Schema, mapping.Table) {
 		return nil, fmt.Errorf("role %q does not have access to %s.%s", role, mapping.Schema, mapping.Table)
 	}
 
+	// GODEPRECATED: use V2 compiler instead
 	tableName := mapping.fullTableName()
 	cols := strings.Join(mapping.Columns, ", ")
 

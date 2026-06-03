@@ -184,7 +184,7 @@ func TestActionHandler_HandleExecute_400_MissingProposalID(t *testing.T) {
 	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["message"].(string), "proposal ID is required")
+	assert.Equal(t, "validation failed", resp["message"].(string))
 }
 
 func TestActionHandler_HandleStatus_404(t *testing.T) {
@@ -299,7 +299,7 @@ func TestActionHandler_HandleStatus_400_MissingProposalID(t *testing.T) {
 	var resp map[string]interface{}
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
-	assert.Contains(t, resp["message"].(string), "proposal ID is required")
+	assert.Equal(t, "validation failed", resp["message"].(string))
 }
 
 func TestActionHandler_HandleStatus_500_InternalError(t *testing.T) {

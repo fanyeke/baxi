@@ -43,7 +43,9 @@ func (h *SandboxHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.CaseID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "case_id is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "case_id", Message: "case_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -53,7 +55,7 @@ func (h *SandboxHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 	sandboxID, err := h.svc.CreateSandbox(r.Context(), req.CaseID, req.Data)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to create sandbox")
+		writeServiceError(w, r, err, "failed to create sandbox")
 		return
 	}
 
@@ -66,7 +68,7 @@ func (h *SandboxHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	sb, err := h.svc.GetSandbox(r.Context(), sandboxID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to get sandbox")
+		writeServiceError(w, r, err, "failed to get sandbox")
 		return
 	}
 	if sb == nil {
@@ -81,7 +83,7 @@ func (h *SandboxHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 func (h *SandboxHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	sandboxes, err := h.svc.ListSandboxes(r.Context())
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to list sandboxes")
+		writeServiceError(w, r, err, "failed to list sandboxes")
 		return
 	}
 
@@ -104,16 +106,18 @@ func (h *SandboxHandler) HandleAddProposal(w http.ResponseWriter, r *http.Reques
 	}
 
 	if req.ProposalID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal_id is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "proposal_id", Message: "proposal_id is required", Code: "required"},
+		})
 		return
 	}
 
 	if err := h.svc.AddProposalToSandbox(r.Context(), sandboxID, req.ProposalID); err != nil {
-		if errors.Is(err, errors.New("sandbox "+sandboxID+" not found")) {
+		if errors.Is(err, review.ErrSandboxNotFound) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "sandbox not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to add proposal to sandbox")
+		writeServiceError(w, r, err, "failed to add proposal to sandbox")
 		return
 	}
 
@@ -125,18 +129,25 @@ func (h *SandboxHandler) HandleCompare(w http.ResponseWriter, r *http.Request) {
 	sandboxID1 := r.URL.Query().Get("sandbox1_id")
 	sandboxID2 := r.URL.Query().Get("sandbox2_id")
 
-	if sandboxID1 == "" || sandboxID2 == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "both sandbox1_id and sandbox2_id query parameters are required")
+	var fields []dto.FieldError
+	if sandboxID1 == "" {
+		fields = append(fields, dto.FieldError{Field: "sandbox1_id", Message: "sandbox1_id is required", Code: "required"})
+	}
+	if sandboxID2 == "" {
+		fields = append(fields, dto.FieldError{Field: "sandbox2_id", Message: "sandbox2_id is required", Code: "required"})
+	}
+	if len(fields) > 0 {
+		writeValidationError(w, r, "validation failed", fields)
 		return
 	}
 
 	result, err := h.svc.CompareSandbox(r.Context(), sandboxID1, sandboxID2)
 	if err != nil {
-		if err.Error() == "sandbox "+sandboxID1+" not found" || err.Error() == "sandbox "+sandboxID2+" not found" {
+		if errors.Is(err, review.ErrSandboxNotFound) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "sandbox not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to compare sandboxes")
+		writeServiceError(w, r, err, "failed to compare sandboxes")
 		return
 	}
 
@@ -163,9 +174,9 @@ func sandboxToResponse(sb *review.Sandbox) dto.SandboxResponse {
 
 // comparisonToResponse converts a domain ComparisonResult to the response DTO.
 func comparisonToResponse(cr *review.ComparisonResult) dto.ComparisonResponse {
-	diffs := make([]dto.DiffItem, 0, len(cr.Differences))
+	diffs := make([]dto.SandboxDiffItem, 0, len(cr.Differences))
 	for _, d := range cr.Differences {
-		diffs = append(diffs, dto.DiffItem{
+		diffs = append(diffs, dto.SandboxDiffItem{
 			Field:  d.Field,
 			Value1: d.Value1,
 			Value2: d.Value2,

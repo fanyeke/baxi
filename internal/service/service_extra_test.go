@@ -10,21 +10,21 @@ import (
 )
 
 func TestLogService_ReadAuditLogs_ZeroLimit_Extra(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadAuditLogs("/nonexistent", nil, nil, 0)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
 
 func TestLogService_ReadLogErrors_ZeroLimit_Extra(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadLogErrors("/nonexistent", nil, 0)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
 
 func TestLogService_ReadLogRecent_ZeroLimit_Extra(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadLogRecent("/nonexistent", 0)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
@@ -36,7 +36,7 @@ func TestLogService_ReadAuditLogs_EmptyRequestID_Extra(t *testing.T) {
 	content := "timestamp,outbox_id,status\n2024-01-01T00:00:00Z,ob-1,sent\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	emptyID := ""
 	entries, err := svc.ReadAuditLogs(path, &emptyID, nil, 10)
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestLogService_ReadLogErrors_EmptyRequestID_Extra(t *testing.T) {
 	content := `{"request_id":"req-1","msg":"error1"}` + "\n"
 	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	emptyID := ""
 	entries, err := svc.ReadLogErrors(path, &emptyID, 10)
 	require.NoError(t, err)
@@ -92,14 +92,14 @@ func TestReadAuditLogs_HeaderOnly_Extra(t *testing.T) {
 	path := filepath.Join(dir, "header_only.csv")
 	require.NoError(t, os.WriteFile(path, []byte("timestamp,outbox_id,status\n"), 0644))
 
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	entries, err := svc.ReadAuditLogs(path, nil, nil, 10)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
 
 func TestLogService_NewLogService_Extra(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	assert.NotNil(t, svc)
 }
 

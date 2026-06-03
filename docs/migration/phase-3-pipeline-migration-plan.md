@@ -1,5 +1,7 @@
 # Phase 3: Pipeline Migration Plan
 
+> **Note:** Historical migration document. The `migration_baseline/` directory and `scripts/migration/` scripts referenced below have been removed — migration is complete. Current pipeline runs via Go CLI (`go run ./cmd/baxi-cli pipeline run`).
+
 ## 1. Overview
 
 This document describes how the old Python + SQLite 9-step data pipeline maps to the new Go + PostgreSQL pipeline. The goal is **exact output parity**: given the same input CSV files, the Go pipeline must produce identical row counts and near-identical values in all target tables.

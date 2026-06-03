@@ -4,21 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	taskRepo "baxi/internal/repository/task"
 )
 
 // TaskService handles business logic for task-related operations.
 type TaskService struct {
-	repo *repository.TaskRepository
-	pool *pgxpool.Pool
+	repo *taskRepo.Repository
 }
 
 // NewTaskService creates a new TaskService.
-func NewTaskService(repo *repository.TaskRepository, pool *pgxpool.Pool) *TaskService {
-	return &TaskService{repo: repo, pool: pool}
+func NewTaskService(repo *taskRepo.Repository) *TaskService {
+	return &TaskService{repo: repo}
 }
 
 // ListTasks retrieves tasks with optional filters and pagination,
@@ -28,13 +25,13 @@ func (s *TaskService) ListTasks(
 	filters model.TaskFilters,
 	limit, offset int,
 ) (*model.TaskListResponse, error) {
-	repoFilters := repository.TaskFilters{
+	repoFilters := taskRepo.TaskFilters{
 		Status:   filters.Status,
 		Priority: filters.Priority,
 		Owner:    filters.Owner,
 	}
 
-	rows, total, err := s.repo.ListTasks(ctx, s.pool, repoFilters, limit, offset)
+	rows, total, err := s.repo.ListTasks(ctx, repoFilters, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
@@ -52,7 +49,7 @@ func (s *TaskService) ListTasks(
 
 // mapRowToTask converts a repository row to a model Task.
 // alert_id in PostgreSQL maps to event_id in the model.
-func mapRowToTask(row repository.TaskRow) model.Task {
+func mapRowToTask(row taskRepo.TaskRow) model.Task {
 	desc := ""
 	if row.TaskDescription != nil {
 		desc = *row.TaskDescription

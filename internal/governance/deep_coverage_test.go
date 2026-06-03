@@ -7,41 +7,40 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"baxi/internal/repository"
 	governanceRepo "baxi/internal/repository/governance"
 )
 
 // ──── mockRepository ────────────────────────────────────────────────────────
 
 type mockGovRepository struct {
-	getConfigSnapshotsFn    func(ctx context.Context, pool interface{}) ([]governanceRepo.ConfigSnapshotRow, error)
-	countObjectSchemasFn    func(ctx context.Context, pool interface{}) int
-	getObjectSchemasFn      func(ctx context.Context, pool interface{}) ([]governanceRepo.ObjectSchemaRow, error)
-	getAccessPoliciesByRoleFn func(ctx context.Context, pool interface{}, role string) ([]repository.AccessPolicyRow, error)
-	getAccessPoliciesFn     func(ctx context.Context, pool interface{}) ([]repository.AccessPolicyRow, error)
-	getDataClassificationsFn func(ctx context.Context, pool interface{}) ([]governanceRepo.DataClassificationRow, error)
-	getLineageBySourceFn    func(ctx context.Context, pool interface{}, table string) ([]repository.DataLineageRow, error)
-	getLineageByTargetFn    func(ctx context.Context, pool interface{}, table string) ([]repository.DataLineageRow, error)
-	getDataLineageFn        func(ctx context.Context, pool interface{}) ([]repository.DataLineageRow, error)
+	getConfigSnapshotsFn    func(ctx context.Context) ([]governanceRepo.ConfigSnapshotRow, error)
+	countObjectSchemasFn    func(ctx context.Context) int
+	getObjectSchemasFn      func(ctx context.Context) ([]governanceRepo.ObjectSchemaRow, error)
+	getAccessPoliciesByRoleFn func(ctx context.Context, role string) ([]governanceRepo.AccessPolicyRow, error)
+	getAccessPoliciesFn     func(ctx context.Context) ([]governanceRepo.AccessPolicyRow, error)
+	getDataClassificationsFn func(ctx context.Context) ([]governanceRepo.DataClassificationRow, error)
+	getLineageBySourceFn    func(ctx context.Context, table string) ([]governanceRepo.DataLineageRow, error)
+	getLineageByTargetFn    func(ctx context.Context, table string) ([]governanceRepo.DataLineageRow, error)
+	getDataLineageFn        func(ctx context.Context) ([]governanceRepo.DataLineageRow, error)
 }
 
-func (m *mockGovRepository) GetConfigSnapshots(ctx context.Context, pool interface{}) ([]governanceRepo.ConfigSnapshotRow, error) {
+func (m *mockGovRepository) GetConfigSnapshots(ctx context.Context) ([]governanceRepo.ConfigSnapshotRow, error) {
 	if m.getConfigSnapshotsFn != nil {
-		return m.getConfigSnapshotsFn(ctx, pool)
+		return m.getConfigSnapshotsFn(ctx)
 	}
 	return nil, nil
 }
 
-func (m *mockGovRepository) CountObjectSchemas(ctx context.Context, pool interface{}) int {
+func (m *mockGovRepository) CountObjectSchemas(ctx context.Context) int {
 	if m.countObjectSchemasFn != nil {
-		return m.countObjectSchemasFn(ctx, pool)
+		return m.countObjectSchemasFn(ctx)
 	}
 	return 0
 }
 
-func (m *mockGovRepository) GetObjectSchemas(ctx context.Context, pool interface{}) ([]governanceRepo.ObjectSchemaRow, error) {
+func (m *mockGovRepository) GetObjectSchemas(ctx context.Context) ([]governanceRepo.ObjectSchemaRow, error) {
 	if m.getObjectSchemasFn != nil {
-		return m.getObjectSchemasFn(ctx, pool)
+		return m.getObjectSchemasFn(ctx)
 	}
 	return nil, nil
 }
@@ -72,33 +71,32 @@ func TestResolveLevel_AllCases(t *testing.T) {
 // ──── access_policy: CheckAccess unit tests with mocked repo ─────────────
 
 type mockAccessPolicyRepository struct {
-	getByRoleFn func(ctx context.Context, pool interface{}, role string) ([]repository.AccessPolicyRow, error)
-	getAllFn    func(ctx context.Context, pool interface{}) ([]repository.AccessPolicyRow, error)
+	getByRoleFn func(ctx context.Context, role string) ([]governanceRepo.AccessPolicyRow, error)
+	getAllFn    func(ctx context.Context) ([]governanceRepo.AccessPolicyRow, error)
 }
 
-func (m *mockAccessPolicyRepository) GetAccessPoliciesByRole(ctx context.Context, pool interface{}, role string) ([]repository.AccessPolicyRow, error) {
+func (m *mockAccessPolicyRepository) GetAccessPoliciesByRole(ctx context.Context, role string) ([]governanceRepo.AccessPolicyRow, error) {
 	if m.getByRoleFn != nil {
-		return m.getByRoleFn(ctx, pool, role)
+		return m.getByRoleFn(ctx, role)
 	}
 	return nil, nil
 }
 
-func (m *mockAccessPolicyRepository) GetAccessPolicies(ctx context.Context, pool interface{}) ([]repository.AccessPolicyRow, error) {
+func (m *mockAccessPolicyRepository) GetAccessPolicies(ctx context.Context) ([]governanceRepo.AccessPolicyRow, error) {
 	if m.getAllFn != nil {
-		return m.getAllFn(ctx, pool)
+		return m.getAllFn(ctx)
 	}
 	return nil, nil
 }
 
 func TestAccessPolicyService_CheckAccess_AllowByRole(t *testing.T) {
-	// With nil pool, the service will panic because the repository calls pgx methods.
 	// This test verifies the constructor works.
-	svc := NewAccessPolicyService(nil, nil)
+	svc := NewAccessPolicyService(nil)
 	assert.NotNil(t, svc)
 }
 
 func TestAccessPolicyService_GetAll_NilPool(t *testing.T) {
-	svc := NewAccessPolicyService(nil, nil)
+	svc := NewAccessPolicyService(nil)
 	assert.NotNil(t, svc)
 }
 

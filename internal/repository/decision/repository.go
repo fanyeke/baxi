@@ -334,8 +334,12 @@ func (r *Repository) ListCases(
 	}
 
 	query += " ORDER BY created_at DESC"
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 100
+	}
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
-	args = append(args, filter.Limit, filter.Offset)
+	args = append(args, limit, filter.Offset)
 
 	rows, err := r.Query(ctx, query, args...)
 	if err != nil {

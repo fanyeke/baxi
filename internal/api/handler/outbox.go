@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -66,7 +67,7 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 
 	resp, err := h.svc.List(r.Context(), filters, pagination.Limit, pagination.Offset)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -76,7 +77,9 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "event_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -86,9 +89,9 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 		case isNotFound(err):
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 		case isInvalidState(err):
-			writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, err.Error())
+			writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
 		default:
-			writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+			writeServiceError(w, r, err, "internal server error")
 		}
 		return
 	}
@@ -102,7 +105,9 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "event_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -112,18 +117,18 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
 	if event.Status != "pending" && event.Status != "failed" {
-		writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, fmt.Sprintf("event cannot be cancelled in %s state", event.Status))
+		writeError(w, r, http.StatusConflict, middleware.CONFLICT, fmt.Sprintf("event cannot be cancelled in %s state", event.Status))
 		return
 	}
 
 	err = h.svc.CancelEvent(r.Context(), eventID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -136,13 +141,19 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 func (h *OutboxHandler) HandleGetDetail(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "event_id is required", Code: "required"},
+		})
 		return
 	}
 
 	event, err := h.svc.GetEvent(r.Context(), eventID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		if isNotFound(err) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
+			return
+		}
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 	if event == nil {
@@ -190,7 +201,50 @@ type BatchDispatchResponse struct {
 
 // HandleBatchDispatch handles POST /outbox/dispatch.
 func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	var req dto.BatchDispatchRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "invalid request body: "+err.Error())
+			return
+		}
+	}
+
+	status := "pending"
+	filters := model.OutboxFilters{
+		Status: &status,
+	}
+
+	resp, err := h.svc.List(r.Context(), filters, 1000, 0)
+	if err != nil {
+		writeServiceError(w, r, err, "failed to list pending events")
+		return
+	}
+
+	dispatched := 0
+	failed := 0
+	eventIDs := make([]string, 0, len(resp.Items))
+
+	for _, event := range resp.Items {
+		eventIDs = append(eventIDs, event.OutboxID)
+
+		if req.DryRun {
+			dispatched++
+			continue
+		}
+
+		if err := h.svc.DispatchEvent(r.Context(), event.OutboxID); err != nil {
+			failed++
+			continue
+		}
+		dispatched++
+	}
+
+	httputil.JSON(w, http.StatusOK, BatchDispatchResponse{
+		DryRun:     req.DryRun,
+		Dispatched: dispatched,
+		Failed:     failed,
+		EventIDs:   eventIDs,
+	})
 }
 
 // dtoFromOutboxListResponse converts model.OutboxListResponse to dto.OutboxListResponse.

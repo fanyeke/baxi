@@ -121,18 +121,18 @@ func TestDecisionUpdateCaseStatus(t *testing.T) {
 	repo, pool := setupRepo(t)
 	ctx := context.Background()
 	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('cu1','open')`)
-	err := repo.UpdateCaseStatus(ctx, "cu1", "resolved", nil, nil, nil)
+	err := repo.UpdateCaseStatus(ctx, "cu1", "closed", nil, nil, nil)
 	require.NoError(t, err)
 	got, err := repo.GetCaseByID(ctx, "cu1")
 	require.NoError(t, err)
-	assert.Equal(t, "resolved", got.Status)
+	assert.Equal(t, "closed", got.Status)
 }
 
 func TestDecisionListCases(t *testing.T) {
 	repo, pool := setupRepo(t)
 	ctx := context.Background()
 	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('c1','open')`)
-	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('c2','resolved')`)
+	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('c2','closed')`)
 	rows, total, err := repo.ListCases(ctx, CaseFilter{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, total)
@@ -143,7 +143,7 @@ func TestDecisionListCasesFiltered(t *testing.T) {
 	repo, pool := setupRepo(t)
 	ctx := context.Background()
 	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('c1','open')`)
-	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('c2','resolved')`)
+	pool.Exec(ctx, `INSERT INTO ai.decision_case(case_id,status) VALUES('c2','closed')`)
 	f := CaseFilter{Status: strPtr("open")}
 	rows, total, err := repo.ListCases(ctx, f)
 	require.NoError(t, err)

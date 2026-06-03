@@ -7,54 +7,54 @@ import (
 	"testing"
 	"time"
 
-	"baxi/internal/repository"
+	alertRepo "baxi/internal/repository/alert"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 )
 
 // --- Mocks ---
 
 type mockCaseRepo struct {
-	createCaseFn       func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error
-	getCaseByIDFn      func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
-	getCaseBySourceFn  func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
-	updateCaseStatusFn func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
-	listCasesFn        func(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error)
+	createCaseFn       func(ctx context.Context, row *decisionRepo.DecisionCaseRow) error
+	getCaseByIDFn      func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
+	getCaseBySourceFn  func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error)
+	updateCaseStatusFn func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
+	listCasesFn        func(ctx context.Context, filter decisionRepo.CaseFilter) ([]decisionRepo.DecisionCaseRow, int, error)
 }
 
-func (m *mockCaseRepo) CreateCase(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
-	return m.createCaseFn(ctx, pool, row)
+func (m *mockCaseRepo) CreateCase(ctx context.Context, row *decisionRepo.DecisionCaseRow) error {
+	return m.createCaseFn(ctx, row)
 }
 
-func (m *mockCaseRepo) GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
-	return m.getCaseByIDFn(ctx, pool, caseID)
+func (m *mockCaseRepo) GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
+	return m.getCaseByIDFn(ctx, caseID)
 }
 
-func (m *mockCaseRepo) GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
-	return m.getCaseBySourceFn(ctx, pool, sourceType, sourceID)
+func (m *mockCaseRepo) GetCaseBySource(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
+	return m.getCaseBySourceFn(ctx, sourceType, sourceID)
 }
 
-func (m *mockCaseRepo) UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
-	return m.updateCaseStatusFn(ctx, pool, caseID, status, contextJSON, contextHash, governanceSnapshot)
+func (m *mockCaseRepo) UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+	return m.updateCaseStatusFn(ctx, caseID, status, contextJSON, contextHash, governanceSnapshot)
 }
 
-func (m *mockCaseRepo) ListCases(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error) {
-	return m.listCasesFn(ctx, pool, filter)
+func (m *mockCaseRepo) ListCases(ctx context.Context, filter decisionRepo.CaseFilter) ([]decisionRepo.DecisionCaseRow, int, error) {
+	return m.listCasesFn(ctx, filter)
 }
 
 type mockAlertRepo struct {
-	getAlertByIDFn func(ctx context.Context, pool *pgxpool.Pool, alertID string) (*repository.AlertRow, error)
+	getAlertByIDFn func(ctx context.Context, alertID string) (*alertRepo.AlertRow, error)
 }
 
-func (m *mockAlertRepo) GetAlertByID(ctx context.Context, pool *pgxpool.Pool, alertID string) (*repository.AlertRow, error) {
-	return m.getAlertByIDFn(ctx, pool, alertID)
+func (m *mockAlertRepo) GetAlertByID(ctx context.Context, alertID string) (*alertRepo.AlertRow, error) {
+	return m.getAlertByIDFn(ctx, alertID)
 }
 
 // --- Compile-time interface checks ---
 
-var _ CaseRepository = (*repository.DecisionRepository)(nil)
-var _ AlertRepository = (*repository.AlertRepository)(nil)
+var _ CaseRepository = (*decisionRepo.Repository)(nil)
+var _ AlertRepository = (*alertRepo.Repository)(nil)
 
 // --- Tests: CreateCaseFromAlert ---
 
@@ -63,10 +63,10 @@ func TestCreateCaseFromAlert_CreatesNewCase(t *testing.T) {
 	createdBy := "system"
 
 	caseRepo := &mockCaseRepo{
-		getCaseBySourceFn: func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
+		getCaseBySourceFn: func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, pgx.ErrNoRows
 		},
-		createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
+		createCaseFn: func(ctx context.Context, row *decisionRepo.DecisionCaseRow) error {
 			assert.Equal(t, "alert", *row.SourceType)
 			assert.Equal(t, alertID, *row.SourceID)
 			assert.Equal(t, "high", *row.Severity)
@@ -79,9 +79,9 @@ func TestCreateCaseFromAlert_CreatesNewCase(t *testing.T) {
 	}
 
 	alertRepo := &mockAlertRepo{
-		getAlertByIDFn: func(ctx context.Context, pool *pgxpool.Pool, aid string) (*repository.AlertRow, error) {
+		getAlertByIDFn: func(ctx context.Context, aid string) (*alertRepo.AlertRow, error) {
 			assert.Equal(t, alertID, aid)
-			return &repository.AlertRow{
+			return &alertRepo.AlertRow{
 				AlertID:    alertID,
 				Severity:   "high",
 				ObjectType: "seller",
@@ -90,7 +90,7 @@ func TestCreateCaseFromAlert_CreatesNewCase(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, alertRepo, nil)
+	svc := NewCaseService(caseRepo, alertRepo)
 	result, err := svc.CreateCaseFromAlert(context.Background(), alertID, createdBy)
 
 	assert.NoError(t, err)
@@ -109,23 +109,23 @@ func TestCreateCaseFromAlert_ReturnsExistingActiveCase(t *testing.T) {
 	existingCaseID := "dc_existing"
 
 	caseRepo := &mockCaseRepo{
-		getCaseBySourceFn: func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
-			return &repository.DecisionCaseRow{
+		getCaseBySourceFn: func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     existingCaseID,
 				Status:     "open",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr(alertID),
 			}, nil
 		},
-		createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
+		createCaseFn: func(ctx context.Context, row *decisionRepo.DecisionCaseRow) error {
 			t.Fatal("CreateCase should not be called when active case exists")
 			return nil
 		},
 	}
 
 	alertRepo := &mockAlertRepo{
-		getAlertByIDFn: func(ctx context.Context, pool *pgxpool.Pool, aid string) (*repository.AlertRow, error) {
-			return &repository.AlertRow{
+		getAlertByIDFn: func(ctx context.Context, aid string) (*alertRepo.AlertRow, error) {
+			return &alertRepo.AlertRow{
 				AlertID:    alertID,
 				Severity:   "medium",
 				ObjectType: "product",
@@ -134,7 +134,7 @@ func TestCreateCaseFromAlert_ReturnsExistingActiveCase(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, alertRepo, nil)
+	svc := NewCaseService(caseRepo, alertRepo)
 	result, err := svc.CreateCaseFromAlert(context.Background(), alertID, "system")
 
 	assert.NoError(t, err)
@@ -152,23 +152,23 @@ func TestCreateCaseFromAlert_ReturnsExistingForActiveStatuses(t *testing.T) {
 			existingCaseID := "dc_" + status
 
 			caseRepo := &mockCaseRepo{
-				getCaseBySourceFn: func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
-					return &repository.DecisionCaseRow{
+				getCaseBySourceFn: func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
+					return &decisionRepo.DecisionCaseRow{
 						CaseID:     existingCaseID,
 						Status:     status,
 						SourceType: strPtr("alert"),
 						SourceID:   strPtr(alertID),
 					}, nil
 				},
-				createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
+				createCaseFn: func(ctx context.Context, row *decisionRepo.DecisionCaseRow) error {
 					t.Fatal("CreateCase should not be called")
 					return nil
 				},
 			}
 
 			alertRepo := &mockAlertRepo{
-				getAlertByIDFn: func(ctx context.Context, pool *pgxpool.Pool, aid string) (*repository.AlertRow, error) {
-					return &repository.AlertRow{
+				getAlertByIDFn: func(ctx context.Context, aid string) (*alertRepo.AlertRow, error) {
+					return &alertRepo.AlertRow{
 						AlertID:    alertID,
 						Severity:   "low",
 						ObjectType: "category",
@@ -177,7 +177,7 @@ func TestCreateCaseFromAlert_ReturnsExistingForActiveStatuses(t *testing.T) {
 				},
 			}
 
-			svc := NewCaseService(caseRepo, alertRepo, nil)
+			svc := NewCaseService(caseRepo, alertRepo)
 			result, err := svc.CreateCaseFromAlert(context.Background(), alertID, "system")
 
 			assert.NoError(t, err)
@@ -194,22 +194,22 @@ func TestCreateCaseFromAlert_CreatesNewWhenExistingClosedOrFailed(t *testing.T) 
 			alertID := "alert-closed-1"
 
 			caseRepo := &mockCaseRepo{
-				getCaseBySourceFn: func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
-					return &repository.DecisionCaseRow{
+				getCaseBySourceFn: func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
+					return &decisionRepo.DecisionCaseRow{
 						CaseID:     "dc_closed",
 						Status:     status,
 						SourceType: strPtr("alert"),
 						SourceID:   strPtr(alertID),
 					}, nil
 				},
-				createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
+				createCaseFn: func(ctx context.Context, row *decisionRepo.DecisionCaseRow) error {
 					return nil
 				},
 			}
 
 			alertRepo := &mockAlertRepo{
-				getAlertByIDFn: func(ctx context.Context, pool *pgxpool.Pool, aid string) (*repository.AlertRow, error) {
-					return &repository.AlertRow{
+				getAlertByIDFn: func(ctx context.Context, aid string) (*alertRepo.AlertRow, error) {
+					return &alertRepo.AlertRow{
 						AlertID:    alertID,
 						Severity:   "critical",
 						ObjectType: "seller",
@@ -218,7 +218,7 @@ func TestCreateCaseFromAlert_CreatesNewWhenExistingClosedOrFailed(t *testing.T) 
 				},
 			}
 
-			svc := NewCaseService(caseRepo, alertRepo, nil)
+			svc := NewCaseService(caseRepo, alertRepo)
 			result, err := svc.CreateCaseFromAlert(context.Background(), alertID, "system")
 
 			assert.NoError(t, err)
@@ -233,22 +233,22 @@ func TestCreateCaseFromAlert_AlertNotFound(t *testing.T) {
 	alertID := "nonexistent"
 
 	caseRepo := &mockCaseRepo{
-		getCaseBySourceFn: func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
+		getCaseBySourceFn: func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, pgx.ErrNoRows
 		},
-		createCaseFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error {
+		createCaseFn: func(ctx context.Context, row *decisionRepo.DecisionCaseRow) error {
 			t.Fatal("CreateCase should not be called when alert not found")
 			return nil
 		},
 	}
 
 	alertRepo := &mockAlertRepo{
-		getAlertByIDFn: func(ctx context.Context, pool *pgxpool.Pool, aid string) (*repository.AlertRow, error) {
+		getAlertByIDFn: func(ctx context.Context, aid string) (*alertRepo.AlertRow, error) {
 			return nil, errors.New("alert not found")
 		},
 	}
 
-	svc := NewCaseService(caseRepo, alertRepo, nil)
+	svc := NewCaseService(caseRepo, alertRepo)
 	result, err := svc.CreateCaseFromAlert(context.Background(), alertID, "system")
 
 	assert.Error(t, err)
@@ -260,14 +260,14 @@ func TestCreateCaseFromAlert_GetCaseBySourceError(t *testing.T) {
 	alertID := "alert-error"
 
 	caseRepo := &mockCaseRepo{
-		getCaseBySourceFn: func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
+		getCaseBySourceFn: func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, errors.New("database connection lost")
 		},
 	}
 
 	alertRepo := &mockAlertRepo{
-		getAlertByIDFn: func(ctx context.Context, pool *pgxpool.Pool, aid string) (*repository.AlertRow, error) {
-			return &repository.AlertRow{
+		getAlertByIDFn: func(ctx context.Context, aid string) (*alertRepo.AlertRow, error) {
+			return &alertRepo.AlertRow{
 				AlertID:    alertID,
 				Severity:   "high",
 				ObjectType: "seller",
@@ -276,7 +276,7 @@ func TestCreateCaseFromAlert_GetCaseBySourceError(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, alertRepo, nil)
+	svc := NewCaseService(caseRepo, alertRepo)
 	result, err := svc.CreateCaseFromAlert(context.Background(), alertID, "system")
 
 	assert.Error(t, err)
@@ -291,9 +291,9 @@ func TestGetCase(t *testing.T) {
 	now := time.Now()
 
 	caseRepo := &mockCaseRepo{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, cid string) (*decisionRepo.DecisionCaseRow, error) {
 			assert.Equal(t, caseID, cid)
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     caseID,
 				Status:     "created",
 				SourceType: strPtr("alert"),
@@ -303,7 +303,7 @@ func TestGetCase(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.GetCase(context.Background(), caseID)
 
 	assert.NoError(t, err)
@@ -314,12 +314,12 @@ func TestGetCase(t *testing.T) {
 
 func TestGetCase_NotFound(t *testing.T) {
 	caseRepo := &mockCaseRepo{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, cid string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, pgx.ErrNoRows
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.GetCase(context.Background(), "nonexistent")
 
 	assert.Error(t, err)
@@ -330,20 +330,20 @@ func TestGetCase_NotFound(t *testing.T) {
 
 func TestListCases(t *testing.T) {
 	now := time.Now()
-	rows := []repository.DecisionCaseRow{
+	rows := []decisionRepo.DecisionCaseRow{
 		{CaseID: "dc-1", Status: "created", SourceType: strPtr("alert"), SourceID: strPtr("a1"), CreatedAt: now, Severity: strPtr("high")},
 		{CaseID: "dc-2", Status: "open", SourceType: strPtr("alert"), SourceID: strPtr("a2"), CreatedAt: now.Add(-1 * time.Hour), Severity: strPtr("medium")},
 	}
 
 	caseRepo := &mockCaseRepo{
-		listCasesFn: func(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error) {
+		listCasesFn: func(ctx context.Context, filter decisionRepo.CaseFilter) ([]decisionRepo.DecisionCaseRow, int, error) {
 			assert.Equal(t, 10, filter.Limit)
 			assert.Equal(t, 0, filter.Offset)
 			return rows, 2, nil
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.ListCases(context.Background(), CaseFilter{Limit: 10, Offset: 0})
 
 	assert.NoError(t, err)
@@ -361,16 +361,16 @@ func TestListCases_WithFilters(t *testing.T) {
 	status := "created"
 
 	caseRepo := &mockCaseRepo{
-		listCasesFn: func(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error) {
+		listCasesFn: func(ctx context.Context, filter decisionRepo.CaseFilter) ([]decisionRepo.DecisionCaseRow, int, error) {
 			assert.NotNil(t, filter.Severity)
 			assert.Equal(t, severity, *filter.Severity)
 			assert.NotNil(t, filter.Status)
 			assert.Equal(t, status, *filter.Status)
-			return []repository.DecisionCaseRow{}, 0, nil
+			return []decisionRepo.DecisionCaseRow{}, 0, nil
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.ListCases(context.Background(), CaseFilter{
 		Severity: &severity,
 		Status:   &status,
@@ -385,12 +385,12 @@ func TestListCases_WithFilters(t *testing.T) {
 
 func TestListCases_Empty(t *testing.T) {
 	caseRepo := &mockCaseRepo{
-		listCasesFn: func(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error) {
-			return []repository.DecisionCaseRow{}, 0, nil
+		listCasesFn: func(ctx context.Context, filter decisionRepo.CaseFilter) ([]decisionRepo.DecisionCaseRow, int, error) {
+			return []decisionRepo.DecisionCaseRow{}, 0, nil
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.ListCases(context.Background(), CaseFilter{Limit: 10, Offset: 0})
 
 	assert.NoError(t, err)
@@ -405,7 +405,7 @@ func TestUpdateCaseStatus(t *testing.T) {
 	status := "context_built"
 
 	caseRepo := &mockCaseRepo{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, st string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, st string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			assert.Equal(t, caseID, cid)
 			assert.Equal(t, status, st)
 			assert.Nil(t, cj)
@@ -415,7 +415,7 @@ func TestUpdateCaseStatus(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	err := svc.UpdateCaseStatus(context.Background(), caseID, status)
 
 	assert.NoError(t, err)
@@ -423,12 +423,12 @@ func TestUpdateCaseStatus(t *testing.T) {
 
 func TestUpdateCaseStatus_NotFound(t *testing.T) {
 	caseRepo := &mockCaseRepo{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, st string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, st string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return errors.New("decision case nonexistent not found")
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	err := svc.UpdateCaseStatus(context.Background(), "nonexistent", "closed")
 
 	assert.Error(t, err)
@@ -439,14 +439,14 @@ func TestUpdateCaseStatus_EmptyStatus(t *testing.T) {
 	caseID := "dc-empty"
 
 	caseRepo := &mockCaseRepo{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, st string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, st string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			assert.Equal(t, caseID, cid)
 			assert.Empty(t, st)
 			return nil
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	err := svc.UpdateCaseStatus(context.Background(), caseID, "")
 
 	assert.NoError(t, err)

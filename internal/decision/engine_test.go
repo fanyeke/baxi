@@ -7,8 +7,7 @@ import (
 	"testing"
 
 	"baxi/internal/llm"
-	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,21 +20,21 @@ func (m *mockDecisionProvider) GenerateDecision(ctx context.Context, input llm.L
 }
 
 type mockDecisionEngineRepository struct {
-	createDecisionFn   func(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error
-	updateCaseStatusFn func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
-	getCaseByIDFn      func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
+	createDecisionFn   func(ctx context.Context, row *decisionRepo.LLMDecisionRow) error
+	updateCaseStatusFn func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
+	getCaseByIDFn      func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
 }
 
-func (m *mockDecisionEngineRepository) CreateDecision(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error {
-	return m.createDecisionFn(ctx, pool, row)
+func (m *mockDecisionEngineRepository) CreateDecision(ctx context.Context, row *decisionRepo.LLMDecisionRow) error {
+	return m.createDecisionFn(ctx, row)
 }
 
-func (m *mockDecisionEngineRepository) UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
-	return m.updateCaseStatusFn(ctx, pool, caseID, status, contextJSON, contextHash, governanceSnapshot)
+func (m *mockDecisionEngineRepository) UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+	return m.updateCaseStatusFn(ctx, caseID, status, contextJSON, contextHash, governanceSnapshot)
 }
 
-func (m *mockDecisionEngineRepository) GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
-	return m.getCaseByIDFn(ctx, pool, caseID)
+func (m *mockDecisionEngineRepository) GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
+	return m.getCaseByIDFn(ctx, caseID)
 }
 
 func validDecisionContext() *DecisionContext {
@@ -108,7 +107,7 @@ func TestEngine_ValidPath(t *testing.T) {
 	dc := validDecisionContext()
 	expectedOutput := validDecisionOutput()
 
-	var savedRow *repository.LLMDecisionRow
+	var savedRow *decisionRepo.LLMDecisionRow
 	var updatedStatus string
 
 	provider := &mockDecisionProvider{
@@ -118,17 +117,17 @@ func TestEngine_ValidPath(t *testing.T) {
 	}
 
 	repo := &mockDecisionEngineRepository{
-		createDecisionFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error {
+		createDecisionFn: func(ctx context.Context, row *decisionRepo.LLMDecisionRow) error {
 			savedRow = row
 			return nil
 		},
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
 			updatedStatus = status
 			return nil
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
+	engine := NewDecisionEngine(provider, repo, new(llm.NoOpAuditLogger))
 	output, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)
@@ -150,7 +149,7 @@ func TestEngine_FallbackOnInvalid(t *testing.T) {
 	ctx := context.Background()
 	dc := validDecisionContext()
 
-	var savedRow *repository.LLMDecisionRow
+	var savedRow *decisionRepo.LLMDecisionRow
 	var updatedStatus string
 
 	provider := &mockDecisionProvider{
@@ -160,17 +159,17 @@ func TestEngine_FallbackOnInvalid(t *testing.T) {
 	}
 
 	repo := &mockDecisionEngineRepository{
-		createDecisionFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error {
+		createDecisionFn: func(ctx context.Context, row *decisionRepo.LLMDecisionRow) error {
 			savedRow = row
 			return nil
 		},
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
 			updatedStatus = status
 			return nil
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
+	engine := NewDecisionEngine(provider, repo, new(llm.NoOpAuditLogger))
 	output, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)
@@ -194,7 +193,7 @@ func TestEngine_BothFail(t *testing.T) {
 	ctx := context.Background()
 	dc := validDecisionContext()
 
-	var savedRow *repository.LLMDecisionRow
+	var savedRow *decisionRepo.LLMDecisionRow
 	var updatedStatus string
 
 	provider := &mockDecisionProvider{
@@ -204,17 +203,17 @@ func TestEngine_BothFail(t *testing.T) {
 	}
 
 	repo := &mockDecisionEngineRepository{
-		createDecisionFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error {
+		createDecisionFn: func(ctx context.Context, row *decisionRepo.LLMDecisionRow) error {
 			savedRow = row
 			return nil
 		},
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
 			updatedStatus = status
 			return nil
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
+	engine := NewDecisionEngine(provider, repo, new(llm.NoOpAuditLogger))
 	engine.fallback = &mockDecisionProvider{
 		generateDecisionFn: func(ctx context.Context, input llm.LLMSafeContext) (*llm.DecisionOutput, error) {
 			return nil, errors.New("fallback also failed")
@@ -241,7 +240,7 @@ func TestEngine_ProviderError(t *testing.T) {
 	ctx := context.Background()
 	dc := validDecisionContext()
 
-	var savedRow *repository.LLMDecisionRow
+	var savedRow *decisionRepo.LLMDecisionRow
 	var updatedStatus string
 
 	provider := &mockDecisionProvider{
@@ -251,17 +250,17 @@ func TestEngine_ProviderError(t *testing.T) {
 	}
 
 	repo := &mockDecisionEngineRepository{
-		createDecisionFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error {
+		createDecisionFn: func(ctx context.Context, row *decisionRepo.LLMDecisionRow) error {
 			savedRow = row
 			return nil
 		},
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
 			updatedStatus = status
 			return nil
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
+	engine := NewDecisionEngine(provider, repo, new(llm.NoOpAuditLogger))
 	output, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)
@@ -289,15 +288,15 @@ func TestEngine_ContextBuilding(t *testing.T) {
 	}
 
 	repo := &mockDecisionEngineRepository{
-		createDecisionFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.LLMDecisionRow) error {
+		createDecisionFn: func(ctx context.Context, row *decisionRepo.LLMDecisionRow) error {
 			return nil
 		},
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
 			return nil
 		},
 	}
 
-	engine := NewDecisionEngine(provider, repo, nil, new(llm.NoOpAuditLogger))
+	engine := NewDecisionEngine(provider, repo, new(llm.NoOpAuditLogger))
 	_, err := engine.GenerateDecision(ctx, "dc-1", dc)
 
 	assert.NoError(t, err)

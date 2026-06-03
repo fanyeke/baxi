@@ -39,6 +39,6 @@ func TestResolveLevel_Empty(t *testing.T) {
 // ──── ClassificationService New ────────────────────────────────────────────
 
 func TestNewClassificationService(t *testing.T) {
-	svc := NewClassificationService(nil, nil)
+	svc := NewClassificationService(nil)
 	assert.NotNil(t, svc)
 }

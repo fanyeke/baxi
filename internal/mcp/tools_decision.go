@@ -244,7 +244,7 @@ func (s *Server) handleResolveCase(ctx context.Context, req mcp.CallToolRequest)
 
 	result := map[string]interface{}{
 		"case_id":    caseID,
-		"status":     "resolved",
+		"status":     "closed",
 		"resolution": resolution,
 	}
 

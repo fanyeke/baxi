@@ -8,6 +8,7 @@ import (
 	"baxi/internal/governance"
 	"baxi/internal/ontology"
 	"baxi/internal/repository"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 )
@@ -119,10 +120,10 @@ func TestResolveOverallClassification_WithDerivedSensitive(t *testing.T) {
 // helper to build a minimal oldBuilder (*ContextBuilder) for switchable tests
 func minimalOldBuilder() *ContextBuilder {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,
@@ -143,7 +144,7 @@ func minimalOldBuilder() *ContextBuilder {
 			return "L1", false, true, nil
 		},
 	}
-	return NewContextBuilder(caseSvc, objectProvider, classProvider, nil, testActionTypes)
+	return NewContextBuilder(caseSvc, objectProvider, classProvider, testActionTypes)
 }
 
 // --- SwitchableContextBuilder: v3 with nil v3Builder ---
@@ -209,10 +210,10 @@ func TestSwitchableContextBuilder_V3WithPath(t *testing.T) {
 
 func TestSwitchableContextBuilder_V2WithPath(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				ObjectType: &objectType,
 				ObjectID:   &objectID,

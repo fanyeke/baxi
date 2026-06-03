@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -282,7 +283,7 @@ func TestProviderFactory_AllBranches(t *testing.T) {
 func TestRuleBasedProvider_GenerateDecision_NilTrigger(t *testing.T) {
 	p := NewRuleBasedProvider()
 	input := LLMSafeContext{}
-	output, err := p.GenerateDecision(t.Context(), input)
+	output, err := p.GenerateDecision(context.Background(), input)
 	assert.NoError(t, err)
 	assert.NotNil(t, output)
 	// Default severity is empty string, hits the default case

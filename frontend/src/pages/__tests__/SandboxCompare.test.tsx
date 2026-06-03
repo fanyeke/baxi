@@ -53,13 +53,13 @@ describe("SandboxCompare", () => {
   it("shows error panel", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("Network error"))
     renderWithQueryClient(<SandboxCompare />)
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("Failed to load")).toBeInTheDocument()
   })
 
   it("shows empty state when no sandboxes", async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ items: [] })
     renderWithQueryClient(<SandboxCompare />)
-    expect(await screen.findByText("暂无沙箱")).toBeInTheDocument()
+    expect(await screen.findByText("No sandboxes")).toBeInTheDocument()
   })
 
   it("renders sandbox list with data", async () => {
@@ -135,7 +135,7 @@ describe("SandboxCompare", () => {
     await user.click(checkboxes[0])
     await user.click(checkboxes[1])
 
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("Comparison failed")).toBeInTheDocument()
   })
 
   it("shows selection count when fewer than 2 selected", async () => {

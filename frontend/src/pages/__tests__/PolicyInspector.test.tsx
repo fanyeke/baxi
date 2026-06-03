@@ -44,11 +44,11 @@ describe("PolicyInspector", () => {
   it("renders error panel on failure", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("Network error"))
     renderWithQueryClient(<PolicyInspector />)
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("加载失败")).toBeInTheDocument()
   })
 
   it("renders empty state when no data", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue(null as any)
+    vi.mocked(apiClient.get).mockResolvedValue(null as unknown)
     renderWithQueryClient(<PolicyInspector />)
     expect(await screen.findByText("暂无治理状态数据")).toBeInTheDocument()
   })

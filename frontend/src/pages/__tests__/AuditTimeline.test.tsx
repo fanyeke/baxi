@@ -61,7 +61,7 @@ describe("AuditTimeline", () => {
   it("renders error panel on failure", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("Network error"))
     renderWithQueryClient(<AuditTimeline />)
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("加载失败")).toBeInTheDocument()
   })
 
   it("renders empty state when no events", async () => {

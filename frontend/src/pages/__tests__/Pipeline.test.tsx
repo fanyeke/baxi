@@ -55,7 +55,7 @@ describe("Pipeline", () => {
 
     // After click: POST should be called
     expect(apiClient.post).toHaveBeenCalledWith("/pipeline/run", {
-      pipeline_type: "daily",
+      config: "daily",
     })
   })
 
@@ -92,7 +92,7 @@ describe("Pipeline", () => {
 
     expect(await screen.findByText("查看预览")).toBeInTheDocument()
     expect(apiClient.post).toHaveBeenCalledWith("/pipeline/run", {
-      pipeline_type: "full",
+      config: "full",
     })
   })
 })

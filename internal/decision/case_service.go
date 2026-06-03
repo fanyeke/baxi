@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"baxi/internal/repository"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+
+	alertRepo "baxi/internal/repository/alert"
+	decisionRepo "baxi/internal/repository/decision"
 )
 
 // DecisionCase is the domain model for ai.decision_case.
@@ -57,31 +58,29 @@ type CaseList struct {
 
 // CaseRepository defines the interface for decision case storage operations.
 type CaseRepository interface {
-	CreateCase(ctx context.Context, pool *pgxpool.Pool, row *repository.DecisionCaseRow) error
-	GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
-	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
-	UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
-	ListCases(ctx context.Context, pool *pgxpool.Pool, filter repository.CaseFilter) ([]repository.DecisionCaseRow, int, error)
+	CreateCase(ctx context.Context, row *decisionRepo.DecisionCaseRow) error
+	GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
+	GetCaseBySource(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error)
+	UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
+	ListCases(ctx context.Context, filter decisionRepo.CaseFilter) ([]decisionRepo.DecisionCaseRow, int, error)
 }
 
 // AlertRepository defines the interface for reading alert data.
 type AlertRepository interface {
-	GetAlertByID(ctx context.Context, pool *pgxpool.Pool, alertID string) (*repository.AlertRow, error)
+	GetAlertByID(ctx context.Context, alertID string) (*alertRepo.AlertRow, error)
 }
 
 // CaseService handles decision case lifecycle operations.
 type CaseService struct {
 	caseRepo  CaseRepository
 	alertRepo AlertRepository
-	pool      *pgxpool.Pool
 }
 
 // NewCaseService creates a new CaseService.
-func NewCaseService(caseRepo CaseRepository, alertRepo AlertRepository, pool *pgxpool.Pool) *CaseService {
+func NewCaseService(caseRepo CaseRepository, alertRepo AlertRepository) *CaseService {
 	return &CaseService{
 		caseRepo:  caseRepo,
 		alertRepo: alertRepo,
-		pool:      pool,
 	}
 }
 
@@ -89,13 +88,13 @@ func NewCaseService(caseRepo CaseRepository, alertRepo AlertRepository, pool *pg
 // Implements idempotency: if an active case already exists for the alert,
 // returns the existing case instead of creating a duplicate.
 func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdBy string) (*DecisionCase, error) {
-	alert, err := s.alertRepo.GetAlertByID(ctx, s.pool, alertID)
+	alert, err := s.alertRepo.GetAlertByID(ctx, alertID)
 	if err != nil {
 		return nil, fmt.Errorf("get alert %s: %w", alertID, err)
 	}
 
 	sourceType := "alert"
-	existing, err := s.caseRepo.GetCaseBySource(ctx, s.pool, sourceType, alertID)
+	existing, err := s.caseRepo.GetCaseBySource(ctx, sourceType, alertID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("check existing case for alert %s: %w", alertID, err)
@@ -107,7 +106,7 @@ func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdB
 	now := time.Now()
 	caseID := GenerateCaseID()
 	sourceTypeVal := "alert"
-	row := &repository.DecisionCaseRow{
+	row := &decisionRepo.DecisionCaseRow{
 		CaseID:     caseID,
 		AlertID:    &alertID,
 		SourceType: &sourceTypeVal,
@@ -120,7 +119,7 @@ func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdB
 		CreatedAt:  now,
 	}
 
-	if err := s.caseRepo.CreateCase(ctx, s.pool, row); err != nil {
+	if err := s.caseRepo.CreateCase(ctx, row); err != nil {
 		return nil, fmt.Errorf("create case for alert %s: %w", alertID, err)
 	}
 
@@ -129,7 +128,7 @@ func (s *CaseService) CreateCaseFromAlert(ctx context.Context, alertID, createdB
 
 // GetCase retrieves a single decision case by its ID.
 func (s *CaseService) GetCase(ctx context.Context, caseID string) (*DecisionCase, error) {
-	row, err := s.caseRepo.GetCaseByID(ctx, s.pool, caseID)
+	row, err := s.caseRepo.GetCaseByID(ctx, caseID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +137,7 @@ func (s *CaseService) GetCase(ctx context.Context, caseID string) (*DecisionCase
 
 // ListCases returns a paginated list of decision cases matching the given filter.
 func (s *CaseService) ListCases(ctx context.Context, filter CaseFilter) (*CaseList, error) {
-	repoFilter := repository.CaseFilter{
+	repoFilter := decisionRepo.CaseFilter{
 		SourceType: filter.SourceType,
 		SourceID:   filter.SourceID,
 		Status:     filter.Status,
@@ -147,7 +146,7 @@ func (s *CaseService) ListCases(ctx context.Context, filter CaseFilter) (*CaseLi
 		Offset:     filter.Offset,
 	}
 
-	rows, total, err := s.caseRepo.ListCases(ctx, s.pool, repoFilter)
+	rows, total, err := s.caseRepo.ListCases(ctx, repoFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -162,10 +161,10 @@ func (s *CaseService) ListCases(ctx context.Context, filter CaseFilter) (*CaseLi
 
 // UpdateCaseStatus updates the status of a decision case.
 func (s *CaseService) UpdateCaseStatus(ctx context.Context, caseID, status string) error {
-	return s.caseRepo.UpdateCaseStatus(ctx, s.pool, caseID, status, nil, nil, nil)
+	return s.caseRepo.UpdateCaseStatus(ctx, caseID, status, nil, nil, nil)
 }
 
-func rowToCase(row *repository.DecisionCaseRow) *DecisionCase {
+func rowToCase(row *decisionRepo.DecisionCaseRow) *DecisionCase {
 	c := &DecisionCase{
 		CaseID:     row.CaseID,
 		AlertID:    row.AlertID,

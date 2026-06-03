@@ -1,0 +1,770 @@
+openapi: "3.0.3"
+info:
+  title: "Baxi API - Phase 1"
+  description: |
+    OpenAPI 3.0 specification for Phase 1 endpoints — LLM-driven decisions,
+    comparison, replay, evaluation, and outbox batch dispatch.
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: "Local development server"
+
+paths:
+  /api/v1/decisions/cases/{case_id}/decide/llm:
+    post:
+      tags:
+        - Decisions
+      summary: "Generate a decision using LLM"
+      description: |
+        Generate a decision for the specified case using the LLM provider.
+        Returns the decision context, generated decision output, and action proposals.
+      operationId: "decideLLM"
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      responses:
+        "200":
+          description: "Decision generated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionResponse"
+              example:
+                decision_case_id: "case-abc123"
+                status: "decision_generated"
+                decision:
+                  type: "monitor"
+                  severity: "medium"
+                  summary: "Anomalous pattern detected in metric X"
+                  rationale: "Value exceeded threshold for 3 consecutive periods"
+                  confidence: 0.87
+                proposals:
+                  - proposal_id: "prop-001"
+                    action_type: "notify_owner"
+                    title: "Notify data owner"
+                    risk_level: "low"
+                    requires_human_review: false
+                    apply_status: "pending"
+                    created_at: "2026-06-01T10:00:00Z"
+        "404":
+          description: "Case not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                request_id: "req_20260601_12345678"
+                error_code: "NOT_FOUND"
+                message: "case not found"
+                diagnosis: "The requested decision case does not exist"
+                suggested_action: "Verify the case_id and retry"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /api/v1/decisions/cases/{case_id}/compare:
+    post:
+      tags:
+        - Decisions
+      summary: "Compare rule-based and LLM decisions"
+      description: |
+        Compare the rule-based decision with the LLM-generated decision for the
+        specified case, returning added, removed, and changed fields with metadata.
+      operationId: "compareDecisions"
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      responses:
+        "200":
+          description: "Comparison completed successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompareResponse"
+              example:
+                decision_case_id: "case-abc123"
+                added: []
+                removed: []
+                changed:
+                  - field: "decision_type"
+                    before: "monitor"
+                    after: "investigate"
+                    change_type: "changed"
+                  - field: "severity"
+                    change_type: "changed"
+                metadata:
+                  decision_type_match: false
+                  severity_match: false
+                  action_overlap: 0.75
+                  confidence_diff: 0.12
+                  created_at: "2026-06-01T10:00:00Z"
+        "404":
+          description: "Case not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                request_id: "req_20260601_12345678"
+                error_code: "NOT_FOUND"
+                message: "case not found"
+                diagnosis: "The requested decision case does not exist"
+                suggested_action: "Verify the case_id and retry"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /api/v1/decisions/cases/{case_id}/replay:
+    post:
+      tags:
+        - Decisions
+      summary: "Replay a decision"
+      description: |
+        Replay the decision generation for the specified case, optionally with
+        different model parameters. Supports dry-run mode for safe testing.
+      operationId: "replayDecision"
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplayRequest"
+            examples:
+              dry_run:
+                value:
+                  dry_run: true
+              with_overrides:
+                value:
+                  dry_run: false
+                  model: "gpt-4o"
+                  temperature: 0.5
+                  context_overrides:
+                    custom_field: "custom_value"
+      responses:
+        "200":
+          description: "Replay completed successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplayResponse"
+              example:
+                original_decision:
+                  type: "monitor"
+                  severity: "medium"
+                replayed_decision:
+                  type: "monitor"
+                  severity: "medium"
+                diff:
+                  decision_type_match: true
+                  severity_match: true
+                  confidence_diff: 0.0
+                  action_overlap: 1.0
+                  summary_changed: false
+                  rationale_changed: false
+                context_hash: "abc123def456"
+                model: "gpt-4o"
+                dry_run: true
+        "404":
+          description: "Case not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                request_id: "req_20260601_12345678"
+                error_code: "NOT_FOUND"
+                message: "case not found"
+                diagnosis: "The requested decision case does not exist"
+                suggested_action: "Verify the case_id and retry"
+        "503":
+          description: "Replay service not available"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                request_id: "req_20260601_12345678"
+                error_code: "INTERNAL_ERROR"
+                message: "replay service not available"
+                diagnosis: "The replay service is not configured"
+                suggested_action: "Configure the replay service or contact support"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /api/v1/decisions/cases/{case_id}/llm-decisions:
+    get:
+      tags:
+        - Decisions
+      summary: "List LLM decisions for a case"
+      description: |
+        Retrieve all LLM-generated decisions associated with the specified case,
+        including provider, model, confidence, and validation status.
+      operationId: "listLLMDecisions"
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      responses:
+        "200":
+          description: "List of LLM decisions retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LLMDecisionItem"
+                  total:
+                    type: integer
+                    description: "Total number of LLM decisions"
+                    example: 3
+              example:
+                items:
+                  - decision_id: "llm-dec-001"
+                    case_id: "case-abc123"
+                    provider: "openai"
+                    model: "gpt-4o"
+                    confidence: 0.87
+                    validation_status: "valid"
+                    fallback_used: false
+                    output_json:
+                      type: "monitor"
+                      severity: "medium"
+                    created_at: "2026-06-01T10:00:00Z"
+                total: 1
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /api/v1/decisions/cases/{case_id}/evals:
+    get:
+      tags:
+        - Decisions
+      summary: "List evaluations for a case"
+      description: |
+        Retrieve all evaluation results for LLM decisions associated with the
+        specified case, including scores and rule compliance status.
+      operationId: "listEvals"
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      responses:
+        "200":
+          description: "List of evaluations retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EvalItem"
+                  total:
+                    type: integer
+                    description: "Total number of evaluations"
+                    example: 2
+              example:
+                items:
+                  - eval_id: "eval-001"
+                    llm_decision_id: "llm-dec-001"
+                    decision_case_id: "case-abc123"
+                    eval_rule_id: "rule-confidence"
+                    eval_status: "pass"
+                    score: 0.87
+                    details_json:
+                      confidence_threshold: 0.8
+                      actual_confidence: 0.87
+                    created_at: "2026-06-01T10:05:00Z"
+                total: 1
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+  /api/v1/outbox/dispatch:
+    post:
+      tags:
+        - Outbox
+      summary: "Batch dispatch pending outbox events"
+      description: |
+        Dispatch all pending outbox events in a single batch operation.
+        Supports dry-run mode to simulate dispatch without sending events.
+      operationId: "batchDispatch"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchDispatchRequest"
+            examples:
+              dry_run:
+                value:
+                  dry_run: true
+              live:
+                value:
+                  dry_run: false
+      responses:
+        "200":
+          description: "Batch dispatch completed successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchDispatchResponse"
+              example:
+                dry_run: true
+                dispatched: 5
+                failed: 0
+                event_ids:
+                  - "evt-001"
+                  - "evt-002"
+                  - "evt-003"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - BearerAuth: []
+
+components:
+  parameters:
+    CaseId:
+      name: case_id
+      in: path
+      required: true
+      description: "Unique identifier of the decision case"
+      schema:
+        type: string
+        example: "case-abc123"
+
+  schemas:
+    DecisionResponse:
+      type: object
+      properties:
+        decision_case_id:
+          type: string
+          description: "Unique identifier of the decision case"
+          example: "case-abc123"
+        status:
+          type: string
+          description: "Current status of the decision"
+          example: "decision_generated"
+        decision:
+          type: object
+          description: "The generated decision output as a JSON object"
+          additionalProperties: true
+          example:
+            type: "monitor"
+            severity: "medium"
+            summary: "Anomalous pattern detected"
+        proposals:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProposalItem"
+          description: "List of action proposals derived from the decision"
+
+    DecisionCaseResponse:
+      type: object
+      properties:
+        decision_case_id:
+          type: string
+          description: "Unique identifier of the decision case"
+          example: "case-abc123"
+        source_type:
+          type: string
+          description: "Type of the source that triggered the case"
+          example: "alert"
+        source_id:
+          type: string
+          description: "Identifier of the source entity"
+          example: "alert-001"
+        object_type:
+          type: string
+          description: "Type of the affected object"
+          example: "table"
+        object_id:
+          type: string
+          description: "Identifier of the affected object"
+          example: "schema.table_name"
+        severity:
+          type: string
+          description: "Severity level of the case"
+          example: "medium"
+        status:
+          type: string
+          description: "Current status of the case"
+          example: "open"
+        context_hash:
+          type: string
+          description: "Hash of the decision context"
+          example: "abc123def456"
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the case was created"
+          example: "2026-06-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the case was last updated"
+          example: "2026-06-01T10:30:00Z"
+
+    ProposalItem:
+      type: object
+      properties:
+        proposal_id:
+          type: string
+          description: "Unique identifier of the proposal"
+          example: "prop-001"
+        action_type:
+          type: string
+          description: "Type of action to be executed"
+          example: "notify_owner"
+        title:
+          type: string
+          description: "Human-readable title of the proposal"
+          example: "Notify data owner"
+        risk_level:
+          type: string
+          description: "Risk level associated with the proposal"
+          example: "low"
+        requires_human_review:
+          type: boolean
+          description: "Whether the proposal requires human review before execution"
+          example: false
+        apply_status:
+          type: string
+          description: "Current apply status of the proposal"
+          example: "pending"
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the proposal was created"
+          example: "2026-06-01T10:00:00Z"
+
+    LLMDecisionItem:
+      type: object
+      properties:
+        decision_id:
+          type: string
+          description: "Unique identifier of the LLM decision"
+          example: "llm-dec-001"
+        case_id:
+          type: string
+          description: "Identifier of the associated decision case"
+          example: "case-abc123"
+        provider:
+          type: string
+          description: "LLM provider used (e.g., openai, rule-based)"
+          example: "openai"
+        model:
+          type: string
+          description: "Model name used for the decision"
+          example: "gpt-4o"
+        confidence:
+          type: number
+          format: float
+          description: "Confidence score of the decision (0.0 - 1.0)"
+          example: 0.87
+        validation_status:
+          type: string
+          description: "Validation status of the decision output"
+          example: "valid"
+        fallback_used:
+          type: boolean
+          description: "Whether the rule-based fallback was used"
+          example: false
+        output_json:
+          type: object
+          description: "Raw decision output as a JSON object"
+          additionalProperties: true
+          example:
+            type: "monitor"
+            severity: "medium"
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the decision was created"
+          example: "2026-06-01T10:00:00Z"
+
+    EvalItem:
+      type: object
+      properties:
+        eval_id:
+          type: string
+          description: "Unique identifier of the evaluation"
+          example: "eval-001"
+        llm_decision_id:
+          type: string
+          description: "Identifier of the evaluated LLM decision"
+          example: "llm-dec-001"
+        decision_case_id:
+          type: string
+          description: "Identifier of the associated decision case"
+          example: "case-abc123"
+        eval_rule_id:
+          type: string
+          description: "Identifier of the evaluation rule applied"
+          example: "rule-confidence"
+        eval_status:
+          type: string
+          description: "Result status of the evaluation"
+          example: "pass"
+        score:
+          type: number
+          format: float
+          description: "Evaluation score (0.0 - 1.0)"
+          example: 0.87
+        details_json:
+          type: object
+          description: "Detailed evaluation results as a JSON object"
+          additionalProperties: true
+          example:
+            confidence_threshold: 0.8
+            actual_confidence: 0.87
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the evaluation was created"
+          example: "2026-06-01T10:05:00Z"
+
+    CompareResponse:
+      type: object
+      properties:
+        decision_case_id:
+          type: string
+          description: "Identifier of the compared decision case"
+          example: "case-abc123"
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiffItem"
+          description: "Fields added in the LLM decision compared to rule-based"
+        removed:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiffItem"
+          description: "Fields removed in the LLM decision compared to rule-based"
+        changed:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiffItem"
+          description: "Fields changed between rule-based and LLM decisions"
+        metadata:
+          $ref: "#/components/schemas/CompareMeta"
+
+    DiffItem:
+      type: object
+      properties:
+        field:
+          type: string
+          description: "Name of the field that differs"
+          example: "decision_type"
+        before:
+          description: "Value before the change (any type)"
+          example: "monitor"
+        after:
+          description: "Value after the change (any type)"
+          example: "investigate"
+        change_type:
+          type: string
+          description: "Type of change detected"
+          example: "changed"
+
+    CompareMeta:
+      type: object
+      properties:
+        decision_type_match:
+          type: boolean
+          description: "Whether decision types match between rule-based and LLM"
+          example: false
+        severity_match:
+          type: boolean
+          description: "Whether severity levels match"
+          example: false
+        action_overlap:
+          type: number
+          format: float
+          description: "Overlap ratio of proposed actions (0.0 - 1.0)"
+          example: 0.75
+        confidence_diff:
+          type: number
+          format: float
+          description: "Difference in confidence scores"
+          example: 0.12
+        created_at:
+          type: string
+          format: date-time
+          description: "Timestamp when the comparison was created"
+          example: "2026-06-01T10:00:00Z"
+
+    ReplayRequest:
+      type: object
+      properties:
+        dry_run:
+          type: boolean
+          description: "If true, simulate replay without persisting changes"
+          default: false
+          example: true
+        model:
+          type: string
+          description: "Override the LLM model to use for replay"
+          example: "gpt-4o"
+        temperature:
+          type: number
+          format: float
+          description: "Override the temperature parameter (0.0 - 2.0)"
+          example: 0.5
+        context_overrides:
+          type: object
+          description: "Additional context fields to override during replay"
+          additionalProperties: true
+          example:
+            custom_field: "custom_value"
+
+    ReplayResponse:
+      type: object
+      properties:
+        original_decision:
+          type: object
+          description: "The original decision as a JSON object"
+          additionalProperties: true
+          example:
+            type: "monitor"
+            severity: "medium"
+        replayed_decision:
+          type: object
+          description: "The replayed decision as a JSON object (null if dry_run)"
+          nullable: true
+          additionalProperties: true
+          example:
+            type: "monitor"
+            severity: "medium"
+        diff:
+          $ref: "#/components/schemas/ReplayDiff"
+        context_hash:
+          type: string
+          description: "Hash of the decision context used"
+          example: "abc123def456"
+        model:
+          type: string
+          description: "Model used for the replay"
+          example: "gpt-4o"
+        dry_run:
+          type: boolean
+          description: "Whether this was a dry run"
+          example: true
+
+    ReplayDiff:
+      type: object
+      properties:
+        decision_type_match:
+          type: boolean
+          description: "Whether decision types match between original and replayed"
+          example: true
+        severity_match:
+          type: boolean
+          description: "Whether severity levels match"
+          example: true
+        confidence_diff:
+          type: number
+          format: float
+          description: "Difference in confidence scores"
+          example: 0.0
+        action_overlap:
+          type: number
+          format: float
+          description: "Overlap ratio of proposed actions (0.0 - 1.0)"
+          example: 1.0
+        summary_changed:
+          type: boolean
+          description: "Whether the summary text changed"
+          example: false
+        rationale_changed:
+          type: boolean
+          description: "Whether the rationale text changed"
+          example: false
+
+    BatchDispatchRequest:
+      type: object
+      properties:
+        dry_run:
+          type: boolean
+          description: "If true, simulate dispatch without sending events"
+          default: false
+          example: true
+
+    BatchDispatchResponse:
+      type: object
+      properties:
+        dry_run:
+          type: boolean
+          description: "Whether this was a dry run"
+          example: true
+        dispatched:
+          type: integer
+          description: "Number of events successfully dispatched"
+          example: 5
+        failed:
+          type: integer
+          description: "Number of events that failed to dispatch"
+          example: 0
+        event_ids:
+          type: array
+          items:
+            type: string
+          description: "List of event IDs that were processed"
+          example:
+            - "evt-001"
+            - "evt-002"
+
+    ErrorResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+          description: "Unique identifier for the request"
+          example: "req_20260601_12345678"
+        error_code:
+          type: string
+          description: "Machine-readable error code"
+          example: "INTERNAL_ERROR"
+        message:
+          type: string
+          description: "Human-readable error message"
+          example: "internal server error"
+        diagnosis:
+          type: string
+          description: "Technical diagnosis of the error"
+          example: "Database connection failed"
+        suggested_action:
+          type: string
+          description: "Suggested action to resolve the error"
+          example: "Please retry the request; contact support if the issue persists"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: "Enter your bearer token in the format: Bearer <token>"
+
+  responses:
+    InternalError:
+      description: "Internal server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            request_id: "req_20260601_12345678"
+            error_code: "INTERNAL_ERROR"
+            message: "internal server error"
+            diagnosis: "An unexpected error occurred"
+            suggested_action: "Please retry the request; contact support if the issue persists"
+
+security:
+  - BearerAuth: []

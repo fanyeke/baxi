@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -14,6 +15,7 @@ import (
 	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/decision"
+	"baxi/internal/eval"
 	"baxi/internal/httputil"
 	"baxi/internal/llm"
 )
@@ -27,6 +29,11 @@ type DecisionService interface {
 	BuildContext(ctx context.Context, caseID string) (*decision.DecisionContext, error)
 	Decide(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
 	ListProposals(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	DecideLLM(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	ListLLMDecisions(ctx context.Context, caseID string) (interface{}, error)
+	ListEvals(ctx context.Context, caseID string) (interface{}, error)
+	Compare(ctx context.Context, caseID string) (*eval.DecisionComparison, error)
+	Replay(ctx context.Context, caseID string, dryRun bool) (*eval.ReplayResult, error)
 }
 
 // DecisionHandler handles HTTP requests for decision case endpoints.
@@ -47,14 +54,21 @@ func (h *DecisionHandler) CreateCase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.SourceType == "" || req.SourceID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "source_type and source_id are required")
+	var fields []dto.FieldError
+	if req.SourceType == "" {
+		fields = append(fields, dto.FieldError{Field: "source_type", Message: "source_type is required", Code: "required"})
+	}
+	if req.SourceID == "" {
+		fields = append(fields, dto.FieldError{Field: "source_id", Message: "source_id is required", Code: "required"})
+	}
+	if len(fields) > 0 {
+		writeValidationError(w, r, "validation failed", fields)
 		return
 	}
 
 	c, err := h.svc.CreateCaseFromAlert(r.Context(), req.SourceID, "api_user")
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -86,7 +100,7 @@ func (h *DecisionHandler) GetCase(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -118,7 +132,7 @@ func (h *DecisionHandler) ListCases(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ListCases(r.Context(), filter)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -145,13 +159,13 @@ func (h *DecisionHandler) BuildContext(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
 	decCtx, err := h.svc.BuildContext(r.Context(), caseID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -176,7 +190,7 @@ func (h *DecisionHandler) Decide(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -195,7 +209,7 @@ func (h *DecisionHandler) ListProposals(w http.ResponseWriter, r *http.Request) 
 
 	proposals, err := h.svc.ListProposals(r.Context(), caseID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -264,25 +278,165 @@ func structToMap(v interface{}) map[string]interface{} {
 
 // DecideLLM handles POST /decisions/cases/{case_id}/decide/llm.
 func (h *DecisionHandler) DecideLLM(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	decCtx, output, proposals, err := h.svc.DecideLLM(r.Context(), caseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
+			return
+		}
+		writeServiceError(w, r, err, "internal server error")
+		return
+	}
+
+	resp := dto.DecisionResponse{
+		DecisionCaseID: decCtx.DecisionCaseID,
+		Status:         "decision_generated",
+		Decision:       structToMap(output),
+		Proposals:      proposalsToDTO(proposals),
+	}
+	httputil.JSON(w, http.StatusOK, resp)
 }
 
 // Compare handles POST /decisions/cases/{case_id}/compare.
 func (h *DecisionHandler) Compare(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	comparison, err := h.svc.Compare(r.Context(), caseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
+			return
+		}
+		writeServiceError(w, r, err, "internal server error")
+		return
+	}
+
+	resp := dto.CompareResponse{
+		DecisionCaseID: comparison.DecisionCaseID,
+		Added:          []dto.DiffItem{},
+		Removed:        []dto.DiffItem{},
+		Changed:        []dto.DiffItem{},
+		Metadata: dto.CompareMeta{
+			DecisionTypeMatch: comparison.DecisionTypeMatch,
+			SeverityMatch:     comparison.SeverityMatch,
+			ActionOverlap:     comparison.ActionOverlap,
+			ConfidenceDiff:    comparison.ConfidenceDiff,
+			CreatedAt:         comparison.CreatedAt.Format(time.RFC3339),
+		},
+	}
+
+	if !comparison.DecisionTypeMatch {
+		resp.Changed = append(resp.Changed, dto.DiffItem{
+			Field:      "decision_type",
+			Before:     comparison.RuleDecisionType,
+			After:      comparison.LLMDecisionType,
+			ChangeType: "changed",
+		})
+	}
+
+	if !comparison.SeverityMatch {
+		resp.Changed = append(resp.Changed, dto.DiffItem{
+			Field:      "severity",
+			ChangeType: "changed",
+		})
+	}
+
+	if comparison.ConfidenceDiff > 0 {
+		resp.Changed = append(resp.Changed, dto.DiffItem{
+			Field:      "confidence",
+			After:      comparison.ConfidenceDiff,
+			ChangeType: "changed",
+		})
+	}
+
+	if comparison.ActionOverlap < 1.0 {
+		resp.Changed = append(resp.Changed, dto.DiffItem{
+			Field:      "actions",
+			Before:     comparison.ActionOverlap,
+			ChangeType: "changed",
+		})
+	}
+
+	httputil.JSON(w, http.StatusOK, resp)
 }
 
 // Replay handles POST /decisions/cases/{case_id}/replay.
 func (h *DecisionHandler) Replay(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	var req dto.ReplayRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// Default to dry_run=false if body parsing fails
+		req.DryRun = false
+	}
+
+	// Model/temperature/context_overrides are parsed for future use;
+	// currently only dry_run is passed to the replay service.
+	result, err := h.svc.Replay(r.Context(), caseID, req.DryRun)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
+			return
+		}
+		if errMsg := err.Error(); errMsg == "replay service not configured" ||
+			errMsg == "not configured" ||
+			strings.Contains(errMsg, "not configured") {
+			writeError(w, r, http.StatusServiceUnavailable, middleware.SERVICE_UNAVAILABLE, "replay service not available")
+			return
+		}
+		writeServiceError(w, r, err, "internal server error")
+		return
+	}
+
+	resp := dto.ReplayResponse{
+		OriginalDecision: structToMap(result.OriginalDecision),
+		ContextHash:      result.ContextHash,
+		Model:            result.Model,
+		DryRun:           result.DryRun,
+	}
+
+	if result.ReplayedDecision != nil {
+		resp.ReplayedDecision = structToMap(result.ReplayedDecision)
+	}
+
+	if result.Diff != nil {
+		resp.Diff = &dto.ReplayDiff{
+			DecisionTypeMatch: result.Diff.DecisionTypeMatch,
+			SeverityMatch:     result.Diff.SeverityMatch,
+			ConfidenceDiff:    result.Diff.ConfidenceDiff,
+			ActionOverlap:     result.Diff.ActionOverlap,
+			SummaryChanged:    result.Diff.SummaryChanged,
+			RationaleChanged:  result.Diff.RationaleChanged,
+		}
+	}
+
+	httputil.JSON(w, http.StatusOK, resp)
 }
 
 // ListLLMDecisions handles GET /decisions/cases/{case_id}/llm-decisions.
 func (h *DecisionHandler) ListLLMDecisions(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	result, err := h.svc.ListLLMDecisions(r.Context(), caseID)
+	if err != nil {
+		writeServiceError(w, r, err, "internal server error")
+		return
+	}
+
+	httputil.JSON(w, http.StatusOK, result)
 }
 
 // ListEvals handles GET /decisions/cases/{case_id}/evals.
 func (h *DecisionHandler) ListEvals(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	result, err := h.svc.ListEvals(r.Context(), caseID)
+	if err != nil {
+		writeServiceError(w, r, err, "internal server error")
+		return
+	}
+
+	httputil.JSON(w, http.StatusOK, result)
 }

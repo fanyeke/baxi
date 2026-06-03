@@ -4,6 +4,8 @@
 **Status**: Final
 **Reference**: [Phase 3 Pipeline Migration Plan](phase-3-pipeline-migration-plan.md)
 
+> **Note:** Historical migration document. The `migration_baseline/` directory and `scripts/migration/` scripts referenced below have been removed — migration is complete. Current verification uses Go E2E tests.
+
 ---
 
 ## Summary

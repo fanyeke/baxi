@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,13 +65,13 @@ func TestCSVFileMapping_Fields(t *testing.T) {
 
 func TestCSVLoader_LoadCSV_NilTx(t *testing.T) {
 	l := NewCSVLoader()
-	_, err := l.LoadCSV(t.Context(), nil, "/nonexistent.csv", "raw.test")
+	_, err := l.LoadCSV(context.Background(), nil, "/nonexistent.csv", "raw.test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "open csv")
 }
 
 func TestCSVLoader_LoadCSV_NonexistentPath(t *testing.T) {
 	l := NewCSVLoader()
-	_, err := l.LoadCSV(t.Context(), nil, "/absolutely/nonexistent/path/file.csv", "raw.test")
+	_, err := l.LoadCSV(context.Background(), nil, "/absolutely/nonexistent/path/file.csv", "raw.test")
 	assert.Error(t, err)
 }

@@ -7,9 +7,11 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"baxi/internal/action"
+	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 )
@@ -56,13 +58,18 @@ type statusResponse struct {
 func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 	proposalID := chi.URLParam(r, "id")
 	if proposalID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal ID is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "proposal ID is required", Code: "required"},
+		})
 		return
 	}
 
 	var req executeRequest
 	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "invalid request body: "+err.Error())
+			return
+		}
 	}
 
 	dryRun := true
@@ -82,7 +89,7 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 			writeError(w, r, http.StatusForbidden, middleware.FORBIDDEN, err.Error())
 			return
 		}
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 
@@ -106,13 +113,19 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 func (h *ActionHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	proposalID := chi.URLParam(r, "id")
 	if proposalID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal ID is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "proposal ID is required", Code: "required"},
+		})
 		return
 	}
 
 	proposal, err := h.svc.GetProposalByID(r.Context(), h.pool, proposalID)
 	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "proposal not found")
+			return
+		}
+		writeServiceError(w, r, err, "internal server error")
 		return
 	}
 	if proposal == nil {

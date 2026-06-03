@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	outboxRepo "baxi/internal/repository/outbox"
+	statusRepo "baxi/internal/repository/status"
+	taskRepo "baxi/internal/repository/task"
 )
 
 // ============================================================
@@ -17,35 +19,34 @@ import (
 // ============================================================
 
 func TestNewTaskService_NilPool(t *testing.T) {
-	repo := repository.NewTaskRepository()
-	svc := NewTaskService(repo, nil)
+	repo := taskRepo.NewRepository(nil)
+	svc := NewTaskService(repo)
 	assert.NotNil(t, svc)
-	assert.Nil(t, svc.pool)
+	assert.NotNil(t, svc.repo)
 }
 
 func TestNewOutboxService_NilPool(t *testing.T) {
-	repo := repository.NewOutboxRepository()
-	svc := NewOutboxService(repo, nil)
+	repo := outboxRepo.NewRepository(nil)
+	svc := NewOutboxService(repo)
 	assert.NotNil(t, svc)
-	assert.Nil(t, svc.pool)
+	assert.NotNil(t, svc.repo)
 }
 
 func TestNewStatusService_NilPool(t *testing.T) {
-	repo := repository.NewStatusRepository()
-	svc := NewStatusService(repo, nil, "test-db-url")
+	repo := statusRepo.NewRepository(nil)
+	svc := NewStatusService(repo, "test-db-url")
 	assert.NotNil(t, svc)
 	assert.Equal(t, "test-db-url", svc.dbURL)
 }
 
 func TestNewQoderService_NilPool(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	assert.NotNil(t, svc)
-	assert.Nil(t, svc.contextRepo)
 	assert.Nil(t, svc.pool)
 }
 
 func TestNewLogService_NilPool(t *testing.T) {
-	svc := NewLogService(nil, nil)
+	svc := NewLogService(nil)
 	assert.NotNil(t, svc)
 }
 
@@ -66,7 +67,7 @@ func TestNewDecisionService_NilDeps(t *testing.T) {
 }
 
 func TestNewAlertService_NilPool(t *testing.T) {
-	svc := NewAlertService(nil, nil)
+	svc := NewAlertService(nil)
 	assert.NotNil(t, svc)
 }
 
@@ -78,7 +79,7 @@ func TestMapRowToTask_FullRow(t *testing.T) {
 	now := time.Now().UTC()
 	completedAt := now.Add(1 * time.Hour)
 
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:           "task-1",
 		TaskTitle:        "Review anomaly",
 		TaskDescription:  strPtr("Full task description"),
@@ -121,7 +122,7 @@ func TestMapRowToTask_FullRow(t *testing.T) {
 }
 
 func TestMapRowToTask_NullFields(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "task-2",
 		TaskTitle: "Minimal task",
 		CreatedAt: time.Now().UTC(),
@@ -145,7 +146,7 @@ func TestMapRowToTask_NullFields(t *testing.T) {
 }
 
 func TestMapRowToTask_EmptyPriorityDefault(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "task-3",
 		TaskTitle: "Empty priority",
 		Priority:  "",
@@ -159,7 +160,7 @@ func TestMapRowToTask_EmptyPriorityDefault(t *testing.T) {
 }
 
 func TestMapRowToTask_EmptyStatusDefault(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "task-4",
 		TaskTitle: "Empty status",
 		Status:    "",
@@ -177,7 +178,7 @@ func TestMapRowToTask_EmptyStatusDefault(t *testing.T) {
 func TestMapRowToTaskItem_FullRow(t *testing.T) {
 	now := time.Now().UTC()
 
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:           "ti-1",
 		TaskTitle:        "Fix pipeline",
 		TaskDescription:  strPtr("Task item description"),
@@ -211,7 +212,7 @@ func TestMapRowToTaskItem_FullRow(t *testing.T) {
 }
 
 func TestMapRowToTaskItem_NullFields(t *testing.T) {
-	row := repository.TaskRow{
+	row := taskRepo.TaskRow{
 		TaskID:    "ti-2",
 		TaskTitle: "Minimal item",
 		CreatedAt: time.Now().UTC(),
@@ -234,7 +235,7 @@ func TestMapRowToTaskItem_NullFields(t *testing.T) {
 // ============================================================
 
 func TestQoderService_GetContext_NilPool(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	ctx := context.Background()
 	params := model.ContextQueryParams{
 		Severity:    "high",
@@ -270,13 +271,13 @@ func TestQoderService_GetContext_NilPool(t *testing.T) {
 }
 
 func TestQoderService_QueryLastPipelineRun_NilPool(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	result := svc.queryLastPipelineRun(context.Background())
 	assert.Nil(t, result)
 }
 
 func TestQoderService_QueryAlerts_NilPool(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	total, items := svc.queryAlerts(context.Background(), "high", 10)
 	assert.Equal(t, 0, total)
 	assert.NotNil(t, items)
@@ -284,7 +285,7 @@ func TestQoderService_QueryAlerts_NilPool(t *testing.T) {
 }
 
 func TestQoderService_QueryOpenTasks_NilPool(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	total, items := svc.queryOpenTasks(context.Background(), 20)
 	assert.Equal(t, 0, total)
 	assert.NotNil(t, items)
@@ -292,7 +293,7 @@ func TestQoderService_QueryOpenTasks_NilPool(t *testing.T) {
 }
 
 func TestQoderService_QueryPendingOutbox_NilPool(t *testing.T) {
-	svc := NewQoderService(nil, nil)
+	svc := NewQoderService(nil)
 	total, items := svc.queryPendingOutbox(context.Background(), 30)
 	assert.Equal(t, 0, total)
 	assert.NotNil(t, items)

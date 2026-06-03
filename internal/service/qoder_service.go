@@ -8,7 +8,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	alertRepo "baxi/internal/repository/alert"
+	outboxRepo "baxi/internal/repository/outbox"
+	taskRepo "baxi/internal/repository/task"
 )
 
 // pipelineRunRow represents the last pipeline run from audit.pipeline_run.
@@ -26,15 +28,13 @@ type pipelineRunRow struct {
 
 // QoderService handles business logic for Qoder AI decision engine endpoints.
 type QoderService struct {
-	contextRepo repository.ContextRepository
-	pool        *pgxpool.Pool
+	pool *pgxpool.Pool
 }
 
 // NewQoderService creates a new QoderService.
-func NewQoderService(contextRepo repository.ContextRepository, pool *pgxpool.Pool) *QoderService {
+func NewQoderService(pool *pgxpool.Pool) *QoderService {
 	return &QoderService{
-		contextRepo: contextRepo,
-		pool:        pool,
+		pool: pool,
 	}
 }
 
@@ -180,7 +180,7 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 
 	var items []model.AlertItem
 	for rows.Next() {
-		var repoRow repository.AlertRow
+		var repoRow alertRepo.AlertRow
 		if err := rows.Scan(
 			&repoRow.AlertID, &repoRow.RuleID, &repoRow.EventDate,
 			&repoRow.Severity, &repoRow.MetricName,
@@ -190,6 +190,14 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 			&repoRow.Status, &repoRow.ImpactScore,
 		); err != nil {
 			continue
+		}
+		ownerRole := ""
+		if repoRow.OwnerRole != nil {
+			ownerRole = *repoRow.OwnerRole
+		}
+		status := ""
+		if repoRow.Status != nil {
+			status = *repoRow.Status
 		}
 		items = append(items, model.AlertItem{
 			EventID:       repoRow.AlertID,
@@ -202,8 +210,8 @@ func (s *QoderService) queryAlerts(ctx context.Context, severity string, limit i
 			CurrentValue:  repoRow.CurrentValue,
 			BaselineValue: repoRow.BaselineValue,
 			ChangeRate:    repoRow.ChangeRate,
-			OwnerRole:     repoRow.OwnerRole,
-			Status:        repoRow.Status,
+			OwnerRole:     ownerRole,
+			Status:        status,
 			ImpactScore:   repoRow.ImpactScore,
 		})
 	}
@@ -248,7 +256,7 @@ func (s *QoderService) queryOpenTasks(ctx context.Context, limit int) (int, []mo
 
 	var items []model.TaskItem
 	for rows.Next() {
-		var row repository.TaskRow
+		var row taskRepo.TaskRow
 		if err := rows.Scan(
 			&row.TaskID,
 			&row.RecommendationID,
@@ -309,7 +317,7 @@ func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, 
 
 	var items []model.OutboxItem
 	for rows.Next() {
-		var row repository.OutboxRow
+		var row outboxRepo.OutboxRow
 		if err := rows.Scan(
 			&row.OutboxID,
 			&row.EventType,
@@ -343,7 +351,7 @@ func (s *QoderService) queryPendingOutbox(ctx context.Context, limit int) (int, 
 	return total, items
 }
 
-func mapRowToTaskItem(row repository.TaskRow) model.TaskItem {
+func mapRowToTaskItem(row taskRepo.TaskRow) model.TaskItem {
 	desc := ""
 	if row.TaskDescription != nil {
 		desc = *row.TaskDescription

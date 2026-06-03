@@ -8,23 +8,23 @@ import (
 	"baxi/internal/governance"
 	"baxi/internal/ontology"
 	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/stretchr/testify/assert"
 )
 
 // --- Mocks ---
 
 type mockDecisionCaseDataProvider struct {
-	getCaseByIDFn     func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
-	getCaseBySourceFn func(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
+	getCaseByIDFn     func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
+	getCaseBySourceFn func(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error)
 }
 
-func (m *mockDecisionCaseDataProvider) GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
-	return m.getCaseByIDFn(ctx, pool, caseID)
+func (m *mockDecisionCaseDataProvider) GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
+	return m.getCaseByIDFn(ctx, caseID)
 }
 
-func (m *mockDecisionCaseDataProvider) GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error) {
-	return m.getCaseBySourceFn(ctx, pool, sourceType, sourceID)
+func (m *mockDecisionCaseDataProvider) GetCaseBySource(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error) {
+	return m.getCaseBySourceFn(ctx, sourceType, sourceID)
 }
 
 type mockObjectDataProvider struct {
@@ -52,12 +52,12 @@ func (m *mockClassificationProvider) GetFieldMarking(ctx context.Context, object
 
 func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-42"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -101,7 +101,7 @@ func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -120,12 +120,12 @@ func TestContextBuilder_BuildDecisionContext_WithTriggerData(t *testing.T) {
 
 func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-42"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -176,7 +176,7 @@ func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -195,12 +195,12 @@ func TestContextBuilder_BuildDecisionContext_AppliesRedaction(t *testing.T) {
 
 func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "medium"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -241,7 +241,7 @@ func TestContextBuilder_BuildDecisionContext_GovernanceData(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestContextBuilder_BuildLLMSafeContext_GeneratesHash(t *testing.T) {
 		ForbiddenActions: []string{"execute_dispatch", "modify_raw_data", "write_dwd", "write_mart"},
 	}
 
-	builder := NewContextBuilder(nil, nil, nil, nil, nil)
+	builder := NewContextBuilder(nil, nil, nil, nil)
 	llmCtx, err := builder.BuildLLMSafeContext(context.Background(), decisionCtx)
 
 	assert.NoError(t, err)
@@ -293,12 +293,12 @@ func TestContextBuilder_BuildLLMSafeContext_GeneratesHash(t *testing.T) {
 
 func TestContextBuilder_BuildDecisionContext_RedactedFieldsInGovernance(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -348,7 +348,7 @@ func TestContextBuilder_BuildDecisionContext_RedactedFieldsInGovernance(t *testi
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -380,12 +380,12 @@ func TestComputeContextHash(t *testing.T) {
 
 func TestContextBuilder_BuildDecisionContext_CaseNotFound(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			return nil, errors.New("case not found")
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, nil, nil, nil, nil)
+	builder := NewContextBuilder(caseSvc, nil, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-missing")
 
 	assert.Error(t, err)
@@ -395,11 +395,11 @@ func TestContextBuilder_BuildDecisionContext_CaseNotFound(t *testing.T) {
 
 func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			severity := "medium"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("manual"),
 				SourceID:   strPtr("manual-1"),
@@ -428,7 +428,7 @@ func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, classProvider, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.NoError(t, err)
@@ -439,12 +439,12 @@ func TestContextBuilder_BuildDecisionContext_NoAlertID(t *testing.T) {
 
 func TestContextBuilder_BuildDecisionContext_AlertError(t *testing.T) {
 	caseSvc := &mockDecisionCaseDataProvider{
-		getCaseByIDFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error) {
+		getCaseByIDFn: func(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error) {
 			alertID := "alert-1"
 			severity := "high"
 			objectType := "seller"
 			objectID := "seller-1"
-			return &repository.DecisionCaseRow{
+			return &decisionRepo.DecisionCaseRow{
 				CaseID:     "dc-1",
 				SourceType: strPtr("alert"),
 				SourceID:   strPtr("alert-1"),
@@ -462,7 +462,7 @@ func TestContextBuilder_BuildDecisionContext_AlertError(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(caseSvc, objectProvider, nil, nil, nil)
+	builder := NewContextBuilder(caseSvc, objectProvider, nil, nil)
 	decisionCtx, err := builder.BuildDecisionContext(context.Background(), "dc-1")
 
 	assert.Error(t, err)
