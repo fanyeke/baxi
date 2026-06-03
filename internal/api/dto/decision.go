@@ -1,6 +1,8 @@
 // Package dto provides data transfer objects for API responses.
 package dto
 
+import "encoding/json"
+
 // CreateCaseRequest is the request body for creating a decision case.
 type CreateCaseRequest struct {
 	SourceType string `json:"source_type"`
@@ -67,6 +69,43 @@ type ProposalItem struct {
 // ProposalListResponse is the list of proposals.
 type ProposalListResponse struct {
 	Items []ProposalItem `json:"items"`
+}
+
+// LLMDecisionItem represents a single LLM decision record in API responses.
+type LLMDecisionItem struct {
+	DecisionID       string          `json:"decision_id"`
+	CaseID           string          `json:"case_id"`
+	Provider         string          `json:"provider"`
+	Model            string          `json:"model"`
+	Confidence       float64         `json:"confidence"`
+	ValidationStatus string          `json:"validation_status"`
+	FallbackUsed     bool            `json:"fallback_used"`
+	OutputJSON       json.RawMessage `json:"output_json,omitempty"`
+	CreatedAt        string          `json:"created_at"`
+}
+
+// EvalItem represents a single evaluation result in API responses.
+type EvalItem struct {
+	EvalID        string          `json:"eval_id"`
+	LLMDecisionID string          `json:"llm_decision_id"`
+	CaseID        string          `json:"decision_case_id"`
+	EvalRuleID    string          `json:"eval_rule_id"`
+	EvalStatus    string          `json:"eval_status"`
+	Score         float64         `json:"score,omitempty"`
+	DetailsJSON   json.RawMessage `json:"details_json,omitempty"`
+	CreatedAt     string          `json:"created_at"`
+}
+
+// LLMDecisionListResponse is the paginated list response for LLM decisions.
+type LLMDecisionListResponse struct {
+	Items []LLMDecisionItem `json:"items"`
+	Total int               `json:"total"`
+}
+
+// EvalListResponse is the paginated list response for eval results.
+type EvalListResponse struct {
+	Items []EvalItem `json:"items"`
+	Total int        `json:"total"`
 }
 
 // CaseFilter represents query filter parameters.

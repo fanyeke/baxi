@@ -27,6 +27,9 @@ type DecisionService interface {
 	BuildContext(ctx context.Context, caseID string) (*decision.DecisionContext, error)
 	Decide(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
 	ListProposals(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	DecideLLM(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	ListLLMDecisions(ctx context.Context, caseID string) (interface{}, error)
+	ListEvals(ctx context.Context, caseID string) (interface{}, error)
 }
 
 // DecisionHandler handles HTTP requests for decision case endpoints.
