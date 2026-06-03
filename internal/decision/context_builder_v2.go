@@ -8,7 +8,7 @@ import (
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 )
 
 // ContextBuilderV2 builds governed LLM-safe decision contexts using the new
@@ -20,7 +20,6 @@ type ContextBuilderV2 struct {
 	ontologyRepo repository.OntologyAwareRepo
 	markingSvc   governance.MarkingService
 	lineageSvc   DecisionLineageService
-	pool         *pgxpool.Pool
 	actionTypes  ActionTypeProvider
 }
 
@@ -30,7 +29,6 @@ func NewContextBuilderV2(
 	ontologyRepo repository.OntologyAwareRepo,
 	markingSvc governance.MarkingService,
 	lineageSvc DecisionLineageService,
-	pool *pgxpool.Pool,
 	actionTypes ActionTypeProvider,
 ) *ContextBuilderV2 {
 	return &ContextBuilderV2{
@@ -38,7 +36,6 @@ func NewContextBuilderV2(
 		ontologyRepo: ontologyRepo,
 		markingSvc:   markingSvc,
 		lineageSvc:   lineageSvc,
-		pool:         pool,
 		actionTypes:  actionTypes,
 	}
 }
@@ -46,7 +43,7 @@ func NewContextBuilderV2(
 // BuildDecisionContext constructs a full DecisionContext for the given case ID
 // using the new ontology-aware repo, marking service, and lineage service.
 func (b *ContextBuilderV2) BuildDecisionContext(ctx context.Context, caseID string) (*DecisionContext, error) {
-	caseRow, err := b.caseSvc.GetCaseByID(ctx, b.pool, caseID)
+	caseRow, err := b.caseSvc.GetCaseByID(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch case %s: %w", caseID, err)
 	}
@@ -60,7 +57,7 @@ func (b *ContextBuilderV2) BuildDecisionContext(ctx context.Context, caseID stri
 		return nil, err
 	}
 
-	objectInst, err := b.ontologyRepo.GetObjectByID(ctx, b.pool, objectType, objectID)
+	objectInst, err := b.ontologyRepo.GetObjectByID(ctx, objectType, objectID)
 	if err != nil {
 		return nil, fmt.Errorf("get object %s/%s: %w", objectType, objectID, err)
 	}
@@ -123,7 +120,7 @@ func (b *ContextBuilderV2) BuildDecisionContext(ctx context.Context, caseID stri
 }
 
 // buildTriggerV2 fetches alert data using OntologyAwareRepo and builds TriggerInfo.
-func (b *ContextBuilderV2) buildTriggerV2(ctx context.Context, caseRow *repository.DecisionCaseRow, severity string) (TriggerInfo, error) {
+func (b *ContextBuilderV2) buildTriggerV2(ctx context.Context, caseRow *decisionRepo.DecisionCaseRow, severity string) (TriggerInfo, error) {
 	trigger := TriggerInfo{
 		Severity: severity,
 	}
@@ -132,7 +129,7 @@ func (b *ContextBuilderV2) buildTriggerV2(ctx context.Context, caseRow *reposito
 		return trigger, nil
 	}
 
-	alert, err := b.ontologyRepo.GetObjectByID(ctx, b.pool, "metric_alert", *caseRow.AlertID)
+	alert, err := b.ontologyRepo.GetObjectByID(ctx, "metric_alert", *caseRow.AlertID)
 	if err != nil {
 		return trigger, fmt.Errorf("fetch alert %s: %w", *caseRow.AlertID, err)
 	}

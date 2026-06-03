@@ -9,8 +9,7 @@ import (
 
 	"baxi/internal/decision"
 	"baxi/internal/llm"
-	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 )
 
 // ActionProposal is the domain model for ai.action_proposal.
@@ -33,13 +32,13 @@ type ActionProposal struct {
 
 // ProposalRepository defines the interface for action proposal storage operations.
 type ProposalRepository interface {
-	CreateProposal(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error
-	ListProposalsByCase(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error)
+	CreateProposal(ctx context.Context, row *decisionRepo.ActionProposalRow) error
+	ListProposalsByCase(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error)
 }
 
 // CaseStatusUpdater defines the interface for updating decision case status.
 type CaseStatusUpdater interface {
-	UpdateCaseStatus(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
+	UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
 }
 
 // ProposalService generates and manages action proposals from decisions.
@@ -47,16 +46,14 @@ type ProposalService struct {
 	repo     ProposalRepository
 	caseSvc  CaseStatusUpdater
 	registry *ActionRegistry
-	pool     *pgxpool.Pool
 }
 
 // NewProposalService creates a new ProposalService.
-func NewProposalService(repo ProposalRepository, caseSvc CaseStatusUpdater, registry *ActionRegistry, pool *pgxpool.Pool) *ProposalService {
+func NewProposalService(repo ProposalRepository, caseSvc CaseStatusUpdater, registry *ActionRegistry) *ProposalService {
 	return &ProposalService{
 		repo:     repo,
 		caseSvc:  caseSvc,
 		registry: registry,
-		pool:     pool,
 	}
 }
 
@@ -124,7 +121,7 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 			recipeIDPtr = &dec.RecipeID
 		}
 
-		row := &repository.ActionProposalRow{
+		row := &decisionRepo.ActionProposalRow{
 			ProposalID:          proposalID,
 			CaseID:              caseID,
 			DecisionID:          &decisionID,
@@ -142,7 +139,7 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 			RecipeID:            recipeIDPtr,
 		}
 
-		if err := s.repo.CreateProposal(ctx, s.pool, row); err != nil {
+		if err := s.repo.CreateProposal(ctx, row); err != nil {
 			return nil, fmt.Errorf("create proposal for action %s: %w", action.ActionType, err)
 		}
 
@@ -150,7 +147,7 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 	}
 
 	// Update case status to signal proposals have been generated
-	if err := s.caseSvc.UpdateCaseStatus(ctx, s.pool, caseID, "proposal_generated", nil, nil, nil); err != nil {
+	if err := s.caseSvc.UpdateCaseStatus(ctx, caseID, "proposal_generated", nil, nil, nil); err != nil {
 		return nil, fmt.Errorf("update case status to proposal_generated: %w", err)
 	}
 
@@ -163,7 +160,7 @@ func (s *ProposalService) GenerateProposals(ctx context.Context, caseID, decisio
 
 // ListProposals returns all action proposals for a given case.
 func (s *ProposalService) ListProposals(ctx context.Context, caseID string) ([]ActionProposal, error) {
-	rows, err := s.repo.ListProposalsByCase(ctx, s.pool, caseID)
+	rows, err := s.repo.ListProposalsByCase(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("list proposals for case %s: %w", caseID, err)
 	}
@@ -177,7 +174,7 @@ func (s *ProposalService) ListProposals(ctx context.Context, caseID string) ([]A
 }
 
 // rowToProposal maps an ActionProposalRow to an ActionProposal domain struct.
-func rowToProposal(row *repository.ActionProposalRow) *ActionProposal {
+func rowToProposal(row *decisionRepo.ActionProposalRow) *ActionProposal {
 	p := &ActionProposal{
 		ProposalID:          row.ProposalID,
 		CaseID:              row.CaseID,

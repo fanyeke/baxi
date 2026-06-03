@@ -10,14 +10,14 @@ import (
 	"baxi/internal/governance"
 	"baxi/internal/llm"
 	"baxi/internal/ontology"
-	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
+	ontologyRepo "baxi/internal/repository/ontology"
 )
 
 // ObjectDataProvider provides object context data.
 type ObjectDataProvider interface {
 	BuildObjectContext(ctx context.Context, objectType, objectID string) (*ontology.ObjectContext, error)
-	GetMetricAlert(ctx context.Context, alertID string) (*repository.ObjectInstance, error)
+	GetMetricAlert(ctx context.Context, alertID string) (*ontologyRepo.ObjectInstance, error)
 }
 
 // ClassificationProvider provides data classification info.
@@ -27,8 +27,8 @@ type ClassificationProvider interface {
 
 // DecisionCaseDataProvider provides decision case data.
 type DecisionCaseDataProvider interface {
-	GetCaseByID(ctx context.Context, pool *pgxpool.Pool, caseID string) (*repository.DecisionCaseRow, error)
-	GetCaseBySource(ctx context.Context, pool *pgxpool.Pool, sourceType, sourceID string) (*repository.DecisionCaseRow, error)
+	GetCaseByID(ctx context.Context, caseID string) (*decisionRepo.DecisionCaseRow, error)
+	GetCaseBySource(ctx context.Context, sourceType, sourceID string) (*decisionRepo.DecisionCaseRow, error)
 }
 
 // ActionTypeProvider provides action type information for decision contexts.
@@ -56,7 +56,7 @@ type PolicyResult struct {
 }
 
 // Compile-time interface checks.
-var _ DecisionCaseDataProvider = (*repository.DecisionRepository)(nil)
+var _ DecisionCaseDataProvider = (*decisionRepo.Repository)(nil)
 
 // EnrichedObjectData holds the context of a linked object discovered via
 // OAG (Object-Action-Governance) link traversal.
@@ -132,7 +132,6 @@ type ContextBuilder struct {
 	caseSvc        DecisionCaseDataProvider
 	objectProvider ObjectDataProvider
 	classProvider  ClassificationProvider
-	pool           *pgxpool.Pool
 	actionTypes    ActionTypeProvider
 }
 
@@ -141,21 +140,19 @@ func NewContextBuilder(
 	caseSvc DecisionCaseDataProvider,
 	objectProvider ObjectDataProvider,
 	classProvider ClassificationProvider,
-	pool *pgxpool.Pool,
 	actionTypes ActionTypeProvider,
 ) *ContextBuilder {
 	return &ContextBuilder{
 		caseSvc:        caseSvc,
 		objectProvider: objectProvider,
 		classProvider:  classProvider,
-		pool:           pool,
 		actionTypes:    actionTypes,
 	}
 }
 
 // BuildDecisionContext constructs a full DecisionContext for the given case ID.
 func (b *ContextBuilder) BuildDecisionContext(ctx context.Context, caseID string) (*DecisionContext, error) {
-	caseRow, err := b.caseSvc.GetCaseByID(ctx, b.pool, caseID)
+	caseRow, err := b.caseSvc.GetCaseByID(ctx, caseID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch case %s: %w", caseID, err)
 	}
@@ -163,6 +160,10 @@ func (b *ContextBuilder) BuildDecisionContext(ctx context.Context, caseID string
 	objectType := derefString(caseRow.ObjectType)
 	objectID := derefString(caseRow.ObjectID)
 	severity := derefString(caseRow.Severity)
+
+	if objectType == "" || objectID == "" {
+		return nil, fmt.Errorf("case %s missing object_type/object_id, cannot build context", caseID)
+	}
 
 	trigger, err := b.buildTrigger(ctx, caseRow, severity)
 	if err != nil {
@@ -262,7 +263,7 @@ func ComputeContextHash(context interface{}) (string, error) {
 	return hex.EncodeToString(hash[:]), nil
 }
 
-func (b *ContextBuilder) buildTrigger(ctx context.Context, caseRow *repository.DecisionCaseRow, severity string) (TriggerInfo, error) {
+func (b *ContextBuilder) buildTrigger(ctx context.Context, caseRow *decisionRepo.DecisionCaseRow, severity string) (TriggerInfo, error) {
 	trigger := TriggerInfo{
 		Severity: severity,
 	}

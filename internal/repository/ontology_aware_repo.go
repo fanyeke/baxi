@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ObjectSchema struct {
@@ -21,7 +19,7 @@ type PropertySchema struct {
 }
 
 type OntologyAwareRepo interface {
-	GetObjectByID(ctx context.Context, pool *pgxpool.Pool, objectType, objectID string) (*ObjectInstance, error)
-	QueryByObjectType(ctx context.Context, pool *pgxpool.Pool, objectType string, filters ObjectFilters) (*ObjectQueryResult, error)
+	GetObjectByID(ctx context.Context, objectType, objectID string) (*ObjectInstance, error)
+	QueryByObjectType(ctx context.Context, objectType string, filters ObjectFilters) (*ObjectQueryResult, error)
 	GetObjectTypeSchema(ctx context.Context, objectType string) (*ObjectSchema, error)
 }

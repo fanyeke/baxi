@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"baxi/internal/repository"
 )
 
@@ -22,13 +20,13 @@ func NewOntologyAwareAdapter(querier repository.ObjectQuerier, registry objectTy
 	return &OntologyAwareAdapter{querier: querier, registry: registry}
 }
 
-func (a *OntologyAwareAdapter) GetObjectByID(ctx context.Context, pool *pgxpool.Pool, objectType, objectID string) (*repository.ObjectInstance, error) {
+func (a *OntologyAwareAdapter) GetObjectByID(ctx context.Context, objectType, objectID string) (*repository.ObjectInstance, error) {
 	allowed, err := a.allowedProperties(objectType)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, err := a.querier.GetObjectByID(ctx, pool, objectType, objectID)
+	obj, err := a.querier.GetObjectByID(ctx, objectType, objectID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +35,13 @@ func (a *OntologyAwareAdapter) GetObjectByID(ctx context.Context, pool *pgxpool.
 	return obj, nil
 }
 
-func (a *OntologyAwareAdapter) QueryByObjectType(ctx context.Context, pool *pgxpool.Pool, objectType string, filters repository.ObjectFilters) (*repository.ObjectQueryResult, error) {
+func (a *OntologyAwareAdapter) QueryByObjectType(ctx context.Context, objectType string, filters repository.ObjectFilters) (*repository.ObjectQueryResult, error) {
 	allowed, err := a.allowedProperties(objectType)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := a.querier.QueryByObjectType(ctx, pool, objectType, filters)
+	result, err := a.querier.QueryByObjectType(ctx, objectType, filters)
 	if err != nil {
 		return nil, err
 	}
