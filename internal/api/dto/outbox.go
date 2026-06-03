@@ -29,3 +29,8 @@ type OutboxFilters struct {
 	Channel   *string
 	EventType *string
 }
+
+// BatchDispatchRequest holds the parameters for a batch dispatch operation.
+type BatchDispatchRequest struct {
+	DryRun bool `json:"dry_run"`
+}

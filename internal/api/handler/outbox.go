@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -190,7 +191,48 @@ type BatchDispatchResponse struct {
 
 // HandleBatchDispatch handles POST /outbox/dispatch.
 func (h *OutboxHandler) HandleBatchDispatch(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	var req dto.BatchDispatchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// Empty body or invalid JSON defaults to dry_run=false
+		req.DryRun = false
+	}
+
+	status := "pending"
+	filters := model.OutboxFilters{
+		Status: &status,
+	}
+
+	resp, err := h.svc.List(r.Context(), filters, 1000, 0)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "failed to list pending events")
+		return
+	}
+
+	dispatched := 0
+	failed := 0
+	eventIDs := make([]string, 0, len(resp.Items))
+
+	for _, event := range resp.Items {
+		eventIDs = append(eventIDs, event.OutboxID)
+
+		if req.DryRun {
+			dispatched++
+			continue
+		}
+
+		if err := h.svc.DispatchEvent(r.Context(), event.OutboxID); err != nil {
+			failed++
+			continue
+		}
+		dispatched++
+	}
+
+	httputil.JSON(w, http.StatusOK, BatchDispatchResponse{
+		DryRun:     req.DryRun,
+		Dispatched: dispatched,
+		Failed:     failed,
+		EventIDs:   eventIDs,
+	})
 }
 
 // dtoFromOutboxListResponse converts model.OutboxListResponse to dto.OutboxListResponse.
