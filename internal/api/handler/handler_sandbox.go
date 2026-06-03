@@ -43,7 +43,9 @@ func (h *SandboxHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.CaseID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "case_id is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "case_id", Message: "case_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -104,7 +106,9 @@ func (h *SandboxHandler) HandleAddProposal(w http.ResponseWriter, r *http.Reques
 	}
 
 	if req.ProposalID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal_id is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "proposal_id", Message: "proposal_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -125,8 +129,15 @@ func (h *SandboxHandler) HandleCompare(w http.ResponseWriter, r *http.Request) {
 	sandboxID1 := r.URL.Query().Get("sandbox1_id")
 	sandboxID2 := r.URL.Query().Get("sandbox2_id")
 
-	if sandboxID1 == "" || sandboxID2 == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "both sandbox1_id and sandbox2_id query parameters are required")
+	var fields []dto.FieldError
+	if sandboxID1 == "" {
+		fields = append(fields, dto.FieldError{Field: "sandbox1_id", Message: "sandbox1_id is required", Code: "required"})
+	}
+	if sandboxID2 == "" {
+		fields = append(fields, dto.FieldError{Field: "sandbox2_id", Message: "sandbox2_id is required", Code: "required"})
+	}
+	if len(fields) > 0 {
+		writeValidationError(w, r, "validation failed", fields)
 		return
 	}
 

@@ -77,7 +77,9 @@ func (h *OutboxHandler) HandleListOutbox(w http.ResponseWriter, r *http.Request)
 func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "event_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -101,7 +103,9 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "event_id is required", Code: "required"},
+		})
 		return
 	}
 
@@ -135,7 +139,9 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 func (h *OutboxHandler) HandleGetDetail(w http.ResponseWriter, r *http.Request) {
 	eventID := chi.URLParam(r, "id")
 	if eventID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "event_id required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "event_id is required", Code: "required"},
+		})
 		return
 	}
 

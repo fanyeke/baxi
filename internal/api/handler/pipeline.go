@@ -36,7 +36,9 @@ func (h *PipelineHandler) HandleRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Config == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "config is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "config", Message: "config is required", Code: "required"},
+		})
 		return
 	}
 
