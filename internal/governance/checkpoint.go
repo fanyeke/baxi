@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	"baxi/internal/repository"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 // CheckpointRule represents a checkpoint rule from config_snapshot.
@@ -21,15 +19,31 @@ type checkpointRulesConfig struct {
 	Checkpoints []CheckpointRule `json:"checkpoints"`
 }
 
+type checkpointSnapshotRepo interface {
+	GetConfigSnapshots(ctx context.Context) ([]governanceRepo.ConfigSnapshotRow, error)
+}
+
+type providerAdapter struct {
+	provider ConfigSnapshotProvider
+}
+
+func (a *providerAdapter) GetConfigSnapshots(ctx context.Context) ([]governanceRepo.ConfigSnapshotRow, error) {
+	return a.provider.GetConfigSnapshots(ctx)
+}
+
 // CheckpointService provides checkpoint evaluation for sensitive actions.
 type CheckpointService struct {
-	pool *pgxpool.Pool
-	repo *repository.GovernanceRepository
+	repo checkpointSnapshotRepo
 }
 
 // NewCheckpointService creates a new CheckpointService.
-func NewCheckpointService(pool *pgxpool.Pool, repo *repository.GovernanceRepository) *CheckpointService {
-	return &CheckpointService{pool: pool, repo: repo}
+func NewCheckpointService(repo checkpointSnapshotRepo) *CheckpointService {
+	return &CheckpointService{repo: repo}
+}
+
+// NewCheckpointServiceWithProvider creates a CheckpointService with a provider for testing.
+func NewCheckpointServiceWithProvider(provider ConfigSnapshotProvider) *CheckpointService {
+	return &CheckpointService{repo: &providerAdapter{provider: provider}}
 }
 
 // RequiresCheckpoint checks if an action requires a checkpoint before execution.
@@ -46,7 +60,7 @@ func (s *CheckpointService) RequiresCheckpoint(ctx context.Context, action strin
 	}
 
 	// Also check config_snapshot for additional checkpoint rules
-	snapshots, err := s.repo.GetConfigSnapshots(ctx, s.pool)
+	snapshots, err := s.repo.GetConfigSnapshots(ctx)
 	if err != nil {
 		return false
 	}
@@ -70,7 +84,7 @@ func (s *CheckpointService) RequiresCheckpoint(ctx context.Context, action strin
 
 // GetRules returns all checkpoint rules loaded from config_snapshot.
 func (s *CheckpointService) GetRules(ctx context.Context) []CheckpointRule {
-	snapshots, err := s.repo.GetConfigSnapshots(ctx, s.pool)
+	snapshots, err := s.repo.GetConfigSnapshots(ctx)
 	if err != nil {
 		return nil
 	}

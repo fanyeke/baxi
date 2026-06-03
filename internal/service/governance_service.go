@@ -8,12 +8,12 @@ import (
 
 	"baxi/internal/governance"
 	"baxi/internal/model"
-	"baxi/internal/repository"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 // GovernanceService handles business logic for governance operations.
 type GovernanceService struct {
-	repo           *repository.GovernanceRepository
+	repo           *governanceRepo.Repository
 	pool           *pgxpool.Pool
 	classification *governance.ClassificationService
 	lineage        *governance.LineageService
@@ -22,14 +22,14 @@ type GovernanceService struct {
 }
 
 // NewGovernanceService creates a new GovernanceService with all governance domain services.
-func NewGovernanceService(repo *repository.GovernanceRepository, pool *pgxpool.Pool) *GovernanceService {
+func NewGovernanceService(repo *governanceRepo.Repository, pool *pgxpool.Pool) *GovernanceService {
 	return &GovernanceService{
 		repo:           repo,
 		pool:           pool,
-		classification: governance.NewClassificationService(pool, repo),
-		lineage:        governance.NewLineageService(pool, repo),
-		accessPolicy:   governance.NewAccessPolicyService(pool, repo),
-		checkpoint:     governance.NewCheckpointService(pool, repo),
+		classification: governance.NewClassificationService(repo),
+		lineage:        governance.NewLineageService(repo),
+		accessPolicy:   governance.NewAccessPolicyService(repo),
+		checkpoint:     governance.NewCheckpointService(repo),
 	}
 }
 
@@ -38,7 +38,7 @@ func NewGovernanceService(repo *repository.GovernanceRepository, pool *pgxpool.P
 // to "active" and configs populated. If no data exists, returns "unknown" with empty configs.
 // Enhanced to include object_schema_count.
 func (s *GovernanceService) GetStatus(ctx context.Context) (*model.GovernanceStatusResponse, error) {
-	configs, err := s.repo.GetConfigSnapshots(ctx, s.pool)
+	configs, err := s.repo.GetConfigSnapshots(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get governance status: %w", err)
 	}
@@ -53,7 +53,7 @@ func (s *GovernanceService) GetStatus(ctx context.Context) (*model.GovernanceSta
 		layer = "unknown"
 	}
 
-	schemaCount := s.repo.CountObjectSchemas(ctx, s.pool)
+	schemaCount := s.repo.CountObjectSchemas(ctx)
 
 	return &model.GovernanceStatusResponse{
 		GovernanceLayer:   layer,
@@ -233,7 +233,7 @@ func (s *GovernanceService) GetHealthChecks(ctx context.Context) (*model.HealthC
 
 // GetCatalog returns the governance catalog of object schemas and datasets.
 func (s *GovernanceService) GetCatalog(ctx context.Context) (*model.CatalogResponse, error) {
-	schemas, err := s.repo.GetObjectSchemas(ctx, s.pool)
+	schemas, err := s.repo.GetObjectSchemas(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get catalog: %w", err)
 	}

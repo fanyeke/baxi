@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"baxi/internal/repository"
+	"baxi/internal/repository/common"
+	governanceRepo "baxi/internal/repository/governance"
 )
 
 const svcGovDDL = `
@@ -105,8 +106,9 @@ func TestGovernanceService_GetStatus(t *testing.T) {
 	_, err = pool.Exec(ctx, `INSERT INTO gov.object_schema (object_type, object_name) VALUES ('order', 'Order'), ('customer', 'Customer')`)
 	require.NoError(t, err)
 
-	repo := repository.NewGovernanceRepository()
-	repo.SetPool(pool)
+	
+	provider := common.NewPoolProvider(pool)
+	repo := governanceRepo.NewRepository(provider)
 	svc := NewGovernanceService(repo, pool)
 
 	resp, err := svc.GetStatus(ctx)
@@ -134,8 +136,9 @@ func TestGovernanceService_GetClassification(t *testing.T) {
 		('order.amount', 'sensitive', 0.8, 'Order amount')`)
 	require.NoError(t, err)
 
-	repo := repository.NewGovernanceRepository()
-	repo.SetPool(pool)
+	
+	provider := common.NewPoolProvider(pool)
+	repo := governanceRepo.NewRepository(provider)
 	svc := NewGovernanceService(repo, pool)
 
 	t.Run("all classifications", func(t *testing.T) {
@@ -182,8 +185,9 @@ func TestGovernanceService_GetFieldMarking(t *testing.T) {
 		('order.amount', 'public_internal', 0.2, 'Order amount')`)
 	require.NoError(t, err)
 
-	repo := repository.NewGovernanceRepository()
-	repo.SetPool(pool)
+	
+	provider := common.NewPoolProvider(pool)
+	repo := governanceRepo.NewRepository(provider)
 	svc := NewGovernanceService(repo, pool)
 
 	t.Run("all markings when no filter", func(t *testing.T) {
@@ -220,8 +224,9 @@ func TestGovernanceService_GetCatalog(t *testing.T) {
 		('product', 'Product', '1.0')`)
 	require.NoError(t, err)
 
-	repo := repository.NewGovernanceRepository()
-	repo.SetPool(pool)
+	
+	provider := common.NewPoolProvider(pool)
+	repo := governanceRepo.NewRepository(provider)
 	svc := NewGovernanceService(repo, pool)
 
 	resp, err := svc.GetCatalog(ctx)
@@ -255,8 +260,9 @@ func TestGovernanceService_GetHealthChecks(t *testing.T) {
 	_, err = pool.Exec(ctx, `INSERT INTO gov.data_classification (field_path, classification_level) VALUES ('test.field', 'internal')`)
 	require.NoError(t, err)
 
-	repo := repository.NewGovernanceRepository()
-	repo.SetPool(pool)
+	
+	provider := common.NewPoolProvider(pool)
+	repo := governanceRepo.NewRepository(provider)
 	svc := NewGovernanceService(repo, pool)
 
 	resp, err := svc.GetHealthChecks(ctx)
@@ -291,8 +297,9 @@ func TestGovernanceService_GetLineage(t *testing.T) {
 		('dwd.dwd_order_level', 'order_id', 'metric.metric_daily', 'order_id')`)
 	require.NoError(t, err)
 
-	repo := repository.NewGovernanceRepository()
-	repo.SetPool(pool)
+	
+	provider := common.NewPoolProvider(pool)
+	repo := governanceRepo.NewRepository(provider)
 	svc := NewGovernanceService(repo, pool)
 
 	resp, err := svc.GetLineage(ctx, "dwd.dwd_order_level")
