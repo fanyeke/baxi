@@ -31,20 +31,18 @@ Phase 2 designs the PostgreSQL layered schema that replaces the existing SQLite 
 
 The exclusive source of truth for existing SQLite table definitions is:
 
-- **`migration_baseline/sqlite_schema.sql`** — 16 table definitions with all columns from migrations 003 through 007 applied
+- **`migration_baseline/`** — Migration baseline directory (removed; migration complete). Contained `sqlite_schema.sql` (16 table definitions), `table_counts.json` (906,526 rows), and config snapshots.
 - **NOT `sql/schema.sql`** — this file is outdated v0.2, missing 2 tables and 10+ columns
 
 Additional references:
-- `migration_baseline/table_counts.json` — 906,526 total rows across 16 tables
 - `sql/indexes.sql` — 25 existing indexes
 - `sql/migrations/010_add_foreign_keys.sql` — Foreign key constraints
-- `migration_baseline/configs_snapshot/` — 28 YAML config files for governance context
 
 ---
 
 ## 2. SQLite to PostgreSQL Table Mapping Matrix
 
-The following table maps all 16 existing SQLite tables to their PostgreSQL schema and table names. Row counts are from `migration_baseline/table_counts.json`.
+The following table maps all 16 existing SQLite tables to their PostgreSQL schema and table names. Row counts are from `migration_baseline/table_counts.json` (removed; migration complete).
 
 | SQLite Table | Rows | PostgreSQL Schema | PostgreSQL Table | Notes |
 |---|---|---|---|---|
@@ -899,8 +897,10 @@ The following fields change from SQLite INTEGER (0/1) to PostgreSQL BOOLEAN:
 ### Running the Introspection
 
 ```bash
-psql "$DATABASE_URL" -f scripts/migration/introspect_schema.sql
+psql "$DATABASE_URL" -c "SELECT table_schema, table_name, column_name, data_type FROM information_schema.columns WHERE table_schema IN ('raw','dwd','mart','ops','gov','ai','audit') ORDER BY table_schema, table_name, ordinal_position;"
 ```
+
+> **Note:** The schema introspection script at `scripts/migration/introspect_schema.sql` was removed after migration completion. Use the `information_schema` queries shown above for current schema inspection.
 
 The script outputs 6 sections: Schema Overview, Table Inventory, Column Type Distribution, Index Inventory, Foreign Key Constraints, and Summary. It inspects all 7 schemas (raw, dwd, mart, ops, gov, ai, audit) and reports on every table, column, index, and foreign key constraint.
 
@@ -1023,11 +1023,11 @@ All 3 FKs reside in the `ops` schema with `ON DELETE SET NULL`, matching the des
 # Quick schema health check
 psql "$DATABASE_URL" -c "SELECT table_schema, COUNT(*) FROM information_schema.tables WHERE table_schema IN ('raw','dwd','mart','ops','gov','ai','audit') GROUP BY table_schema ORDER BY table_schema;"
 
-# Full introspection (this script)
-psql "$DATABASE_URL" -f scripts/migration/introspect_schema.sql
+# Full introspection
+psql "$DATABASE_URL" -c "SELECT table_schema, table_name, column_name, data_type FROM information_schema.columns WHERE table_schema IN ('raw','dwd','mart','ops','gov','ai','audit') ORDER BY table_schema, table_name, ordinal_position;"
 
-# Run parity with SQLite baseline
-python3 scripts/migration/verify_schema.py
+# Schema verification
+go test ./internal/repository/...
 ```
 
 ---

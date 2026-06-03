@@ -12,7 +12,7 @@ This is a parity migration, not a redesign. The Go API reproduces the FastAPI en
 
 - **FastAPI freeze tag**: `v0.5.3-python-sqlite-freeze`
 - **Migration branch**: `migration/go-postgres`
-- **API response snapshots**: `migration_baseline/api_responses/` (7 JSON files)
+- **API response snapshots**: `migration_baseline/api_responses/` (removed — migration complete)
 - **Blueprint reference**: `docs/API_REFERENCE.md`
 
 ---

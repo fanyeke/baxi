@@ -1,5 +1,7 @@
 # Marketing Funnel 数据集获取指南
 
+> **注意：** 本文档引用了 Python 分析脚本。这些脚本已在 Go/PostgreSQL 迁移过程中移除。当前数据分析由 Go 管道执行。
+
 ## 数据集说明
 
 Olist Marketing Funnel 数据集记录了 Olist 如何获取卖家（商家）以及这些卖家的转化过程，是理解 Olist 商业模式的关键数据。
