@@ -57,7 +57,12 @@ Plans:
   4. Malformed JSON in request bodies returns 400 with parse error details instead of being silently ignored
   5. Database connection failures return 503 Service Unavailable with retry-after guidance
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — 核心错误基础设施（新常量、Details 字段、FieldError 类型、DB 连接检测）
+- [ ] 02-02-PLAN.md — Bug 修复 + 错误码修正（静默 JSON 解码、冲突/服务不可用错误码、类型化哨兵错误）
+- [ ] 02-03-PLAN.md — 验证错误字段级详情 + DB 503 检测（writeValidationError、writeServiceError 覆盖所有 handler）
 
 ### Phase 3: Code Hygiene & Cleanup
 
