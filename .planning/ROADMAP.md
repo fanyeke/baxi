@@ -11,7 +11,7 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Core API Completion** - Implement all 6 API endpoints returning 501, plus OpenAPI schemas
+- [x] **Phase 1: Core API Completion** - Implement all 6 API endpoints returning 501, plus OpenAPI schemas (completed 2026-06-03)
 - [ ] **Phase 2: Error Handling & Observability** - Replace generic 500s with proper HTTP status codes and structured error responses
 - [ ] **Phase 3: Code Hygiene & Cleanup** - Remove Python/SQLite remnants, dead code, deprecated repositories
 - [ ] **Phase 4: Bug Fixes & Stability** - Fix silently ignored errors, marshaling failures, migration gaps, SQL injection risks
@@ -42,7 +42,7 @@ Plans:
 - [x] 01-01-PLAN.md — DecideLLM + ListLLMDecisions + ListEvals implementation
 - [x] 01-02-PLAN.md — Compare + Replay implementation
 - [x] 01-03-PLAN.md — BatchDispatch implementation
-- [ ] 01-04-PLAN.md — OpenAPI schema documentation
+- [x] 01-04-PLAN.md — OpenAPI schema documentation
 
 ### Phase 2: Error Handling & Observability
 
@@ -127,7 +127,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core API Completion | 3/4 | In Progress|  |
+| 1. Core API Completion | 4/4 | Complete   | 2026-06-03 |
 | 2. Error Handling & Observability | 0/TBD | Not started | - |
 | 3. Code Hygiene & Cleanup | 0/TBD | Not started | - |
 | 4. Bug Fixes & Stability | 0/TBD | Not started | - |
