@@ -1,4 +1,4 @@
-.PHONY: up down migrate api worker mcp test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare api-compare test-pipeline governance-load governance-check test-governance test-governance-integration decision-create decision-context decision-decide decision-list decision-compare decision-replay decision-evals llm-status llm-metrics backup restore rollback verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-all coverage
+.PHONY: up down migrate api worker mcp test fmt build vet tidy restart pipeline pipeline-ingest pipeline-dwd pipeline-metrics pipeline-compare test-pipeline governance-load governance-check test-governance test-governance-integration decision-create decision-context decision-decide decision-list decision-compare decision-replay decision-evals backup restore rollback verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-all coverage
 
 DATABASE_URL ?= postgres://baxi:baxi_dev@localhost:5432/baxi?sslmode=disable
 DATA_DIR ?= ./data/raw
@@ -68,9 +68,6 @@ pipeline-metrics:  ## Run metric build steps
 pipeline-compare:  ## Compare output against baseline
 	go run ./cmd/baxi-cli pipeline validate --data-dir $(DATA_DIR)
 
-api-compare:  ## Compare Go API responses against baseline snapshots
-	python3 scripts/migration/compare_api_baseline.py
-
 test-pipeline:  ## Run pipeline tests
 	go test ./internal/pipeline/... ./internal/ingest/... ./internal/alert/... ./internal/recommendation/... ./internal/outbox/... -short -count=1
 
@@ -108,13 +105,6 @@ decision-replay:  ## Replay a decision case
 
 decision-evals:  ## Evaluate a decision case
 	go run ./cmd/baxi-cli decision evals --case-id $(CASE_ID)
-
-# LLM commands
-llm-status:  ## Show LLM provider status
-	go run ./cmd/baxi-cli llm status
-
-llm-metrics:  ## Show LLM usage metrics
-	go run ./cmd/baxi-cli llm metrics
 
 # Migration Verification
 verify-phase1:  ## Verify Phase 1: Parallel Run (both APIs + new tables)
