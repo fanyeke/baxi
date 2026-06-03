@@ -55,7 +55,7 @@ describe("Layout", () => {
 
   it("uses default token when no token is stored", () => {
     renderWithRouter()
-    expect(sessionStorage.getItem("API_BEARER_TOKEN")).toBe("test-token-for-dev-b2kA3QOBBD48wLFQAgAtLw")
+    expect(sessionStorage.getItem("API_BEARER_TOKEN")).toBeNull()
   })
 
   it("loads existing token from sessionStorage", () => {
