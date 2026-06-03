@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"baxi/internal/action"
+	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/httputil"
 )
@@ -57,7 +58,9 @@ type statusResponse struct {
 func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 	proposalID := chi.URLParam(r, "id")
 	if proposalID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal ID is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "proposal ID is required", Code: "required"},
+		})
 		return
 	}
 
@@ -110,7 +113,9 @@ func (h *ActionHandler) HandleExecute(w http.ResponseWriter, r *http.Request) {
 func (h *ActionHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	proposalID := chi.URLParam(r, "id")
 	if proposalID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "proposal ID is required")
+		writeValidationError(w, r, "validation failed", []dto.FieldError{
+			{Field: "id", Message: "proposal ID is required", Code: "required"},
+		})
 		return
 	}
 

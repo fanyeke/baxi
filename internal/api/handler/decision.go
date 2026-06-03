@@ -54,8 +54,15 @@ func (h *DecisionHandler) CreateCase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.SourceType == "" || req.SourceID == "" {
-		writeError(w, r, http.StatusBadRequest, middleware.BAD_REQUEST, "source_type and source_id are required")
+	var fields []dto.FieldError
+	if req.SourceType == "" {
+		fields = append(fields, dto.FieldError{Field: "source_type", Message: "source_type is required", Code: "required"})
+	}
+	if req.SourceID == "" {
+		fields = append(fields, dto.FieldError{Field: "source_id", Message: "source_id is required", Code: "required"})
+	}
+	if len(fields) > 0 {
+		writeValidationError(w, r, "validation failed", fields)
 		return
 	}
 
