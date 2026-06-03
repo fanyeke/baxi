@@ -16,7 +16,7 @@ func TestPipelineService_PreviewPipelineRun_Daily(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "daily", result.PipelineType)
-	assert.Equal(t, "python3 scripts/run_daily_pipeline.py", result.Command)
+	assert.Equal(t, "go run ./cmd/baxi-cli pipeline run", result.Command)
 	assert.Equal(t, "~30 seconds (daily mode, single-day simulation)", result.EstimatedDuration)
 	assert.Equal(t, "8-step daily pipeline: ingest → quality → metrics → alerts → AIP → wake → Feishu", result.Description)
 	assert.Equal(t, requiredEnvVars, result.RequiredEnvVars)
@@ -28,7 +28,7 @@ func TestPipelineService_PreviewPipelineRun_Full(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "full", result.PipelineType)
-	assert.Equal(t, "python3 scripts/run_full_pipeline.py", result.Command)
+	assert.Equal(t, "go run ./cmd/baxi-cli pipeline run", result.Command)
 	assert.Equal(t, "~5 minutes (full mode, all 634 days)", result.EstimatedDuration)
 	assert.Equal(t, "5-step full pipeline: metrics → alerts → AIP → AI decision → Feishu", result.Description)
 }
@@ -39,7 +39,7 @@ func TestPipelineService_PreviewPipelineRun_DBFull(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "db_full", result.PipelineType)
-	assert.Equal(t, "python3 scripts/run_db_pipeline.py --mode full --dimensional", result.Command)
+	assert.Equal(t, "go run ./cmd/baxi-cli pipeline run", result.Command)
 	assert.Equal(t, "~2 minutes (DB mode, all data via SQLite)", result.EstimatedDuration)
 	assert.Equal(t, "5-step DB pipeline: init → ingest → metrics → rules → export", result.Description)
 }
@@ -203,7 +203,7 @@ func TestPipelineService_PreviewPipelineRun_ResultStructure(t *testing.T) {
 	result := svc.PreviewPipelineRun("daily")
 
 	assert.IsType(t, &model.PipelinePreview{}, result)
-	assert.Equal(t, "python3 scripts/run_daily_pipeline.py", result.Command)
+	assert.Equal(t, "go run ./cmd/baxi-cli pipeline run", result.Command)
 	assert.Equal(t, "daily", result.PipelineType)
 	assert.Equal(t, "~30 seconds (daily mode, single-day simulation)", result.EstimatedDuration)
 	assert.Equal(t, requiredEnvVars, result.RequiredEnvVars)

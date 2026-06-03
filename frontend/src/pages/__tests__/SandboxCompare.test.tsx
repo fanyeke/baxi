@@ -59,7 +59,7 @@ describe("SandboxCompare", () => {
   it("shows empty state when no sandboxes", async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ items: [] })
     renderWithQueryClient(<SandboxCompare />)
-    expect(await screen.findByText("暂无沙箱")).toBeInTheDocument()
+    expect(await screen.findByText("No sandboxes")).toBeInTheDocument()
   })
 
   it("renders sandbox list with data", async () => {

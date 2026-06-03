@@ -252,7 +252,7 @@ describe("DecisionReview", () => {
     await user.type(searchInput, "NONEXISTENT")
 
     expect(screen.queryByText("notify_owner")).not.toBeInTheDocument()
-    expect(screen.getByText("暂无决策案例")).toBeInTheDocument()
+    expect(screen.getByText("No cases found")).toBeInTheDocument()
   })
 
   it("shows empty state when no proposals match filter", async () => {
