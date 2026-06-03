@@ -120,6 +120,17 @@
 - Mapped to phases: 32
 - Unmapped: 0 ✓
 
+**Phase mapping summary:**
+
+| Phase | Name | Requirements | Count |
+|-------|------|--------------|-------|
+| 1 | Core API Completion | API-01..API-07 | 7 |
+| 2 | Error Handling & Observability | ERR-01..ERR-05 | 5 |
+| 3 | Code Hygiene & Cleanup | HYG-01..HYG-07 | 7 |
+| 4 | Bug Fixes & Stability | BUG-01..BUG-05 | 5 |
+| 5 | Security Hardening | SEC-01..SEC-03 | 3 |
+| 6 | Integration & End-to-End Demo | INT-01..INT-05 | 5 |
+
 ---
 *Requirements defined: 2026-06-03*
 *Last updated: 2026-06-03 after initial definition*
