@@ -267,7 +267,25 @@ func structToMap(v interface{}) map[string]interface{} {
 
 // DecideLLM handles POST /decisions/cases/{case_id}/decide/llm.
 func (h *DecisionHandler) DecideLLM(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	decCtx, output, proposals, err := h.svc.DecideLLM(r.Context(), caseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "case not found")
+			return
+		}
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		return
+	}
+
+	resp := dto.DecisionResponse{
+		DecisionCaseID: decCtx.DecisionCaseID,
+		Status:         "decision_generated",
+		Decision:       structToMap(output),
+		Proposals:      proposalsToDTO(proposals),
+	}
+	httputil.JSON(w, http.StatusOK, resp)
 }
 
 // Compare handles POST /decisions/cases/{case_id}/compare.
@@ -282,10 +300,26 @@ func (h *DecisionHandler) Replay(w http.ResponseWriter, r *http.Request) {
 
 // ListLLMDecisions handles GET /decisions/cases/{case_id}/llm-decisions.
 func (h *DecisionHandler) ListLLMDecisions(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	result, err := h.svc.ListLLMDecisions(r.Context(), caseID)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		return
+	}
+
+	httputil.JSON(w, http.StatusOK, result)
 }
 
 // ListEvals handles GET /decisions/cases/{case_id}/evals.
 func (h *DecisionHandler) ListEvals(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusNotImplemented, middleware.INTERNAL_ERROR, "not implemented")
+	caseID := chi.URLParam(r, "case_id")
+
+	result, err := h.svc.ListEvals(r.Context(), caseID)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		return
+	}
+
+	httputil.JSON(w, http.StatusOK, result)
 }

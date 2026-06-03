@@ -22,12 +22,15 @@ import (
 )
 
 type mockDecisionService struct {
-	createCaseFn    func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
-	getCaseFn       func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
-	listCasesFn     func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
-	buildContextFn  func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
-	decideFn        func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
-	listProposalsFn func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	createCaseFn      func(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error)
+	getCaseFn         func(ctx context.Context, caseID string) (*decision.DecisionCase, error)
+	listCasesFn       func(ctx context.Context, filter decision.CaseFilter) (*decision.CaseList, error)
+	buildContextFn    func(ctx context.Context, caseID string) (*decision.DecisionContext, error)
+	decideFn          func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	listProposalsFn   func(ctx context.Context, caseID string) ([]action.ActionProposal, error)
+	decideLLMFn       func(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
+	listLLMDecisionsFn func(ctx context.Context, caseID string) (interface{}, error)
+	listEvalsFn       func(ctx context.Context, caseID string) (interface{}, error)
 }
 
 func (m *mockDecisionService) CreateCaseFromAlert(ctx context.Context, alertID, createdBy string) (*decision.DecisionCase, error) {
@@ -70,6 +73,27 @@ func (m *mockDecisionService) ListProposals(ctx context.Context, caseID string) 
 		return m.listProposalsFn(ctx, caseID)
 	}
 	return nil, errors.New("unexpected call to ListProposals")
+}
+
+func (m *mockDecisionService) DecideLLM(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error) {
+	if m.decideLLMFn != nil {
+		return m.decideLLMFn(ctx, caseID)
+	}
+	return m.Decide(ctx, caseID)
+}
+
+func (m *mockDecisionService) ListLLMDecisions(ctx context.Context, caseID string) (interface{}, error) {
+	if m.listLLMDecisionsFn != nil {
+		return m.listLLMDecisionsFn(ctx, caseID)
+	}
+	return []interface{}{}, nil
+}
+
+func (m *mockDecisionService) ListEvals(ctx context.Context, caseID string) (interface{}, error) {
+	if m.listEvalsFn != nil {
+		return m.listEvalsFn(ctx, caseID)
+	}
+	return []interface{}{}, nil
 }
 
 func TestDecisionHandler_CreateCase_201(t *testing.T) {
