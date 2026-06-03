@@ -40,7 +40,7 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 Plans:
 
 - [x] 01-01-PLAN.md — DecideLLM + ListLLMDecisions + ListEvals implementation
-- [ ] 01-02-PLAN.md — Compare + Replay implementation
+- [x] 01-02-PLAN.md — Compare + Replay implementation
 - [x] 01-03-PLAN.md — BatchDispatch implementation
 - [ ] 01-04-PLAN.md — OpenAPI schema documentation
 
@@ -127,7 +127,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core API Completion | 2/4 | In Progress|  |
+| 1. Core API Completion | 3/4 | In Progress|  |
 | 2. Error Handling & Observability | 0/TBD | Not started | - |
 | 3. Code Hygiene & Cleanup | 0/TBD | Not started | - |
 | 4. Bug Fixes & Stability | 0/TBD | Not started | - |
