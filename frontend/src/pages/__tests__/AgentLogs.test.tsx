@@ -45,7 +45,7 @@ describe("AgentLogs", () => {
   it("shows error panel", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("Network error"))
     renderWithQueryClient(<AgentLogs />)
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("加载失败")).toBeInTheDocument()
   })
 
   it("shows empty state when no logs", async () => {

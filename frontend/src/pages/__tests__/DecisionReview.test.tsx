@@ -69,7 +69,7 @@ describe("DecisionReview", () => {
   it("shows error panel when cases fail to load", async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error("Network error"))
     renderWithQueryClient(<DecisionReview />)
-    expect(await screen.findByText("请求异常")).toBeInTheDocument()
+    expect(await screen.findByText("Failed to load")).toBeInTheDocument()
   })
 
   it("renders proposals with data", async () => {
