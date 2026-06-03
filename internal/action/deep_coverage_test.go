@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"baxi/internal/llm"
-	"baxi/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	decisionRepo "baxi/internal/repository/decision"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -356,12 +355,12 @@ func TestRegistry_NilActionsBlock(t *testing.T) {
 
 func TestProposalService_ListProposals_Error(t *testing.T) {
 	repo := &mockProposalRepo{
-		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string) ([]repository.ActionProposalRow, error) {
+		listProposalsByCaseFn: func(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error) {
 			return nil, assert.AnError
 		},
 	}
 
-	svc := NewProposalService(repo, &mockCaseUpdater{}, nil, nil)
+	svc := NewProposalService(repo, &mockCaseUpdater{}, nil)
 	_, err := svc.ListProposals(context.Background(), "case-1")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "list proposals")
@@ -369,13 +368,13 @@ func TestProposalService_ListProposals_Error(t *testing.T) {
 
 func TestProposalService_GenerateProposals_CaseUpdateError(t *testing.T) {
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			return nil
 		},
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return assert.AnError
 		},
 	}
@@ -397,13 +396,13 @@ func TestProposalService_GenerateProposals_CaseUpdateError(t *testing.T) {
 
 func TestProposalService_GenerateProposals_RepoCreateError(t *testing.T) {
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			return assert.AnError
 		},
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, caseID string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -439,15 +438,15 @@ func TestGenerateProposals_RegistrySkipsInvalidPayload(t *testing.T) {
 		},
 	}
 
-	var savedProposals []repository.ActionProposalRow
+	var savedProposals []decisionRepo.ActionProposalRow
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			savedProposals = append(savedProposals, *row)
 			return nil
 		},
 	}
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -489,15 +488,15 @@ func TestGenerateProposals_RegistrySchemaVersion(t *testing.T) {
 		},
 	}
 
-	var savedRow repository.ActionProposalRow
+	var savedRow decisionRepo.ActionProposalRow
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			savedRow = *row
 			return nil
 		},
 	}
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -522,12 +521,12 @@ func TestGenerateProposals_RegistrySchemaVersion(t *testing.T) {
 
 func TestGenerateProposals_NilPayload(t *testing.T) {
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, row *repository.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
 			return nil
 		},
 	}
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}

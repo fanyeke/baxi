@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"baxi/internal/llm"
+	"baxi/internal/repository/common"
 	decisionRepo "baxi/internal/repository/decision"
-	decisionRepo "baxi/internal/repository/decision"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,24 +16,24 @@ import (
 // --- Mocks ---
 
 type mockProposalRepo struct {
-	createProposalFn      func(ctx context.Context, pool *pgxpool.Pool, row *decisionRepo.ActionProposalRow) error
+	createProposalFn      func(ctx context.Context, row *decisionRepo.ActionProposalRow) error
 	listProposalsByCaseFn func(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error)
 }
 
 func (m *mockProposalRepo) CreateProposal(ctx context.Context, row *decisionRepo.ActionProposalRow) error {
-	return m.createProposalFn(ctx, pool, row)
+	return m.createProposalFn(ctx, row)
 }
 
 func (m *mockProposalRepo) ListProposalsByCase(ctx context.Context, caseID string) ([]decisionRepo.ActionProposalRow, error) {
-	return m.listProposalsByCaseFn(ctx, pool, caseID)
+	return m.listProposalsByCaseFn(ctx, caseID)
 }
 
 type mockCaseUpdater struct {
-	updateCaseStatusFn func(ctx context.Context, pool *pgxpool.Pool, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
+	updateCaseStatusFn func(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error
 }
 
 func (m *mockCaseUpdater) UpdateCaseStatus(ctx context.Context, caseID string, status string, contextJSON *json.RawMessage, contextHash *string, governanceSnapshot *json.RawMessage) error {
-	return m.updateCaseStatusFn(ctx, pool, caseID, status, contextJSON, contextHash, governanceSnapshot)
+	return m.updateCaseStatusFn(ctx, caseID, status, contextJSON, contextHash, governanceSnapshot)
 }
 
 // --- Compile-time interface checks ---
@@ -58,7 +57,7 @@ func TestGenerateProposals_CreatesProposalsFromDecision(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			assert.Equal(t, caseID, cid)
 			assert.Equal(t, "proposal_generated", status)
 			assert.Nil(t, cj)
@@ -145,7 +144,7 @@ func TestGenerateProposals_AllProposalsRequireHumanReview(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -182,7 +181,7 @@ func TestGenerateProposals_AllProposalsHaveApplyStatusProposed(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -218,7 +217,7 @@ func TestGenerateProposals_UpdatesCaseStatus(t *testing.T) {
 
 	statusUpdated := false
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			statusUpdated = true
 			assert.Equal(t, caseID, cid)
 			assert.Equal(t, "proposal_generated", status)
@@ -253,7 +252,7 @@ func TestGenerateProposals_EmptyDecisionReturnsEmptyList(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -316,13 +315,13 @@ func TestListProposals_ReturnsProposalsForCase(t *testing.T) {
 	}
 
 	repo := &mockProposalRepo{
-		listProposalsByCaseFn: func(ctx context.Context, pool *pgxpool.Pool, cid string) ([]decisionRepo.ActionProposalRow, error) {
+		listProposalsByCaseFn: func(ctx context.Context, cid string) ([]decisionRepo.ActionProposalRow, error) {
 			assert.Equal(t, caseID, cid)
 			return rows, nil
 		},
 	}
 
-	svc := NewProposalService(repo, &mockCaseUpdater{}, nil, nil)
+	svc := NewProposalService(repo, &mockCaseUpdater{}, nil)
 	proposals, err := svc.ListProposals(context.Background(), caseID)
 
 	assert.NoError(t, err)
@@ -353,7 +352,7 @@ func TestListProposals_EmptyCaseReturnsEmptyList(t *testing.T) {
 		},
 	}
 
-	svc := NewProposalService(repo, &mockCaseUpdater{}, nil, nil)
+	svc := NewProposalService(repo, &mockCaseUpdater{}, nil)
 	proposals, err := svc.ListProposals(context.Background(), "empty-case")
 
 	assert.NoError(t, err)
@@ -400,7 +399,7 @@ func TestGenerateProposals_TruncatesLongTitle(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -484,7 +483,7 @@ func TestProposeAction_WithEvidenceRefs(t *testing.T) {
 	// Simulate storage → retrieval round-trip via mock repo
 	var savedRow *decisionRepo.ActionProposalRow
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, r *decisionRepo.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, r *decisionRepo.ActionProposalRow) error {
 			savedRow = r
 			return nil
 		},
@@ -497,7 +496,7 @@ func TestProposeAction_WithEvidenceRefs(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -602,7 +601,7 @@ func TestProposeAction_WithoutTraceFields(t *testing.T) {
 
 	// Simulate a GenerateProposals call without a context hash
 	repo := &mockProposalRepo{
-		createProposalFn: func(ctx context.Context, pool *pgxpool.Pool, r *decisionRepo.ActionProposalRow) error {
+		createProposalFn: func(ctx context.Context, r *decisionRepo.ActionProposalRow) error {
 			assert.Nil(t, r.EvidenceRefs, "evidence_refs must be nil when not provided")
 			assert.Nil(t, r.RecipeID, "recipe_id must be nil when not provided")
 			// legacy callers pass empty context hash
@@ -616,7 +615,7 @@ func TestProposeAction_WithoutTraceFields(t *testing.T) {
 	}
 
 	updater := &mockCaseUpdater{
-		updateCaseStatusFn: func(ctx context.Context, pool *pgxpool.Pool, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
+		updateCaseStatusFn: func(ctx context.Context, cid string, status string, cj *json.RawMessage, ch *string, gs *json.RawMessage) error {
 			return nil
 		},
 	}
@@ -705,10 +704,9 @@ func TestLLMDecision_CreateAndRetrieve(t *testing.T) {
 	}
 
 	// Use the decision repository to persist the LLM decision
-	decisionRepo := repository.NewDecisionRepository()
-	decisionRepo.SetPool(pool)
+	llmRepo := decisionRepo.NewRepository(common.NewPoolProvider(pool))
 
-	err := decisionRepo.CreateDecision(ctx, pool, row)
+	err := llmRepo.CreateDecision(ctx, row)
 	require.NoError(t, err)
 
 	// Retrieve all LLM decisions for the case via query
