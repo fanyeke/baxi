@@ -90,7 +90,7 @@ func (h *ReviewHandler) handleReviewAction(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		if errors.Is(err, review.ErrInvalidState) {
-			writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, err.Error())
+			writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
 			return
 		}
 		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")

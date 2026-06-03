@@ -376,7 +376,7 @@ func (h *DecisionHandler) Replay(w http.ResponseWriter, r *http.Request) {
 		if errMsg := err.Error(); errMsg == "replay service not configured" ||
 			errMsg == "not configured" ||
 			strings.Contains(errMsg, "not configured") {
-			writeError(w, r, http.StatusServiceUnavailable, middleware.INTERNAL_ERROR, "replay service not available")
+			writeError(w, r, http.StatusServiceUnavailable, middleware.SERVICE_UNAVAILABLE, "replay service not available")
 			return
 		}
 		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")

@@ -87,9 +87,7 @@ func (h *OutboxHandler) HandleDispatch(w http.ResponseWriter, r *http.Request) {
 		case isNotFound(err):
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, err.Error())
 		case isInvalidState(err):
-			writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, err.Error())
-		default:
-			writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
+		writeError(w, r, http.StatusConflict, middleware.CONFLICT, err.Error())
 		}
 		return
 	}
@@ -118,7 +116,7 @@ func (h *OutboxHandler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if event.Status != "pending" && event.Status != "failed" {
-		writeError(w, r, http.StatusConflict, middleware.BAD_REQUEST, fmt.Sprintf("event cannot be cancelled in %s state", event.Status))
+		writeError(w, r, http.StatusConflict, middleware.CONFLICT, fmt.Sprintf("event cannot be cancelled in %s state", event.Status))
 		return
 	}
 
