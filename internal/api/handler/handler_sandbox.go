@@ -163,9 +163,9 @@ func sandboxToResponse(sb *review.Sandbox) dto.SandboxResponse {
 
 // comparisonToResponse converts a domain ComparisonResult to the response DTO.
 func comparisonToResponse(cr *review.ComparisonResult) dto.ComparisonResponse {
-	diffs := make([]dto.DiffItem, 0, len(cr.Differences))
+	diffs := make([]dto.SandboxDiffItem, 0, len(cr.Differences))
 	for _, d := range cr.Differences {
-		diffs = append(diffs, dto.DiffItem{
+		diffs = append(diffs, dto.SandboxDiffItem{
 			Field:  d.Field,
 			Value1: d.Value1,
 			Value2: d.Value2,

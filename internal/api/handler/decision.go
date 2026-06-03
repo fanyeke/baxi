@@ -14,6 +14,7 @@ import (
 	"baxi/internal/api/dto"
 	"baxi/internal/api/middleware"
 	"baxi/internal/decision"
+	"baxi/internal/eval"
 	"baxi/internal/httputil"
 	"baxi/internal/llm"
 )
@@ -30,6 +31,8 @@ type DecisionService interface {
 	DecideLLM(ctx context.Context, caseID string) (*decision.DecisionContext, *llm.DecisionOutput, []action.ActionProposal, error)
 	ListLLMDecisions(ctx context.Context, caseID string) (interface{}, error)
 	ListEvals(ctx context.Context, caseID string) (interface{}, error)
+	Compare(ctx context.Context, caseID string) (*eval.DecisionComparison, error)
+	Replay(ctx context.Context, caseID string, dryRun bool) (*eval.ReplayResult, error)
 }
 
 // DecisionHandler handles HTTP requests for decision case endpoints.

@@ -116,3 +116,57 @@ type CaseFilter struct {
 	Limit      int
 	Offset     int
 }
+
+// DiffItem represents a single field difference in a decision comparison.
+type DiffItem struct {
+	Field      string      `json:"field"`
+	Before     interface{} `json:"before,omitempty"`
+	After      interface{} `json:"after,omitempty"`
+	ChangeType string      `json:"change_type"`
+}
+
+// CompareMeta contains metadata about a decision comparison.
+type CompareMeta struct {
+	DecisionTypeMatch bool    `json:"decision_type_match"`
+	SeverityMatch     bool    `json:"severity_match"`
+	ActionOverlap     float64 `json:"action_overlap"`
+	ConfidenceDiff    float64 `json:"confidence_diff"`
+	CreatedAt         string  `json:"created_at"`
+}
+
+// CompareResponse is the response for the compare endpoint.
+type CompareResponse struct {
+	DecisionCaseID string      `json:"decision_case_id"`
+	Added          []DiffItem  `json:"added"`
+	Removed        []DiffItem  `json:"removed"`
+	Changed        []DiffItem  `json:"changed"`
+	Metadata       CompareMeta `json:"metadata"`
+}
+
+// ReplayRequest is the request body for replaying a decision.
+type ReplayRequest struct {
+	DryRun           bool                   `json:"dry_run"`
+	Model            string                 `json:"model,omitempty"`
+	Temperature      float64                `json:"temperature,omitempty"`
+	ContextOverrides map[string]interface{} `json:"context_overrides,omitempty"`
+}
+
+// ReplayDiff contains the diff between original and replayed decisions.
+type ReplayDiff struct {
+	DecisionTypeMatch bool    `json:"decision_type_match"`
+	SeverityMatch     bool    `json:"severity_match"`
+	ConfidenceDiff    float64 `json:"confidence_diff"`
+	ActionOverlap     float64 `json:"action_overlap"`
+	SummaryChanged    bool    `json:"summary_changed"`
+	RationaleChanged  bool    `json:"rationale_changed"`
+}
+
+// ReplayResponse is the response for the replay endpoint.
+type ReplayResponse struct {
+	OriginalDecision map[string]interface{} `json:"original_decision"`
+	ReplayedDecision map[string]interface{} `json:"replayed_decision,omitempty"`
+	Diff             *ReplayDiff            `json:"diff,omitempty"`
+	ContextHash      string                 `json:"context_hash"`
+	Model            string                 `json:"model"`
+	DryRun           bool                   `json:"dry_run"`
+}

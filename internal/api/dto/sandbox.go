@@ -32,11 +32,11 @@ type SandboxListResponse struct {
 type ComparisonResponse struct {
 	Sandbox1ID  string               `json:"sandbox_1_id"`
 	Sandbox2ID  string               `json:"sandbox_2_id"`
-	Differences []DiffItem           `json:"differences"`
+	Differences []SandboxDiffItem    `json:"differences"`
 }
 
-// DiffItem represents a single field difference between two sandboxes.
-type DiffItem struct {
+// SandboxDiffItem represents a single field difference between two sandboxes.
+type SandboxDiffItem struct {
 	Field  string      `json:"field"`
 	Value1 interface{} `json:"value_1"`
 	Value2 interface{} `json:"value_2"`
