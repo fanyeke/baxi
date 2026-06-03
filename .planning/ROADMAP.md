@@ -7,6 +7,7 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
@@ -20,10 +21,12 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 ## Phase Details
 
 ### Phase 1: Core API Completion
+
 **Goal**: All API endpoints return proper responses with documented schemas instead of 501 Not Implemented
 **Depends on**: Nothing (first phase)
 **Requirements**: API-01, API-02, API-03, API-04, API-05, API-06, API-07
 **Success Criteria** (what must be TRUE):
+
   1. POST /api/v1/decisions/llm returns 200 with valid decision body containing context, validation, and repair retry
   2. POST /api/v1/decisions/compare returns 200 with structured comparison and diff visualization data
   3. POST /api/v1/decisions/replay returns 200 with new decision result from original or modified context
@@ -31,25 +34,38 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
   5. GET /api/v1/evals returns 200 with evaluation metrics and quality scores
   6. POST /api/v1/outbox/dispatch returns 200 after processing pending outbox events in batch
   7. All implemented endpoints return response bodies matching their OpenAPI-documented schemas
-**Plans**: TBD
+
+**Plans**: 4 plans
+
+Plans:
+
+- [x] 01-01-PLAN.md — DecideLLM + ListLLMDecisions + ListEvals implementation
+- [ ] 01-02-PLAN.md — Compare + Replay implementation
+- [x] 01-03-PLAN.md — BatchDispatch implementation
+- [ ] 01-04-PLAN.md — OpenAPI schema documentation
 
 ### Phase 2: Error Handling & Observability
+
 **Goal**: API returns meaningful HTTP status codes and structured error details instead of generic 500 errors
 **Depends on**: Phase 1
 **Requirements**: ERR-01, ERR-02, ERR-03, ERR-04, ERR-05
 **Success Criteria** (what must be TRUE):
+
   1. Invalid request payloads return 400 Bad Request (not 500) with field-level error details
   2. Requests for non-existent resources return 404 Not Found (not 500)
   3. All error responses include structured JSON with `code`, `message`, and optional `details` fields
   4. Malformed JSON in request bodies returns 400 with parse error details instead of being silently ignored
   5. Database connection failures return 503 Service Unavailable with retry-after guidance
+
 **Plans**: TBD
 
 ### Phase 3: Code Hygiene & Cleanup
+
 **Goal**: Clean, buildable codebase with no Python/SQLite migration artifacts or dead code
 **Depends on**: Phase 2
 **Requirements**: HYG-01, HYG-02, HYG-03, HYG-04, HYG-05, HYG-06, HYG-07
 **Success Criteria** (what must be TRUE):
+
   1. Pipeline preview command (`make pipeline` or baxi-cli) displays Go commands, not Python scripts
   2. Makefile has no references to Python scripts for verification or pipeline tasks
   3. Deprecated repository shim files are removed from the codebase
@@ -57,40 +73,50 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
   5. Dead CLI subcommand `cmd/baxi-cli/llm.go` is either removed or properly wired into `main.go` dispatch
   6. Placeholder `internal/worker/worker.go` is removed
   7. Migration baseline directory (`migration_baseline/`) is archived or removed (no sqlite_schema.sql or Python scripts)
+
 **Plans**: TBD
 
 ### Phase 4: Bug Fixes & Stability
+
 **Goal**: Known bugs are fixed and the system handles edge cases gracefully without silent failures
 **Depends on**: Phase 3
 **Requirements**: BUG-01, BUG-02, BUG-03, BUG-04, BUG-05
 **Success Criteria** (what must be TRUE):
+
   1. Invalid JSON in `internal/api/handler/action.go` request body returns 400 instead of proceeding with zero-value defaults
   2. `internal/alert/engine.go` handles JSON marshal errors explicitly with logging (no silent data loss)
   3. `internal/feishu/client.go` handles `page_token` type assertion failures with proper error propagation
   4. Goose migration sequence is continuous with no missing migration numbers (audit and fix any gaps like 015, 025)
   5. Ontology repository queries use allowlist validation before interpolating `schema.table` identifiers (SQL injection eliminated)
+
 **Plans**: TBD
 
 ### Phase 5: Security Hardening
+
 **Goal**: Authentication, CORS, and deployment credentials are secured for demo use
 **Depends on**: Phase 4
 **Requirements**: SEC-01, SEC-02, SEC-03
 **Success Criteria** (what must be TRUE):
+
   1. Auth middleware validates JWT with claims and expiry (or supports token rotation)
   2. CORS origin check validates the scheme explicitly (`http` vs `https`) before allowing requests
   3. Docker Compose uses environment variables or Docker secrets for credentials — no hardcoded passwords in plain text
+
 **Plans**: TBD
 
 ### Phase 6: Integration & End-to-End Demo
+
 **Goal**: Frontend connects to all backend features, all tests pass, and the full closed-loop demo runs successfully
 **Depends on**: Phase 5
 **Requirements**: INT-01, INT-02, INT-03, INT-04, INT-05
 **Success Criteria** (what must be TRUE):
+
   1. Frontend pages for decisions, governance, pipeline, and alerts all load and display live data from backend endpoints
   2. E2E integration tests (`test/integration/phase7_test.go`) pass cleanly with no failures
   3. Security E2E tests (`test/security/phase7_test.go`) pass cleanly with no failures
   4. Frontend unit tests (`frontend/src/pages/__tests__/*.test.tsx`) pass cleanly
   5. Full closed-loop demo works end-to-end: trigger pipeline → governance rules fire → decision created → action executed → alert sent → result visible in frontend
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -101,7 +127,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core API Completion | 0/TBD | Not started | - |
+| 1. Core API Completion | 2/4 | In Progress|  |
 | 2. Error Handling & Observability | 0/TBD | Not started | - |
 | 3. Code Hygiene & Cleanup | 0/TBD | Not started | - |
 | 4. Bug Fixes & Stability | 0/TBD | Not started | - |
