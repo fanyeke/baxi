@@ -6,6 +6,138 @@ import (
 	"testing"
 )
 
+func TestNewCORSMiddleware_SchemeMismatch(t *testing.T) {
+	// Config with http, request with https → rejected (scheme mismatch)
+	handler := NewCORSMiddleware("http://localhost:5173")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	req.Header.Set("Origin", "https://localhost:5173")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	resp := rec.Result()
+	resp.Body.Close()
+
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no CORS headers for scheme mismatch, got %q", got)
+	}
+}
+
+func TestNewCORSMiddleware_DefaultPortNormalization(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		origin   string
+		allowed  bool
+	}{
+		{"http config, origin with explicit port 80", "http://localhost", "http://localhost:80", true},
+		{"https config, origin with explicit port 443", "https://example.com", "https://example.com:443", true},
+		{"http config with port 80, origin without port", "http://localhost:80", "http://localhost", true},
+		{"https config with port 443, origin without port", "https://example.com:443", "https://example.com", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewCORSMiddleware(tt.config)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
+
+			req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+			req.Header.Set("Origin", tt.origin)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			resp := rec.Result()
+			resp.Body.Close()
+
+			if tt.allowed {
+				if got := resp.Header.Get("Access-Control-Allow-Origin"); got != tt.origin {
+					t.Errorf("expected Access-Control-Allow-Origin %q, got %q", tt.origin, got)
+				}
+			} else {
+				if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "" {
+					t.Errorf("expected no CORS headers, got %q", got)
+				}
+			}
+		})
+	}
+}
+
+func TestNewCORSMiddleware_DifferentPortRejected(t *testing.T) {
+	handler := NewCORSMiddleware("http://localhost:5173")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	req.Header.Set("Origin", "http://localhost:3000")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	resp := rec.Result()
+	resp.Body.Close()
+
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no CORS headers for different port, got %q", got)
+	}
+}
+
+func TestNewCORSMiddleware_DifferentHostRejected(t *testing.T) {
+	handler := NewCORSMiddleware("http://localhost:5173")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	req.Header.Set("Origin", "http://evil.com:5173")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	resp := rec.Result()
+	resp.Body.Close()
+
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no CORS headers for different host, got %q", got)
+	}
+}
+
+func TestNewCORSMiddleware_InvalidOrigin_Rejected(t *testing.T) {
+	handler := NewCORSMiddleware("http://localhost:5173")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	req.Header.Set("Origin", "not-a-valid-origin")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	resp := rec.Result()
+	resp.Body.Close()
+
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no CORS headers for invalid origin, got %q", got)
+	}
+}
+
+func TestNewCORSMiddleware_SchemeRejection_HttpVsHttps(t *testing.T) {
+	// Config with http, request with https on same host:port → rejected
+	handler := NewCORSMiddleware("http://example.com")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+	req.Header.Set("Origin", "https://example.com")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	resp := rec.Result()
+	resp.Body.Close()
+
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("expected no CORS headers for http→https scheme mismatch, got %q", got)
+	}
+}
+
 func TestNewCORSMiddleware_PreflightAllowedOrigin(t *testing.T) {
 	handler := NewCORSMiddleware("http://localhost:5173,http://localhost:3000")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("next handler should not be called for preflight requests")
