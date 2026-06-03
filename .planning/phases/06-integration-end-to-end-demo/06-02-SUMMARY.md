@@ -90,6 +90,15 @@ None - no external service configuration required.
 - 后续计划 06-03 可以依赖这些类型进行集成验证
 - 前端 TypeScript 编译零错误，Governance 测试全部通过
 
+## Self-Check: PASSED
+
+- ✅ All 4 modified files exist on disk
+- ✅ Task 1 commit: `98c9987` (feat)
+- ✅ Task 2 commit: `3802cc6` (feat)
+- ✅ SUMMARY commit: `db86f15` (docs)
+- ✅ TypeScript compilation: zero errors
+- ✅ Governance tests: 6/6 passed
+
 ---
 
 *Phase: 06-integration-end-to-end-demo*
