@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"baxi/internal/action"
@@ -115,6 +116,10 @@ func (h *ActionHandler) HandleStatus(w http.ResponseWriter, r *http.Request) {
 
 	proposal, err := h.svc.GetProposalByID(r.Context(), h.pool, proposalID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "proposal not found")
+			return
+		}
 		writeError(w, r, http.StatusInternalServerError, middleware.INTERNAL_ERROR, "internal server error")
 		return
 	}

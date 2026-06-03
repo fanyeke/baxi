@@ -109,7 +109,7 @@ func (h *SandboxHandler) HandleAddProposal(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.svc.AddProposalToSandbox(r.Context(), sandboxID, req.ProposalID); err != nil {
-		if errors.Is(err, errors.New("sandbox "+sandboxID+" not found")) {
+		if errors.Is(err, review.ErrSandboxNotFound) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "sandbox not found")
 			return
 		}
@@ -132,7 +132,7 @@ func (h *SandboxHandler) HandleCompare(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.CompareSandbox(r.Context(), sandboxID1, sandboxID2)
 	if err != nil {
-		if err.Error() == "sandbox "+sandboxID1+" not found" || err.Error() == "sandbox "+sandboxID2+" not found" {
+		if errors.Is(err, review.ErrSandboxNotFound) {
 			writeError(w, r, http.StatusNotFound, middleware.NOT_FOUND, "sandbox not found")
 			return
 		}

@@ -119,7 +119,7 @@ func (s *SandboxService) AddProposalToSandbox(ctx context.Context, sandboxID, pr
 		return fmt.Errorf("update proposal_sandbox: %w", err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("sandbox %s not found", sandboxID)
+		return fmt.Errorf("add proposal to sandbox: %w", ErrSandboxNotFound)
 	}
 	return nil
 }
@@ -131,7 +131,7 @@ func (s *SandboxService) CompareSandbox(ctx context.Context, sandboxID1, sandbox
 		return nil, fmt.Errorf("get sandbox 1: %w", err)
 	}
 	if sb1 == nil {
-		return nil, fmt.Errorf("sandbox %s not found", sandboxID1)
+		return nil, fmt.Errorf("get sandbox: %w", ErrSandboxNotFound)
 	}
 
 	sb2, err := s.GetSandbox(ctx, sandboxID2)
@@ -139,7 +139,7 @@ func (s *SandboxService) CompareSandbox(ctx context.Context, sandboxID1, sandbox
 		return nil, fmt.Errorf("get sandbox 2: %w", err)
 	}
 	if sb2 == nil {
-		return nil, fmt.Errorf("sandbox %s not found", sandboxID2)
+		return nil, fmt.Errorf("get sandbox: %w", ErrSandboxNotFound)
 	}
 
 	diffs := compareData(sb1.SandboxData, sb2.SandboxData)
