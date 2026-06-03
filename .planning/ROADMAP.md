@@ -107,7 +107,12 @@ Plans:
   4. Goose migration sequence is continuous with no missing migration numbers (audit and fix any gaps like 015, 025)
   5. Ontology repository queries use allowlist validation before interpolating `schema.table` identifiers (SQL injection eliminated)
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+- [ ] 04-01-PLAN.md — 迁移占位文件 + Feishu page_token 修复 (BUG-03, BUG-04)
+- [ ] 04-02-PLAN.md — 告警引擎 JSON marshal 修复 + Ontology SQL 注入加固 (BUG-02, BUG-05)
 
 ### Phase 5: Security Hardening
 
