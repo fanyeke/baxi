@@ -25,7 +25,7 @@ func main() {
 	case "help", "--help", "-h":
 		printHelp()
 		return
-	case "pipeline", "governance", "decision":
+	case "pipeline", "governance", "decision", "llm":
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
 		printHelp()
@@ -68,6 +68,8 @@ func main() {
 			handleGovernance(ctx, os.Args[2:], zapLog, pool.Pool)
 		case "decision":
 			handleDecision(ctx, os.Args[2:], zapLog, pool.Pool, cfg)
+		case "llm":
+			handleLLM(ctx, os.Args[2:], zapLog, pool.Pool, cfg)
 		}
 		cancel()
 	}()
@@ -98,6 +100,11 @@ func printHelp() {
 	fmt.Println("  decision context             Build context for a decision case")
 	fmt.Println("  decision decide              Generate decision and proposals")
 	fmt.Println("  decision list                List decision cases")
+	fmt.Println("  decision compare             Compare decision outcomes")
+	fmt.Println("  decision replay              Replay a decision case")
+	fmt.Println("  decision evals               Run decision evaluations")
+	fmt.Println("  llm status                   Check LLM provider status")
+	fmt.Println("  llm metrics                  Show LLM usage metrics")
 	fmt.Println("")
 	fmt.Println("Environment:")
 	fmt.Println("  DATABASE_URL              PostgreSQL connection string (required)")

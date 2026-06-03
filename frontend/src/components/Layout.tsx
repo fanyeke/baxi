@@ -11,6 +11,10 @@ const NAV_ITEMS = [
   { to: "/pipeline", label: "运行管道", icon: "▶" },
   { to: "/governance", label: "治理中心", icon: "🏛" },
   { to: "/agent-logs", label: "Agent 日志", icon: "🤖" },
+  { to: "/decision-review", label: "决策审查", icon: "⚖" },
+  { to: "/sandbox", label: "沙箱对比", icon: "🧪" },
+  { to: "/audit-timeline", label: "审计时间线", icon: "⏱" },
+  { to: "/policy-inspector", label: "策略审查", icon: "🔍" },
 ]
 
 export default function Layout() {

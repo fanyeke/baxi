@@ -72,6 +72,10 @@ func (s *Server) setupRoutes() {
 
 			r.Post("/pipeline/run", s.pipelineHandler().HandleRun)
 
+			r.Post("/feishu/export", s.feishuHandler().HandleExport)
+			r.Post("/feishu/sync", s.feishuHandler().HandleSync)
+			r.Post("/feishu/status/import", s.feishuHandler().HandleStatusImport)
+
 			r.Post("/sandboxes", s.sandboxHandler().HandleCreate)
 			r.Get("/sandboxes", s.sandboxHandler().HandleList)
 			r.Get("/sandboxes/compare", s.sandboxHandler().HandleCompare)

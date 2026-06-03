@@ -119,10 +119,16 @@ func main() {
 		svc: service.NewGovernanceService(govRepo, pool.Pool),
 	}
 
-	// Pipeline runner (simple stub)
 	pipelineSteps := []pipeline.Step{
 		steps.NewIngestRawStep(),
 		steps.NewBuildDWDSOrderLevelStep(),
+		steps.NewBuildDWDItemLevelStep(),
+		steps.NewBuildMetricDailyStep(),
+		steps.NewBuildMetricDimensionDailyStep(),
+		steps.NewDetectAlertsStep(),
+		steps.NewGenerateRecommendationsStep(),
+		steps.NewGenerateTasksStep(),
+		steps.NewCreateOutboxStep(),
 	}
 	pipelineRunner := &pipeline.Runner{DB: pool.Pool, Steps: pipelineSteps, Log: zapLog}
 	pipelineSvc := &pipelineRunService{runner: pipelineRunner}

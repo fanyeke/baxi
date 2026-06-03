@@ -99,6 +99,7 @@ LEFT JOIN (
     FROM raw.olist_order_reviews
     ORDER BY order_id, review_answer_timestamp DESC NULLS LAST
 ) r ON o.order_id = r.order_id
+ORDER BY o.order_id
 ON CONFLICT (order_id) DO NOTHING;
 `
 	args := pgx.NamedArgs{

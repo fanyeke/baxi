@@ -15,7 +15,7 @@ export default function AgentLogs() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["agentLogs", tool, status],
-    queryFn: () => apiClient.get<AgentLogListResponse>("/agent-execution-logs", params),
+    queryFn: () => apiClient.get<AgentLogListResponse>("/logs/agent", params),
   })
 
   return (
