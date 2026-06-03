@@ -10,7 +10,6 @@ import (
 	alertRepo "baxi/internal/repository/alert"
 	decisionRepo "baxi/internal/repository/decision"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -304,7 +303,7 @@ func TestGetCase(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.GetCase(context.Background(), caseID)
 
 	assert.NoError(t, err)
@@ -320,7 +319,7 @@ func TestGetCase_NotFound(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.GetCase(context.Background(), "nonexistent")
 
 	assert.Error(t, err)
@@ -344,7 +343,7 @@ func TestListCases(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.ListCases(context.Background(), CaseFilter{Limit: 10, Offset: 0})
 
 	assert.NoError(t, err)
@@ -371,7 +370,7 @@ func TestListCases_WithFilters(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.ListCases(context.Background(), CaseFilter{
 		Severity: &severity,
 		Status:   &status,
@@ -391,7 +390,7 @@ func TestListCases_Empty(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	result, err := svc.ListCases(context.Background(), CaseFilter{Limit: 10, Offset: 0})
 
 	assert.NoError(t, err)
@@ -416,7 +415,7 @@ func TestUpdateCaseStatus(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	err := svc.UpdateCaseStatus(context.Background(), caseID, status)
 
 	assert.NoError(t, err)
@@ -429,7 +428,7 @@ func TestUpdateCaseStatus_NotFound(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	err := svc.UpdateCaseStatus(context.Background(), "nonexistent", "closed")
 
 	assert.Error(t, err)
@@ -447,7 +446,7 @@ func TestUpdateCaseStatus_EmptyStatus(t *testing.T) {
 		},
 	}
 
-	svc := NewCaseService(caseRepo, &mockAlertRepo{}, nil)
+	svc := NewCaseService(caseRepo, &mockAlertRepo{})
 	err := svc.UpdateCaseStatus(context.Background(), caseID, "")
 
 	assert.NoError(t, err)
