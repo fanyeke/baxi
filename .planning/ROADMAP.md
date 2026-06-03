@@ -58,10 +58,17 @@ Plans:
   5. Database connection failures return 503 Service Unavailable with retry-after guidance
 
 **Plans**: 3 plans
-
 Plans:
+**Wave 1**
+
 - [ ] 02-01-PLAN.md — 核心错误基础设施（新常量、Details 字段、FieldError 类型、DB 连接检测）
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-02-PLAN.md — Bug 修复 + 错误码修正（静默 JSON 解码、冲突/服务不可用错误码、类型化哨兵错误）
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 02-03-PLAN.md — 验证错误字段级详情 + DB 503 检测（writeValidationError、writeServiceError 覆盖所有 handler）
 
 ### Phase 3: Code Hygiene & Cleanup
