@@ -112,6 +112,15 @@ None — no external service configuration required.
 - Ready for Plan 02 (repository shim migration) and Plan 03 (migration baselines cleanup)
 - Pipeline preview, Makefile, and CLI are clean of Python/dead-code references
 
+## Self-Check: PASSED
+
+- SUMMARY.md found at expected path ✓
+- `internal/worker/worker.go` confirmed deleted ✓
+- `cmd/baxi-cli/llm.go` confirmed deleted ✓
+- 3 commits referencing 03-01 found in git log ✓
+- `go build ./...` passes cleanly ✓
+- `client.go`, `decision.go`, `pipeline.go`, `governance.go` unmodified ✓
+
 ---
 
 *Phase: 03-code-hygiene-cleanup*
