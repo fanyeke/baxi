@@ -15,7 +15,7 @@ export default function Pipeline() {
   const [pipelineType, setPipelineType] = useState("daily")
 
   const mutation = useMutation({
-    mutationFn: () => apiClient.post<PipelineRunResponse>("/pipeline/run", { pipeline_type: pipelineType }),
+    mutationFn: () => apiClient.post<PipelineRunResponse>("/pipeline/run", { config: pipelineType }),
   })
 
   return (
