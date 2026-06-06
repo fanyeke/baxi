@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -41,7 +40,7 @@ func (s *Server) handleBuildContext(ctx context.Context, req mcp.CallToolRequest
 
 	envelope, err := s.buildContextSvc.BuildEnvelope(ctx, caseID, recipeID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to build context: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to build context: %v", err)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{

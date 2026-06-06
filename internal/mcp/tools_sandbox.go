@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -96,7 +95,7 @@ func (s *Server) handleCreateSandbox(ctx context.Context, req mcp.CallToolReques
 
 	sandboxID, err := s.sandboxSvc.CreateSandbox(ctx, caseID, data)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to create sandbox: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to create sandbox: %v", err)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{
@@ -121,7 +120,7 @@ func (s *Server) handleAddToSandbox(ctx context.Context, req mcp.CallToolRequest
 	}
 
 	if err := s.sandboxSvc.AddProposalToSandbox(ctx, sandboxID, proposalID); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to add proposal to sandbox: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to add proposal to sandbox: %v", err)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{
@@ -147,7 +146,7 @@ func (s *Server) handleCompareSandboxes(ctx context.Context, req mcp.CallToolReq
 
 	result, err := s.sandboxSvc.CompareSandbox(ctx, sandboxID1, sandboxID2)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to compare sandboxes: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to compare sandboxes: %v", err)), nil
 	}
 
 	diffs := make([]map[string]interface{}, 0, len(result.Differences))
@@ -177,10 +176,10 @@ func (s *Server) handleGetSandbox(ctx context.Context, req mcp.CallToolRequest) 
 
 	sandbox, err := s.sandboxSvc.GetSandbox(ctx, sandboxID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get sandbox: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get sandbox: %v", err)), nil
 	}
 	if sandbox == nil {
-		return mcp.NewToolResultError(fmt.Sprintf("sandbox %q not found", sandboxID)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("sandbox %q not found", sandboxID)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{

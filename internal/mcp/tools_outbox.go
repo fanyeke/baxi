@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -67,7 +66,7 @@ func (s *Server) handleListOutboxEvents(ctx context.Context, req mcp.CallToolReq
 
 	events, total, err := s.outboxSvc.ListOutboxEvents(ctx, status, limit, offset)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list outbox events: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list outbox events: %v", err)), nil
 	}
 
 	eventList := make([]map[string]interface{}, len(events))
@@ -94,12 +93,12 @@ func (s *Server) handleListOutboxEvents(ctx context.Context, req mcp.CallToolReq
 func (s *Server) handleGetPipelineStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	lastRun, err := s.pipelineInfoSvc.GetLastRunStatus(ctx)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get last run status: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get last run status: %v", err)), nil
 	}
 
 	runs, err := s.pipelineInfoSvc.ListRuns(ctx, 10)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list runs: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list runs: %v", err)), nil
 	}
 
 	runList := make([]map[string]interface{}, len(runs))

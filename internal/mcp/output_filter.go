@@ -1,6 +1,19 @@
 package mcp
 
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
 // output_filter.go provides centralized filter functions for MCP tool outputs.
+
+var (
+	// schemaTableRegex matches "schema.table_name" patterns like "ops.metric_alert"
+	schemaTableRegex = regexp.MustCompile(`[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*`)
+	// filePathRegex matches Linux file system paths
+	filePathRegex = regexp.MustCompile(`(?:/|[a-zA-Z]:\\|\.\./|\./)(?:[^\s"':])+`)
+)
 // These functions strip architectural details from responses to prevent
 // information leakage to AI agents.
 //
@@ -64,3 +77,42 @@ func FilterSearchObjects(result map[string]interface{}) {
 func FilterLinkedObjects(result map[string]interface{}) {
 	// Phase 9: apply field-level filtering, verify depth bounds
 }
+
+// SanitizeErrorf wraps fmt.Sprintf with error sanitization for use in
+// NewToolResultError calls. This prevents database schema details, file paths,
+// and internal architecture info from leaking through error messages.
+//
+// Usage: mcp.NewToolResultError(SanitizeErrorf("Failed to do X: %v", err))
+func SanitizeErrorf(format string, args ...interface{}) string {
+	msg := fmt.Sprintf(format, args...)
+	return SanitizeError(msg)
+}
+
+
+// SanitizeError redacts sensitive details from error messages that could
+// leak database architecture, file paths, or internal implementation details.
+// Applied to all NewToolResultError calls across MCP handlers.
+//
+// Redactions:
+//   - schema.table patterns → "db.table"
+//   - File paths (/home/..., /tmp/...) → "[redacted path]"
+//   - SQL error details → "[database error]"
+//   - Stack traces or query text → "[internal detail]"
+func SanitizeError(msg string) string {
+	// Redact common schema.table patterns (e.g., "ops.metric_alert", "audit.pipeline_run")
+	msg = schemaTableRegex.ReplaceAllString(msg, "db.table")
+
+	// Redact error messages containing SQL keywords as indicators of database errors
+	if strings.Contains(msg, "ERROR") || strings.Contains(msg, "relation") ||
+		strings.Contains(msg, "column") || strings.Contains(msg, "syntax error") ||
+		strings.Contains(msg, " violates ") || strings.Contains(msg, "constraint") ||
+		strings.Contains(msg, "not null") {
+		msg = "database operation failed"
+	}
+
+	// Redact file system paths (Linux paths)
+	msg = filePathRegex.ReplaceAllString(msg, "[redacted path]")
+
+	return msg
+}
+

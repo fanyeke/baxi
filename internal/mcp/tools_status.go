@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -52,7 +51,7 @@ func (s *Server) registerStatusTools() {
 func (s *Server) handleGetSystemStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	status, err := s.statusSvc.GetStatus(ctx)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get system status: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get system status: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -117,7 +116,7 @@ func (s *Server) handleSearchObjects(ctx context.Context, req mcp.CallToolReques
 
 	searchResult, err := s.searchSvc.SearchObjects(ctx, objectType, query, limit, offset)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to search objects: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to search objects: %v", err)), nil
 	}
 
 	if searchResult.Items == nil {

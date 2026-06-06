@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -97,7 +96,7 @@ func (s *Server) registerOntologyTools() {
 func (s *Server) handleDescribeOntology(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	descriptor, err := s.ontologySvc.DescribeOntology(ctx)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to describe ontology: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to describe ontology: %v", err)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{
@@ -120,7 +119,7 @@ func (s *Server) handleGetObject(ctx context.Context, req mcp.CallToolRequest) (
 
 	obj, err := s.ontologySvc.GetObject(ctx, objectType, objectID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get object: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get object: %v", err)), nil
 	}
 
 	// Attempt to fetch metrics; non-fatal if unavailable.
@@ -166,7 +165,7 @@ func (s *Server) handleGetLinkedObjects(ctx context.Context, req mcp.CallToolReq
 
 	result, err := s.ontologySvc.GetLinkedObjects(ctx, objectType, objectID, linkName, maxDepth)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get linked objects: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get linked objects: %v", err)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{
@@ -197,7 +196,7 @@ func (s *Server) handleExecuteAction(ctx context.Context, req mcp.CallToolReques
 	var params map[string]interface{}
 	if paramsRaw, ok := args["params"].(string); ok && paramsRaw != "" {
 		if err := json.Unmarshal([]byte(paramsRaw), &params); err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("invalid JSON in params: %v", err)), nil
+			return mcp.NewToolResultError(SanitizeErrorf("invalid JSON in params: %v", err)), nil
 		}
 	}
 
@@ -212,7 +211,7 @@ func (s *Server) handleExecuteAction(ctx context.Context, req mcp.CallToolReques
 
 	result, err := s.ontologySvc.ExecuteAction(ctx, objectType, objectID, actionType, params)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to execute action: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to execute action: %v", err)), nil
 	}
 
 	res := map[string]interface{}{

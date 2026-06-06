@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"baxi/internal/model"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -74,7 +73,7 @@ func (s *Server) handleListAlerts(ctx context.Context, req mcp.CallToolRequest) 
 
 	alertList, err := s.alertSvc.ListAlerts(ctx, filters, sort, limit, offset)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list alerts: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list alerts: %v", err)), nil
 	}
 
 	alerts := make([]map[string]interface{}, len(alertList.Items))

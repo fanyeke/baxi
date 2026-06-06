@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"baxi/internal/decision"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -138,7 +137,7 @@ func (s *Server) handleCreateDecisionCase(ctx context.Context, req mcp.CallToolR
 
 	decisionCase, err := s.decisionSvc.CreateCaseFromAlert(ctx, alertID, createdBy)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to create decision case: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to create decision case: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -165,7 +164,7 @@ func (s *Server) handleDecide(ctx context.Context, req mcp.CallToolRequest) (*mc
 	// Generate the decision and persist proposals via DecisionService.Decide
 	proposals, err := s.decisionSvc.Decide(ctx, caseID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to generate decision: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to generate decision: %v", err)), nil
 	}
 
 	proposalList := make([]map[string]interface{}, len(proposals))
@@ -224,7 +223,7 @@ func (s *Server) handleListCases(ctx context.Context, req mcp.CallToolRequest) (
 
 	caseList, err := s.decisionSvc.ListCases(ctx, filter)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list cases: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list cases: %v", err)), nil
 	}
 
 	cases := make([]map[string]interface{}, len(caseList.Cases))
@@ -257,7 +256,7 @@ func (s *Server) handleGetCase(ctx context.Context, req mcp.CallToolRequest) (*m
 
 	decisionCase, err := s.decisionSvc.GetCase(ctx, caseID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get case: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get case: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -295,7 +294,7 @@ func (s *Server) handleResolveCase(ctx context.Context, req mcp.CallToolRequest)
 	}
 
 	if err := s.decisionSvc.ResolveCase(ctx, caseID, resolution, comment); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to resolve case: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to resolve case: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -317,7 +316,7 @@ func (s *Server) handleListProposals(ctx context.Context, req mcp.CallToolReques
 
 	proposals, err := s.proposalSvc.ListProposals(ctx, caseID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list proposals: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list proposals: %v", err)), nil
 	}
 
 	proposalList := make([]map[string]interface{}, len(proposals))

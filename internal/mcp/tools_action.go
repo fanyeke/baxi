@@ -106,7 +106,7 @@ func (s *Server) handleProposeAction(ctx context.Context, req mcp.CallToolReques
 	var params map[string]interface{}
 	if paramsRaw, ok := args["params"].(string); ok && paramsRaw != "" {
 		if err := json.Unmarshal([]byte(paramsRaw), &params); err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("invalid JSON in params: %v", err)), nil
+			return mcp.NewToolResultError(SanitizeErrorf("invalid JSON in params: %v", err)), nil
 		}
 	}
 
@@ -127,7 +127,7 @@ func (s *Server) handleProposeAction(ctx context.Context, req mcp.CallToolReques
 	if decisionJSON != "" {
 		decisionID, caseID, ds, err := s.handleDecisionJSON(ctx, decisionJSON, &trace)
 		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("invalid decision_json: %v", err)), nil
+			return mcp.NewToolResultError(SanitizeErrorf("invalid decision_json: %v", err)), nil
 		}
 		trace.DecisionID = decisionID
 		trace.CaseID = caseID
@@ -157,7 +157,7 @@ func (s *Server) handleProposeAction(ctx context.Context, req mcp.CallToolReques
 						}
 					}
 					if !recommended {
-						warning := fmt.Sprintf("action %q is not in the recommended actions for severity %q (recommended: %v)",
+						warning := SanitizeErrorf("action %q is not in the recommended actions for severity %q (recommended: %v)",
 							actionType, guidanceSeverity, level.Actions)
 						guidanceWarnings = append(guidanceWarnings, warning)
 					}
@@ -169,7 +169,7 @@ func (s *Server) handleProposeAction(ctx context.Context, req mcp.CallToolReques
 
 	result, err := s.ontologySvc.ProposeAction(ctx, objectType, objectID, actionType, params, trace)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to propose action: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to propose action: %v", err)), nil
 	}
 
 	res := map[string]interface{}{
@@ -302,7 +302,7 @@ func (s *Server) handleExecuteProposal(ctx context.Context, req mcp.CallToolRequ
 
 	result, err := s.executeSvc.ExecuteProposal(ctx, s.pool, proposalID, s.mcpUserID, action.WithDryRun(dryRun))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to execute proposal: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to execute proposal: %v", err)), nil
 	}
 
 	payload := map[string]interface{}{
@@ -330,7 +330,7 @@ func (s *Server) handleGetDecisionContext(ctx context.Context, req mcp.CallToolR
 
 	decisionCtx, err := s.contextBuilder.BuildDecisionContext(ctx, caseID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to build decision context: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to build decision context: %v", err)), nil
 	}
 
 	// Build evidence items from the trigger data.

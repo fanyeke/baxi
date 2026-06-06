@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -68,7 +67,7 @@ func (s *Server) handleCheckAccess(ctx context.Context, req mcp.CallToolRequest)
 
 	accessDecision, err := s.govSvc.CheckAccess(ctx, role, objectType, action)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to check access: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to check access: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -91,7 +90,7 @@ func (s *Server) handleGetClassification(ctx context.Context, req mcp.CallToolRe
 
 	classification, err := s.govSvc.GetClassification(ctx, fieldPath)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get classification: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get classification: %v", err)), nil
 	}
 
 	result := map[string]interface{}{

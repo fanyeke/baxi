@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -121,7 +120,7 @@ func (s *Server) handleApproveProposal(ctx context.Context, req mcp.CallToolRequ
 
 	record, err := s.reviewSvc.ApproveProposal(ctx, proposalID, s.mcpUserID, feedback)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to approve proposal: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to approve proposal: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -151,7 +150,7 @@ func (s *Server) handleRejectProposal(ctx context.Context, req mcp.CallToolReque
 
 	record, err := s.reviewSvc.RejectProposal(ctx, proposalID, s.mcpUserID, feedback)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to reject proposal: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to reject proposal: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -180,7 +179,7 @@ func (s *Server) handleCancelProposal(ctx context.Context, req mcp.CallToolReque
 	}
 
 	if err := s.reviewSvc.CancelProposal(ctx, proposalID, s.mcpUserID, reason); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to cancel proposal: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to cancel proposal: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
@@ -202,7 +201,7 @@ func (s *Server) handleGetProposalByID(ctx context.Context, req mcp.CallToolRequ
 
 	proposal, err := s.reviewSvc.GetProposalByID(ctx, proposalID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get proposal: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get proposal: %v", err)), nil
 	}
 	if proposal == nil {
 		return mcp.NewToolResultError("proposal not found"), nil
@@ -248,7 +247,7 @@ func (s *Server) handleListReviewRecords(ctx context.Context, req mcp.CallToolRe
 
 	records, total, err := s.reviewSvc.ListReviewRecords(ctx, proposalID, limit, offset)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list review records: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list review records: %v", err)), nil
 	}
 
 	items := make([]map[string]interface{}, 0, len(records))

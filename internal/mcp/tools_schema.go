@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -46,7 +45,7 @@ func (s *Server) registerSchemaTools() {
 func (s *Server) handleListActionSchemas(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	schemas, err := s.schemaSvc.ListActionSchemas(ctx)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to list action schemas: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to list action schemas: %v", err)), nil
 	}
 
 	items := make([]map[string]interface{}, 0, len(schemas))
@@ -77,10 +76,10 @@ func (s *Server) handleGetActionSchema(ctx context.Context, req mcp.CallToolRequ
 
 	schema, err := s.schemaSvc.GetActionSchema(ctx, actionType)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to get action schema: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to get action schema: %v", err)), nil
 	}
 	if schema == nil {
-		return mcp.NewToolResultError(fmt.Sprintf("action type %q not found", actionType)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("action type %q not found", actionType)), nil
 	}
 
 	return mcp.NewToolResultJSON(map[string]interface{}{

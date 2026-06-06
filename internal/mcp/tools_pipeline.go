@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -55,7 +54,7 @@ func (s *Server) handleRunPipeline(ctx context.Context, req mcp.CallToolRequest)
 		for c := range validPipelineConfigs {
 			valid = append(valid, c)
 		}
-		return mcp.NewToolResultError(fmt.Sprintf("invalid config %q. Valid options: %v", config, valid)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("invalid config %q. Valid options: %v", config, valid)), nil
 	}
 
 	// data_dir is fixed to the built-in path (not user-specifiable)
@@ -63,7 +62,7 @@ func (s *Server) handleRunPipeline(ctx context.Context, req mcp.CallToolRequest)
 
 	resultID, err := s.pipelineRunner.Run(ctx, config, dataDir)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to run pipeline: %v", err)), nil
+		return mcp.NewToolResultError(SanitizeErrorf("Failed to run pipeline: %v", err)), nil
 	}
 
 	result := map[string]interface{}{
