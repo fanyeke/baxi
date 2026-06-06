@@ -262,5 +262,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Foundation — 身份 & 命名 | 1/1 | Complete | 2026-06-06 |
 | 8. Schema & Status 输出裁剪 | 1/1 | Complete | 2026-06-06 |
 | 9. 对象数据字段级过滤 | 1/1 | Complete | 2026-06-06 |
-| 10. 输入加固 — Search & Pipeline | 0/TBD | Not started | - |
+| 10. 输入加固 — Search & Pipeline | 1/1 | Complete | 2026-06-06 |
 | 11. 兼容性验证 & 错误净化 | 0/TBD | Not started | - |

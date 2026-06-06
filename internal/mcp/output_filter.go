@@ -29,9 +29,33 @@ func FilterOntologyDescriptor(objectTypes []interface{}) {
 
 // FilterSearchObjects caps result size and strips detailed fields from
 // search results, returning only a summary view.
-// Currently a no-op placeholder for Phase 10 implementation.
+// For each result item, keeps only object_id and object_type (if present),
+// removing all detailed property fields.
 func FilterSearchObjects(result map[string]interface{}) {
-	// Phase 10: cap limit, strip detailed fields from items
+	itemsRaw, ok := result["items"]
+	if !ok {
+		return
+	}
+	items, ok := itemsRaw.([]map[string]interface{})
+	if !ok {
+		return
+	}
+	stripped := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		summary := make(map[string]interface{})
+		if id, ok := item["object_id"]; ok {
+			summary["object_id"] = id
+		}
+		if objType, ok := item["object_type"]; ok {
+			summary["object_type"] = objType
+		}
+		// If neither object_id nor object_type found, keep a minimal marker
+		if len(summary) == 0 {
+			summary["id"] = item["id"]
+		}
+		stripped = append(stripped, summary)
+	}
+	result["items"] = stripped
 }
 
 // FilterLinkedObjects enforces max_depth and strips detailed fields from

@@ -7,14 +7,26 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+// validPipelineConfigs defines the allowed pipeline configuration names.
+// Any config value not in this list is rejected (Phase 10 containment).
+var validPipelineConfigs = map[string]bool{
+	"full":                   true,
+	"ingest_raw":             true,
+	"build_dwd":              true,
+	"build_metrics":          true,
+	"detect_alerts":          true,
+	"generate_recommendations": true,
+	"generate_tasks":         true,
+	"create_outbox":          true,
+}
+
 // registerPipelineTools registers all pipeline-related MCP tools.
 func (s *Server) registerPipelineTools() {
 	// Tool: process_data
 	runPipelineTool := mcp.NewTool(
 		ToolProcessData,
 		mcp.WithDescription("Process data with the specified configuration"),
-		mcp.WithString("config", mcp.Required(), mcp.Description("The pipeline configuration name or path")),
-		mcp.WithString("data_dir", mcp.Description("Directory containing input data files")),
+		mcp.WithString("config", mcp.Required(), mcp.Description("Pipeline configuration name")),
 	)
 	s.server.AddTool(runPipelineTool, s.handleRunPipeline)
 
@@ -37,10 +49,17 @@ func (s *Server) handleRunPipeline(ctx context.Context, req mcp.CallToolRequest)
 		return mcp.NewToolResultError("config is required"), nil
 	}
 
-	dataDir := "./data/raw"
-	if v, ok := args["data_dir"].(string); ok && v != "" {
-		dataDir = v
+	// Validate config against allowlist (Phase 10 containment)
+	if !validPipelineConfigs[config] {
+		valid := make([]string, 0, len(validPipelineConfigs))
+		for c := range validPipelineConfigs {
+			valid = append(valid, c)
+		}
+		return mcp.NewToolResultError(fmt.Sprintf("invalid config %q. Valid options: %v", config, valid)), nil
 	}
+
+	// data_dir is fixed to the built-in path (not user-specifiable)
+	dataDir := "./data/raw"
 
 	resultID, err := s.pipelineRunner.Run(ctx, config, dataDir)
 	if err != nil {
@@ -49,7 +68,6 @@ func (s *Server) handleRunPipeline(ctx context.Context, req mcp.CallToolRequest)
 
 	result := map[string]interface{}{
 		"config":    config,
-		"data_dir":  dataDir,
 		"result_id": resultID,
 		"status":    "started",
 	}

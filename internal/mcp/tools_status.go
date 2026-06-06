@@ -105,6 +105,10 @@ func (s *Server) handleSearchObjects(ctx context.Context, req mcp.CallToolReques
 	if v, ok := args["limit"].(float64); ok && v > 0 {
 		limit = int(v)
 	}
+	// Hard cap: maximum 100 results per request (Phase 10 containment)
+	if limit > 100 {
+		limit = 100
+	}
 
 	offset := 0
 	if v, ok := args["offset"].(float64); ok && v >= 0 {
@@ -124,6 +128,9 @@ func (s *Server) handleSearchObjects(ctx context.Context, req mcp.CallToolReques
 		"items": searchResult.Items,
 		"total": searchResult.Total,
 	}
+
+	// Strip detailed properties from search results (Phase 10 containment)
+	FilterSearchObjects(result)
 
 	return mcp.NewToolResultJSON(result)
 }
