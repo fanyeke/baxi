@@ -197,11 +197,11 @@ export default function (pi: ExtensionAPI) {
 
   // ── Pipeline Tools ──
 
-  // Tool: baxi_run_pipeline
+  // Tool: baxi_process_data
   pi.registerTool({
-    name: "baxi_run_pipeline",
-    label: "Run Pipeline",
-    description: "Run a data pipeline with the specified configuration",
+    name: "baxi_process_data",
+    label: "Process Data",
+    description: "Process data through the data pipeline with the specified configuration",
     parameters: Type.Object({
       config: Type.String({ description: "The pipeline configuration name or path" }),
     }),

@@ -12,7 +12,7 @@ import (
 func (s *Server) registerAlertTools() {
 	// Tool: list_alerts
 	listAlertsTool := mcp.NewTool(
-		"list_alerts",
+		ToolListAlerts,
 		mcp.WithDescription("List alerts with optional filtering and sorting"),
 		mcp.WithString("severity", mcp.Description("Filter by severity (e.g., 'low', 'medium', 'high', 'critical')")),
 		mcp.WithString("status", mcp.Description("Filter by status (e.g., 'open', 'acknowledged', 'resolved')")),
@@ -23,6 +23,20 @@ func (s *Server) registerAlertTools() {
 		mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
 	)
 	s.server.AddTool(listAlertsTool, s.handleListAlerts)
+	if isLegacyToolsEnabled() && LegacyListAlerts != ToolListAlerts {
+		legacyTool := mcp.NewTool(
+			LegacyListAlerts,
+			mcp.WithDescription("List alerts with optional filtering and sorting"),
+			mcp.WithString("severity", mcp.Description("Filter by severity (e.g., 'low', 'medium', 'high', 'critical')")),
+			mcp.WithString("status", mcp.Description("Filter by status (e.g., 'open', 'acknowledged', 'resolved')")),
+			mcp.WithString("object_type", mcp.Description("Filter by object type")),
+			mcp.WithString("rule_id", mcp.Description("Filter by rule ID")),
+			mcp.WithString("sort", mcp.Description("Sort field (default: 'created_at desc')")),
+			mcp.WithNumber("limit", mcp.Description("Maximum number of alerts to return (default 20)")),
+			mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
+		)
+		s.server.AddTool(legacyTool, s.handleListAlerts)
+	}
 }
 
 // handleListAlerts handles the list_alerts tool.

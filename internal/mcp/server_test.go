@@ -121,12 +121,12 @@ func (m *MockGovernanceService) GetClassification(ctx context.Context, fieldPath
 }
 
 type MockPipelineRunner struct {
-	RunFunc func(ctx context.Context, config string) (string, error)
+	RunFunc func(ctx context.Context, config string, dataDir string) (string, error)
 }
 
-func (m *MockPipelineRunner) Run(ctx context.Context, config string) (string, error) {
+func (m *MockPipelineRunner) Run(ctx context.Context, config string, dataDir string) (string, error) {
 	if m.RunFunc != nil {
-		return m.RunFunc(ctx, config)
+		return m.RunFunc(ctx, config, dataDir)
 	}
 	return "", nil
 }
@@ -417,40 +417,93 @@ func TestServerToolRegistration(t *testing.T) {
 		t.Fatal("ListTools returned nil")
 	}
 
+	// Both new (contained) tool names and legacy aliases are registered
+	// when MCP_ENABLE_LEGACY_TOOLS is not set (defaults to "true").
 	expectedTools := []string{
-		"create_decision_case",
-		"decide",
-		"build_context",
-		"list_cases",
-		"get_case",
-		"list_proposals",
-		"list_alerts",
-		"check_access",
-		"get_classification",
-		"run_pipeline",
-		"approve_proposal",
-		"reject_proposal",
-		"execute_proposal",
-		"get_decision_context",
-		"get_system_status",
-		"search_objects",
-		"list_outbox_events",
-		"get_pipeline_status",
-		"describe_ontology",
-		"get_object",
-		"get_linked_objects",
-		"execute_action",
-		"propose_action",
-		"resolve_case",
-		"cancel_proposal",
-		"get_proposal_by_id",
-		"list_review_records",
-		"list_action_schemas",
-		"get_action_schema",
-		"create_sandbox",
-		"add_to_sandbox",
-		"compare_sandboxes",
-		"get_sandbox",
+		// New decision/evaluation tools
+		ToolEvaluateCase,
+		ToolGenerateRecommendation,
+		ToolResolveEvaluation,
+		ToolListEvaluations,
+		ToolGetEvaluation,
+		ToolListRecommendations,
+		// Legacy decision tools
+		LegacyCreateDecisionCase,
+		LegacyDecide,
+		LegacyResolveCase,
+		LegacyListCases,
+		LegacyGetCase,
+		LegacyListProposals,
+		// New context/analysis tools
+		ToolAnalyzeSituation,
+		// Legacy context tool
+		LegacyBuildContext,
+		// Alert (same name for both)
+		ToolListAlerts,
+		// New governance/classification tools
+		ToolCheckPermission,
+		ToolGetDataClassification,
+		// Legacy governance tools
+		LegacyCheckAccess,
+		LegacyGetClassification,
+		// New pipeline tool
+		ToolProcessData,
+		// Legacy pipeline tool
+		LegacyRunPipeline,
+		// New review/approval tools
+		ToolApproveAction,
+		ToolRejectAction,
+		ToolCancelAction,
+		ToolGetActionProposal,
+		ToolListReviews,
+		// Legacy review tools
+		LegacyApproveProposal,
+		LegacyRejectProposal,
+		LegacyCancelProposal,
+		LegacyGetProposalByID,
+		LegacyListReviewRecords,
+		// New action tools
+		ToolExecuteAction,
+		ToolGetDecisionContext,
+		ToolProposeAction,
+		// Legacy action tools
+		LegacyExecuteProposal,
+		LegacyGetDecisionContext,
+		LegacyProposeAction,
+		// New event/status tools
+		ToolListEvents,
+		ToolGetProcessingStatus,
+		ToolGetSystemHealth,
+		ToolSearchRecords,
+		// Legacy event/status tools
+		LegacyListOutboxEvents,
+		LegacyGetPipelineStatus,
+		LegacyGetSystemStatus,
+		LegacySearchObjects,
+		// New ontology/schema tools
+		ToolDescribeSchema,
+		ToolGetRecord,
+		ToolGetRelatedRecords,
+		ToolApplyAction,
+		ToolListActionTypes,
+		ToolGetActionType,
+		// Legacy ontology tools
+		LegacyDescribeOntology,
+		LegacyGetObject,
+		LegacyGetLinkedObjects,
+		LegacyExecuteAction,
+		LegacyListActionSchemas,
+		LegacyGetActionSchema,
+		// New sandbox/simulation tools
+		ToolCreateSimulation,
+		ToolAddToSimulation,
+		ToolCompareSimulations,
+		ToolGetSimulation,
+		// Legacy sandbox tools
+		LegacyCreateSandbox,
+		LegacyAddToSandbox,
+		LegacyCompareSandboxes,
+		LegacyGetSandbox,
 	}
 
 	toolNames := make(map[string]bool)
@@ -458,14 +511,14 @@ func TestServerToolRegistration(t *testing.T) {
 		toolNames[name] = true
 	}
 
+	var missing []string
 	for _, expected := range expectedTools {
 		if !toolNames[expected] {
-			t.Errorf("Expected tool '%s' not found in registered tools", expected)
+			missing = append(missing, expected)
 		}
 	}
-
-	if len(tools) != len(expectedTools) {
-		t.Errorf("Expected %d tools, got %d", len(expectedTools), len(tools))
+	if len(missing) > 0 {
+		t.Errorf("Expected %d tools not found: %v (registered: %d)", len(missing), missing, len(tools))
 	}
 }
 

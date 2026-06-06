@@ -9,23 +9,43 @@ import (
 
 // registerGovernanceTools registers all governance-related MCP tools.
 func (s *Server) registerGovernanceTools() {
-	// Tool: check_access
-	checkAccessTool := mcp.NewTool(
-		"check_access",
-		mcp.WithDescription("Check if a role has access to perform an action on an object type"),
-		mcp.WithString("role", mcp.Required(), mcp.Description("The role to check access for")),
-		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to check access on")),
+	// Tool: check_permission (was check_access)
+	checkPermissionTool := mcp.NewTool(
+		ToolCheckPermission,
+		mcp.WithDescription("Check if a role has permission to perform an action on an object type"),
+		mcp.WithString("role", mcp.Required(), mcp.Description("The role to check permission for")),
+		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to check permission on")),
 		mcp.WithString("action", mcp.Required(), mcp.Description("The action to check (e.g., 'read', 'write', 'delete')")),
 	)
-	s.server.AddTool(checkAccessTool, s.handleCheckAccess)
+	s.server.AddTool(checkPermissionTool, s.handleCheckAccess)
 
-	// Tool: get_classification
+	if isLegacyToolsEnabled() {
+		legacyCheckAccessTool := mcp.NewTool(
+			LegacyCheckAccess,
+			mcp.WithDescription("Check if a role has access to perform an action on an object type"),
+			mcp.WithString("role", mcp.Required(), mcp.Description("The role to check access for")),
+			mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to check access on")),
+			mcp.WithString("action", mcp.Required(), mcp.Description("The action to check (e.g., 'read', 'write', 'delete')")),
+		)
+		s.server.AddTool(legacyCheckAccessTool, s.handleCheckAccess)
+	}
+
+	// Tool: get_data_classification (was get_classification)
 	getClassificationTool := mcp.NewTool(
-		"get_classification",
-		mcp.WithDescription("Get classification information for a field path"),
+		ToolGetDataClassification,
+		mcp.WithDescription("Get data classification information for a field path"),
 		mcp.WithString("field_path", mcp.Required(), mcp.Description("The field path to get classification for (e.g., 'user.email')")),
 	)
 	s.server.AddTool(getClassificationTool, s.handleGetClassification)
+
+	if isLegacyToolsEnabled() {
+		legacyGetClassificationTool := mcp.NewTool(
+			LegacyGetClassification,
+			mcp.WithDescription("Get classification information for a field path"),
+			mcp.WithString("field_path", mcp.Required(), mcp.Description("The field path to get classification for (e.g., 'user.email')")),
+		)
+		s.server.AddTool(legacyGetClassificationTool, s.handleGetClassification)
+	}
 }
 
 // handleCheckAccess handles the check_access tool.

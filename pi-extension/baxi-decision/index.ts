@@ -4,15 +4,15 @@ import { Type } from "typebox";
 export default function (pi: ExtensionAPI) {
     // Register decision tools
     pi.registerTool({
-        name: "baxi_create_case",
-        label: "Create Decision Case",
-        description: "Create a decision case from a Baxi alert",
+        name: "baxi_evaluate_case",
+        label: "Evaluate Case",
+        description: "Evaluate a decision case from a Baxi alert",
         parameters: Type.Object({
             alert_id: Type.String({ description: "Alert ID to create case from" }),
         }),
         async execute(toolCallId, params, signal, onUpdate, ctx) {
             // Use pi-mcp-adapter's mcp proxy tool via the conversation
-            ctx.sendMessage(`Please use the mcp tool to call baxi_mcp with: create_decision_case with alert_id=${params.alert_id}`);
+            ctx.sendMessage(`Please use the mcp tool to call baxi_mcp with: evaluate_case with alert_id=${params.alert_id}`);
             return {
                 content: [{ type: "text", text: "Attempting to create decision case..." }],
                 details: {},

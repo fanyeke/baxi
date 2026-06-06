@@ -7,41 +7,79 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// registerSandboxTools registers all sandbox MCP tools.
+// registerSandboxTools registers all simulation MCP tools.
 func (s *Server) registerSandboxTools() {
-	// Tool: create_sandbox
+	// Tool: create_simulation (was create_sandbox)
 	createTool := mcp.NewTool(
-		"create_sandbox",
-		mcp.WithDescription("Create a new proposal sandbox"),
+		ToolCreateSimulation,
+		mcp.WithDescription("Create a new simulation"),
 		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the decision case")),
 	)
 	s.server.AddTool(createTool, s.handleCreateSandbox)
 
-	// Tool: add_to_sandbox
+	if isLegacyToolsEnabled() {
+		legacyCreateSimulationTool := mcp.NewTool(
+			LegacyCreateSandbox,
+			mcp.WithDescription("Create a new proposal sandbox"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the decision case")),
+		)
+		s.server.AddTool(legacyCreateSimulationTool, s.handleCreateSandbox)
+	}
+
+	// Tool: add_to_simulation (was add_to_sandbox)
 	addTool := mcp.NewTool(
-		"add_to_sandbox",
-		mcp.WithDescription("Add a proposal to an existing sandbox"),
-		mcp.WithString("sandbox_id", mcp.Required(), mcp.Description("The ID of the sandbox")),
+		ToolAddToSimulation,
+		mcp.WithDescription("Add a proposal to an existing simulation"),
+		mcp.WithString("simulation_id", mcp.Required(), mcp.Description("The ID of the simulation")),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to add")),
 	)
 	s.server.AddTool(addTool, s.handleAddToSandbox)
 
-	// Tool: compare_sandboxes
+	if isLegacyToolsEnabled() {
+		legacyAddToSimulationTool := mcp.NewTool(
+			LegacyAddToSandbox,
+			mcp.WithDescription("Add a proposal to an existing sandbox"),
+			mcp.WithString("sandbox_id", mcp.Required(), mcp.Description("The ID of the sandbox")),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to add")),
+		)
+		s.server.AddTool(legacyAddToSimulationTool, s.handleAddToSandbox)
+	}
+
+	// Tool: compare_simulations (was compare_sandboxes)
 	compareTool := mcp.NewTool(
-		"compare_sandboxes",
-		mcp.WithDescription("Compare two sandboxes and return differences"),
-		mcp.WithString("sandbox_id_1", mcp.Required(), mcp.Description("The first sandbox ID")),
-		mcp.WithString("sandbox_id_2", mcp.Required(), mcp.Description("The second sandbox ID")),
+		ToolCompareSimulations,
+		mcp.WithDescription("Compare two simulations and return differences"),
+		mcp.WithString("simulation_id_1", mcp.Required(), mcp.Description("The first simulation ID")),
+		mcp.WithString("simulation_id_2", mcp.Required(), mcp.Description("The second simulation ID")),
 	)
 	s.server.AddTool(compareTool, s.handleCompareSandboxes)
 
-	// Tool: get_sandbox
+	if isLegacyToolsEnabled() {
+		legacyCompareSimulationsTool := mcp.NewTool(
+			LegacyCompareSandboxes,
+			mcp.WithDescription("Compare two sandboxes and return differences"),
+			mcp.WithString("sandbox_id_1", mcp.Required(), mcp.Description("The first sandbox ID")),
+			mcp.WithString("sandbox_id_2", mcp.Required(), mcp.Description("The second sandbox ID")),
+		)
+		s.server.AddTool(legacyCompareSimulationsTool, s.handleCompareSandboxes)
+	}
+
+	// Tool: get_simulation (was get_sandbox)
 	getTool := mcp.NewTool(
-		"get_sandbox",
-		mcp.WithDescription("Get sandbox details by ID"),
-		mcp.WithString("sandbox_id", mcp.Required(), mcp.Description("The ID of the sandbox")),
+		ToolGetSimulation,
+		mcp.WithDescription("Get simulation details by ID"),
+		mcp.WithString("simulation_id", mcp.Required(), mcp.Description("The ID of the simulation")),
 	)
 	s.server.AddTool(getTool, s.handleGetSandbox)
+
+	if isLegacyToolsEnabled() {
+		legacyGetSimulationTool := mcp.NewTool(
+			LegacyGetSandbox,
+			mcp.WithDescription("Get sandbox details by ID"),
+			mcp.WithString("sandbox_id", mcp.Required(), mcp.Description("The ID of the sandbox")),
+		)
+		s.server.AddTool(legacyGetSimulationTool, s.handleGetSandbox)
+	}
 }
 
 // handleCreateSandbox handles the create_sandbox tool.

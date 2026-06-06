@@ -9,9 +9,9 @@ import (
 
 // registerOutboxTools registers outbox and pipeline status MCP tools.
 func (s *Server) registerOutboxTools() {
-	// Tool: list_outbox_events
+	// Tool: list_events
 	listTool := mcp.NewTool(
-		"list_outbox_events",
+		ToolListEvents,
 		mcp.WithDescription("List outbox events with optional status filter"),
 		mcp.WithString("status", mcp.Description("Filter by status (e.g., 'pending', 'dispatched', 'failed')")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of events to return (default 20)")),
@@ -19,12 +19,31 @@ func (s *Server) registerOutboxTools() {
 	)
 	s.server.AddTool(listTool, s.handleListOutboxEvents)
 
-	// Tool: get_pipeline_status
+	if isLegacyToolsEnabled() {
+		legacyListTool := mcp.NewTool(
+			LegacyListOutboxEvents,
+			mcp.WithDescription("List outbox events with optional status filter"),
+			mcp.WithString("status", mcp.Description("Filter by status (e.g., 'pending', 'dispatched', 'failed')")),
+			mcp.WithNumber("limit", mcp.Description("Maximum number of events to return (default 20)")),
+			mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
+		)
+		s.server.AddTool(legacyListTool, s.handleListOutboxEvents)
+	}
+
+	// Tool: get_processing_status
 	statusTool := mcp.NewTool(
-		"get_pipeline_status",
+		ToolGetProcessingStatus,
 		mcp.WithDescription("Get pipeline status including last run and recent runs"),
 	)
 	s.server.AddTool(statusTool, s.handleGetPipelineStatus)
+
+	if isLegacyToolsEnabled() {
+		legacyStatusTool := mcp.NewTool(
+			LegacyGetPipelineStatus,
+			mcp.WithDescription("Get pipeline status including last run and recent runs"),
+		)
+		s.server.AddTool(legacyStatusTool, s.handleGetPipelineStatus)
+	}
 }
 
 // handleListOutboxEvents handles the list_outbox_events tool.

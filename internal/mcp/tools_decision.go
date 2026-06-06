@@ -10,61 +10,117 @@ import (
 
 // registerDecisionTools registers all decision-related MCP tools.
 func (s *Server) registerDecisionTools() {
-	// Tool: create_decision_case
+	// Tool: evaluate_case
 	createCaseTool := mcp.NewTool(
-		"create_decision_case",
-		mcp.WithDescription("Create a new decision case from an alert"),
-		mcp.WithString("alert_id", mcp.Required(), mcp.Description("The ID of the alert to create a case from")),
-		mcp.WithString("created_by", mcp.Description("The user or system creating the case")),
+		ToolEvaluateCase,
+		mcp.WithDescription("Create a new evaluation from an alert"),
+		mcp.WithString("alert_id", mcp.Required(), mcp.Description("The ID of the alert to create an evaluation from")),
+		mcp.WithString("created_by", mcp.Description("The user or system creating the evaluation")),
 	)
 	s.server.AddTool(createCaseTool, s.handleCreateDecisionCase)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyCreateDecisionCase,
+			mcp.WithDescription("Create a new decision case from an alert"),
+			mcp.WithString("alert_id", mcp.Required(), mcp.Description("The ID of the alert to create a case from")),
+			mcp.WithString("created_by", mcp.Description("The user or system creating the case")),
+		)
+		s.server.AddTool(legacyTool, s.handleCreateDecisionCase)
+	}
 
-	// Tool: decide
+	// Tool: generate_recommendation
 	decideTool := mcp.NewTool(
-		"decide",
-		mcp.WithDescription("Generate a decision for a case, persisting action proposals"),
-		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to generate a decision for")),
+		ToolGenerateRecommendation,
+		mcp.WithDescription("Generate a recommendation for an evaluation, persisting action proposals"),
+		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the evaluation to generate a recommendation for")),
 	)
 	s.server.AddTool(decideTool, s.handleDecide)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyDecide,
+			mcp.WithDescription("Generate a decision for a case, persisting action proposals"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to generate a decision for")),
+		)
+		s.server.AddTool(legacyTool, s.handleDecide)
+	}
 
-	// Tool: resolve_case
+	// Tool: resolve_evaluation
 	resolveCaseTool := mcp.NewTool(
-		"resolve_case",
-		mcp.WithDescription("Resolve a decision case with a resolution and optional comment"),
-		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to resolve")),
+		ToolResolveEvaluation,
+		mcp.WithDescription("Resolve an evaluation with a resolution and optional comment"),
+		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the evaluation to resolve")),
 		mcp.WithString("resolution", mcp.Required(), mcp.Description("Resolution type: approved, rejected, escalated")),
 		mcp.WithString("comment", mcp.Description("Optional comment about the resolution")),
 	)
 	s.server.AddTool(resolveCaseTool, s.handleResolveCase)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyResolveCase,
+			mcp.WithDescription("Resolve a decision case with a resolution and optional comment"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to resolve")),
+			mcp.WithString("resolution", mcp.Required(), mcp.Description("Resolution type: approved, rejected, escalated")),
+			mcp.WithString("comment", mcp.Description("Optional comment about the resolution")),
+		)
+		s.server.AddTool(legacyTool, s.handleResolveCase)
+	}
 
-	// Tool: list_cases
+	// Tool: list_evaluations
 	listCasesTool := mcp.NewTool(
-		"list_cases",
-		mcp.WithDescription("List decision cases with optional filtering"),
+		ToolListEvaluations,
+		mcp.WithDescription("List evaluations with optional filtering"),
 		mcp.WithString("source_type", mcp.Description("Filter by source type (e.g., 'alert')")),
 		mcp.WithString("source_id", mcp.Description("Filter by source ID")),
-		mcp.WithString("status", mcp.Description("Filter by case status (e.g., 'created', 'decision_generated', 'closed')")),
+		mcp.WithString("status", mcp.Description("Filter by evaluation status")),
 		mcp.WithString("severity", mcp.Description("Filter by severity (e.g., 'low', 'medium', 'high', 'critical')")),
-		mcp.WithNumber("limit", mcp.Description("Maximum number of cases to return (default 20)")),
+		mcp.WithNumber("limit", mcp.Description("Maximum number of evaluations to return (default 20)")),
 		mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
 	)
 	s.server.AddTool(listCasesTool, s.handleListCases)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyListCases,
+			mcp.WithDescription("List decision cases with optional filtering"),
+			mcp.WithString("source_type", mcp.Description("Filter by source type (e.g., 'alert')")),
+			mcp.WithString("source_id", mcp.Description("Filter by source ID")),
+			mcp.WithString("status", mcp.Description("Filter by case status (e.g., 'created', 'decision_generated', 'closed')")),
+			mcp.WithString("severity", mcp.Description("Filter by severity (e.g., 'low', 'medium', 'high', 'critical')")),
+			mcp.WithNumber("limit", mcp.Description("Maximum number of cases to return (default 20)")),
+			mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
+		)
+		s.server.AddTool(legacyTool, s.handleListCases)
+	}
 
-	// Tool: get_case
+	// Tool: get_evaluation
 	getCaseTool := mcp.NewTool(
-		"get_case",
-		mcp.WithDescription("Get details of a specific decision case"),
-		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to retrieve")),
+		ToolGetEvaluation,
+		mcp.WithDescription("Get details of a specific evaluation"),
+		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the evaluation to retrieve")),
 	)
 	s.server.AddTool(getCaseTool, s.handleGetCase)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyGetCase,
+			mcp.WithDescription("Get details of a specific decision case"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to retrieve")),
+		)
+		s.server.AddTool(legacyTool, s.handleGetCase)
+	}
 
-	// Tool: list_proposals
+	// Tool: list_recommendations
 	listProposalsTool := mcp.NewTool(
-		"list_proposals",
-		mcp.WithDescription("List action proposals for a case"),
-		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to list proposals for")),
+		ToolListRecommendations,
+		mcp.WithDescription("List recommendations for an evaluation"),
+		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the evaluation to list recommendations for")),
 	)
 	s.server.AddTool(listProposalsTool, s.handleListProposals)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyListProposals,
+			mcp.WithDescription("List action proposals for a case"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to list proposals for")),
+		)
+		s.server.AddTool(legacyTool, s.handleListProposals)
+	}
 }
 
 // handleCreateDecisionCase handles the create_decision_case tool.

@@ -51,7 +51,7 @@ describe("baxi-operations extension", () => {
             expect(names).toContain("baxi_get_classification");
             expect(names).toContain("baxi_list_outbox_events");
             expect(names).toContain("baxi_get_pipeline_status");
-            expect(names).toContain("baxi_run_pipeline");
+            expect(names).toContain("baxi_process_data");
             expect(names).toContain("baxi_approve_proposal");
             expect(names).toContain("baxi_reject_proposal");
             expect(names).toContain("baxi_cancel_proposal");
@@ -291,7 +291,7 @@ describe("baxi-operations extension", () => {
         });
     });
 
-    describe("baxi_run_pipeline (Pipeline)", () => {
+    describe("baxi_process_data (Pipeline)", () => {
         it("sends POST to /pipeline/run with config", async () => {
             mockFetch.mockResolvedValue(textResponse({
                 result_id: "run-42",
@@ -303,7 +303,7 @@ describe("baxi-operations extension", () => {
             const ext = await loadExtension();
             ext(pi);
 
-            const tool = registeredTools.find((t) => t.name === "baxi_run_pipeline")!;
+            const tool = registeredTools.find((t) => t.name === "baxi_process_data")!;
             const result = await tool.execute(
                 "call-9",
                 { config: "default" },
@@ -498,7 +498,7 @@ describe("baxi-operations extension", () => {
             "baxi_get_classification",
             "baxi_list_outbox_events",
             "baxi_get_pipeline_status",
-            "baxi_run_pipeline",
+            "baxi_process_data",
             "baxi_approve_proposal",
             "baxi_reject_proposal",
             "baxi_cancel_proposal",

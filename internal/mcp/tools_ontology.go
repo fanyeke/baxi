@@ -10,44 +10,87 @@ import (
 
 // registerOntologyTools registers all ontology-related MCP tools.
 func (s *Server) registerOntologyTools() {
-	// Tool: describe_ontology
-	describeOntologyTool := mcp.NewTool(
-		"describe_ontology",
-		mcp.WithDescription("Describe all registered AIP object types with their properties, links, and allowed actions"),
+	// Tool: describe_schema (was describe_ontology)
+	describeSchemaTool := mcp.NewTool(
+		ToolDescribeSchema,
+		mcp.WithDescription("Describe all registered data object types with their properties, relationships, and allowed actions"),
 	)
-	s.server.AddTool(describeOntologyTool, s.handleDescribeOntology)
+	s.server.AddTool(describeSchemaTool, s.handleDescribeOntology)
 
-	// Tool: get_object
-	getObjectTool := mcp.NewTool(
-		"get_object",
-		mcp.WithDescription("Get a single object by type and ID"),
-		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to retrieve")),
-		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the object to retrieve")),
+	if isLegacyToolsEnabled() {
+		legacyDescribeOntologyTool := mcp.NewTool(
+			LegacyDescribeOntology,
+			mcp.WithDescription("Describe all registered AIP object types with their properties, links, and allowed actions"),
+		)
+		s.server.AddTool(legacyDescribeOntologyTool, s.handleDescribeOntology)
+	}
+
+	// Tool: get_record (was get_object)
+	getRecordTool := mcp.NewTool(
+		ToolGetRecord,
+		mcp.WithDescription("Get a single record by type and ID"),
+		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of record to retrieve")),
+		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the record to retrieve")),
 	)
-	s.server.AddTool(getObjectTool, s.handleGetObject)
+	s.server.AddTool(getRecordTool, s.handleGetObject)
 
-	// Tool: get_linked_objects
-	getLinkedObjectsTool := mcp.NewTool(
-		"get_linked_objects",
-		mcp.WithDescription("Get objects linked to a given object via relationships"),
-		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the source object")),
-		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the source object")),
+	if isLegacyToolsEnabled() {
+		legacyGetObjectTool := mcp.NewTool(
+			LegacyGetObject,
+			mcp.WithDescription("Get a single object by type and ID"),
+			mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to retrieve")),
+			mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the object to retrieve")),
+		)
+		s.server.AddTool(legacyGetObjectTool, s.handleGetObject)
+	}
+
+	// Tool: get_related_records (was get_linked_objects)
+	getRelatedRecordsTool := mcp.NewTool(
+		ToolGetRelatedRecords,
+		mcp.WithDescription("Get records linked to a given record via relationships"),
+		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the source record")),
+		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the source record")),
 		mcp.WithString("link_name", mcp.Description("Optional: filter by link name")),
 		mcp.WithNumber("max_depth", mcp.Description("Optional: traversal depth (default: 1, max: 3)")),
 	)
-	s.server.AddTool(getLinkedObjectsTool, s.handleGetLinkedObjects)
+	s.server.AddTool(getRelatedRecordsTool, s.handleGetLinkedObjects)
 
-	// Tool: execute_action
-	executeActionTool := mcp.NewTool(
-		"execute_action",
-		mcp.WithDescription("Execute an action on an object"),
-		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the target object")),
-		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target object")),
+	if isLegacyToolsEnabled() {
+		legacyGetLinkedObjectsTool := mcp.NewTool(
+			LegacyGetLinkedObjects,
+			mcp.WithDescription("Get objects linked to a given object via relationships"),
+			mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the source object")),
+			mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the source object")),
+			mcp.WithString("link_name", mcp.Description("Optional: filter by link name")),
+			mcp.WithNumber("max_depth", mcp.Description("Optional: traversal depth (default: 1, max: 3)")),
+		)
+		s.server.AddTool(legacyGetLinkedObjectsTool, s.handleGetLinkedObjects)
+	}
+
+	// Tool: apply_action (was execute_action)
+	applyActionTool := mcp.NewTool(
+		ToolApplyAction,
+		mcp.WithDescription("Execute an action on a record"),
+		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the target record")),
+		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target record")),
 		mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to execute")),
 		mcp.WithString("params", mcp.Description("Optional JSON-encoded parameters for the action")),
 		mcp.WithBoolean("dry_run", mcp.Description("When true (default), simulate execution without side effects")),
 	)
-	s.server.AddTool(executeActionTool, s.handleExecuteAction)
+	s.server.AddTool(applyActionTool, s.handleExecuteAction)
+
+	if isLegacyToolsEnabled() {
+		legacyExecuteActionTool := mcp.NewTool(
+			LegacyExecuteAction,
+			mcp.WithDescription("Execute an action on an object"),
+			mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the target object")),
+			mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target object")),
+			mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to execute")),
+			mcp.WithString("params", mcp.Description("Optional JSON-encoded parameters for the action")),
+			mcp.WithBoolean("dry_run", mcp.Description("When true (default), simulate execution without side effects")),
+		)
+		s.server.AddTool(legacyExecuteActionTool, s.handleExecuteAction)
+	}
 }
 
 // handleDescribeOntology returns metadata for all registered object types.

@@ -45,10 +45,10 @@ describe("baxi-decision extension", () => {
 
             expect(registeredTools).toHaveLength(13);
             const names = registeredTools.map((t) => t.name);
-            expect(names).toContain("baxi_create_decision_case");
+            expect(names).toContain("baxi_evaluate_case");
             expect(names).toContain("baxi_decide");
             expect(names).toContain("baxi_list_cases");
-            expect(names).toContain("baxi_get_case");
+            expect(names).toContain("baxi_get_evaluation");
             expect(names).toContain("baxi_list_proposals");
             expect(names).toContain("baxi_approve_proposal");
             expect(names).toContain("baxi_reject_proposal");
@@ -72,7 +72,7 @@ describe("baxi-decision extension", () => {
         });
     });
 
-    describe("baxi_create_decision_case", () => {
+    describe("baxi_evaluate_case", () => {
         it("sends POST to /decisions/cases", async () => {
             mockFetch.mockResolvedValue(textResponse({ case_id: "case-123" }));
 
@@ -80,7 +80,7 @@ describe("baxi-decision extension", () => {
             const ext = await loadExtension();
             ext(pi);
 
-            const tool = registeredTools.find((t) => t.name === "baxi_create_decision_case")!;
+            const tool = registeredTools.find((t) => t.name === "baxi_evaluate_case")!;
             const result = await tool.execute(
                 "call-1",
                 { case_id: "case-123", object_type: "order", object_id: "ord-456" },
@@ -105,7 +105,7 @@ describe("baxi-decision extension", () => {
             const ext = await loadExtension();
             ext(pi);
 
-            const tool = registeredTools.find((t) => t.name === "baxi_create_decision_case")!;
+            const tool = registeredTools.find((t) => t.name === "baxi_evaluate_case")!;
             const result = await tool.execute(
                 "call-2",
                 { case_id: "bad", object_type: "order", object_id: "x" },
@@ -214,7 +214,7 @@ describe("baxi-decision extension", () => {
         });
     });
 
-    describe("baxi_get_case", () => {
+    describe("baxi_get_evaluation", () => {
         it("sends GET to /decisions/cases/{id}", async () => {
             mockFetch.mockResolvedValue(jsonResponse({
                 case_id: "case-123",
@@ -225,7 +225,7 @@ describe("baxi-decision extension", () => {
             const ext = await loadExtension();
             ext(pi);
 
-            const tool = registeredTools.find((t) => t.name === "baxi_get_case")!;
+            const tool = registeredTools.find((t) => t.name === "baxi_get_evaluation")!;
             const result = await tool.execute(
                 "call-7",
                 { case_id: "case-123" },

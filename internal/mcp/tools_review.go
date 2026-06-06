@@ -9,50 +9,100 @@ import (
 
 // registerReviewTools registers all review-related MCP tools.
 func (s *Server) registerReviewTools() {
-	// Tool: approve_proposal
+	// Tool: approve_action (was approve_proposal)
 	approveTool := mcp.NewTool(
-		"approve_proposal",
-		mcp.WithDescription("Approve an action proposal"),
+		ToolApproveAction,
+		mcp.WithDescription("Approve an action"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to approve")),
 		mcp.WithString("feedback", mcp.Description("Optional feedback for the approval")),
 	)
 	s.server.AddTool(approveTool, s.handleApproveProposal)
 
-	// Tool: reject_proposal
+	if isLegacyToolsEnabled() {
+		legacyApproveTool := mcp.NewTool(
+			LegacyApproveProposal,
+			mcp.WithDescription("Approve an action proposal"),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to approve")),
+			mcp.WithString("feedback", mcp.Description("Optional feedback for the approval")),
+		)
+		s.server.AddTool(legacyApproveTool, s.handleApproveProposal)
+	}
+
+	// Tool: reject_action (was reject_proposal)
 	rejectTool := mcp.NewTool(
-		"reject_proposal",
-		mcp.WithDescription("Reject an action proposal"),
+		ToolRejectAction,
+		mcp.WithDescription("Reject an action"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to reject")),
 		mcp.WithString("feedback", mcp.Description("Optional feedback for the rejection")),
 	)
 	s.server.AddTool(rejectTool, s.handleRejectProposal)
 
-	// Tool: cancel_proposal
+	if isLegacyToolsEnabled() {
+		legacyRejectTool := mcp.NewTool(
+			LegacyRejectProposal,
+			mcp.WithDescription("Reject an action proposal"),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to reject")),
+			mcp.WithString("feedback", mcp.Description("Optional feedback for the rejection")),
+		)
+		s.server.AddTool(legacyRejectTool, s.handleRejectProposal)
+	}
+
+	// Tool: cancel_action (was cancel_proposal)
 	cancelTool := mcp.NewTool(
-		"cancel_proposal",
-		mcp.WithDescription("Cancel an action proposal"),
+		ToolCancelAction,
+		mcp.WithDescription("Cancel an action"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to cancel")),
 		mcp.WithString("reason", mcp.Description("Optional reason for the cancellation")),
 	)
 	s.server.AddTool(cancelTool, s.handleCancelProposal)
 
-	// Tool: get_proposal_by_id
+	if isLegacyToolsEnabled() {
+		legacyCancelTool := mcp.NewTool(
+			LegacyCancelProposal,
+			mcp.WithDescription("Cancel an action proposal"),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to cancel")),
+			mcp.WithString("reason", mcp.Description("Optional reason for the cancellation")),
+		)
+		s.server.AddTool(legacyCancelTool, s.handleCancelProposal)
+	}
+
+	// Tool: get_action_proposal (was get_proposal_by_id)
 	getProposalTool := mcp.NewTool(
-		"get_proposal_by_id",
+		ToolGetActionProposal,
 		mcp.WithDescription("Get full details of an action proposal by ID"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to retrieve")),
 	)
 	s.server.AddTool(getProposalTool, s.handleGetProposalByID)
 
-	// Tool: list_review_records
+	if isLegacyToolsEnabled() {
+		legacyGetProposalTool := mcp.NewTool(
+			LegacyGetProposalByID,
+			mcp.WithDescription("Get full details of an action proposal by ID"),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to retrieve")),
+		)
+		s.server.AddTool(legacyGetProposalTool, s.handleGetProposalByID)
+	}
+
+	// Tool: list_reviews (was list_review_records)
 	listReviewTool := mcp.NewTool(
-		"list_review_records",
-		mcp.WithDescription("List review records for a proposal with pagination"),
+		ToolListReviews,
+		mcp.WithDescription("List reviews with pagination"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of records to return (default 50)")),
 		mcp.WithNumber("offset", mcp.Description("Number of records to skip (default 0)")),
 	)
 	s.server.AddTool(listReviewTool, s.handleListReviewRecords)
+
+	if isLegacyToolsEnabled() {
+		legacyListReviewTool := mcp.NewTool(
+			LegacyListReviewRecords,
+			mcp.WithDescription("List review records for a proposal with pagination"),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal")),
+			mcp.WithNumber("limit", mcp.Description("Maximum number of records to return (default 50)")),
+			mcp.WithNumber("offset", mcp.Description("Number of records to skip (default 0)")),
+		)
+		s.server.AddTool(legacyListReviewTool, s.handleListReviewRecords)
+	}
 }
 
 // handleApproveProposal handles the approve_proposal tool.

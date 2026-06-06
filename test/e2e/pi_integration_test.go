@@ -151,21 +151,21 @@ func TestPiIntegration_Basic(t *testing.T) {
 	}
 
 	expectedTools := []string{
-		"create_decision_case",
+		"evaluate_case",
 		"decide",
 		"list_cases",
 		"get_case",
 		"list_proposals",
 		"list_alerts",
-		"check_access",
+		"check_permission",
 		"get_classification",
-		"run_pipeline",
+		"process_data",
 		"approve_proposal",
 		"reject_proposal",
 		"execute_proposal",
 		"get_decision_context",
-		"get_system_status",
-		"search_objects",
+		"get_system_health",
+		"search_records",
 		"list_outbox_events",
 		"get_pipeline_status",
 	}
@@ -186,12 +186,12 @@ func TestPiIntegration_Basic(t *testing.T) {
 	require.Equal(t, 0, alertResp.Total, "list_alerts should return 0 total with no data")
 	t.Logf("list_alerts: total=%d", alertResp.Total)
 
-	// --- Step 3: Call get_system_status — verify it returns data ---
-	statusResult := mcpCallTool(t, client, "get_system_status", nil)
+	// --- Step 3: Call get_system_health — verify it returns data ---
+	statusResult := mcpCallTool(t, client, "get_system_health", nil)
 	var statusResp map[string]interface{}
 	extractJSON(t, statusResult, &statusResp)
-	require.Contains(t, statusResp, "alert_count", "get_system_status should contain alert_count")
-	t.Logf("get_system_status: %v", statusResp)
+	require.Contains(t, statusResp, "alert_count", "get_system_health should contain alert_count")
+	t.Logf("get_system_health: %v", statusResp)
 
 	// --- Step 4: Call list_outbox_events — expect empty result ---
 	outboxResult := mcpCallTool(t, client, "list_outbox_events", nil)
@@ -224,10 +224,10 @@ func TestPiIntegration_ParameterValidation(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Test missing required param for create_decision_case (needs alert_id)
+	// Test missing required param for evaluate_case (needs alert_id)
 	result, err := client.CallTool(ctx, mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
-			Name:      "create_decision_case",
+			Name:      "evaluate_case",
 			Arguments: map[string]interface{}{},
 		},
 	})
@@ -235,7 +235,7 @@ func TestPiIntegration_ParameterValidation(t *testing.T) {
 	require.True(t, result.IsError, "should return isError for missing required param")
 	textContent, ok := mcp.AsTextContent(result.Content[0])
 	require.True(t, ok)
-	t.Logf("create_decision_case missing alert_id: %s", textContent.Text)
+	t.Logf("evaluate_case missing alert_id: %s", textContent.Text)
 
 	// Test missing required param for get_case (needs case_id)
 	result, err = client.CallTool(ctx, mcp.CallToolRequest{
@@ -276,10 +276,10 @@ func TestPiIntegration_ParameterValidation(t *testing.T) {
 	require.True(t, ok)
 	t.Logf("execute_proposal missing proposal_id: %s", textContent.Text)
 
-	// Test missing required param for search_objects (needs object_type + query)
+	// Test missing required param for search_records (needs object_type + query)
 	result, err = client.CallTool(ctx, mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
-			Name:      "search_objects",
+			Name:      "search_records",
 			Arguments: map[string]interface{}{},
 		},
 	})
@@ -287,7 +287,7 @@ func TestPiIntegration_ParameterValidation(t *testing.T) {
 	require.True(t, result.IsError, "should return isError for missing object_type")
 	textContent, ok = mcp.AsTextContent(result.Content[0])
 	require.True(t, ok)
-	t.Logf("search_objects missing params: %s", textContent.Text)
+	t.Logf("search_records missing params: %s", textContent.Text)
 }
 
 // ---------------------------------------------------------------------------

@@ -16,19 +16,29 @@ import (
 
 // registerActionTools registers all action-related MCP tools.
 func (s *Server) registerActionTools() {
-	// Tool: execute_proposal
+	// Tool: execute_action (was execute_proposal)
 	executeTool := mcp.NewTool(
-		"execute_proposal",
-		mcp.WithDescription("Execute an approved action proposal"),
+		ToolExecuteAction,
+		mcp.WithDescription("Execute an action"),
 		mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to execute")),
 		mcp.WithBoolean("dry_run", mcp.Description("When true (default), simulate execution without side effects")),
 	)
 	s.server.AddTool(executeTool, s.handleExecuteProposal)
 
-	// Tool: propose_action
+	if isLegacyToolsEnabled() {
+		legacyExecuteTool := mcp.NewTool(
+			LegacyExecuteProposal,
+			mcp.WithDescription("Execute an approved action proposal"),
+			mcp.WithString("proposal_id", mcp.Required(), mcp.Description("The ID of the proposal to execute")),
+			mcp.WithBoolean("dry_run", mcp.Description("When true (default), simulate execution without side effects")),
+		)
+		s.server.AddTool(legacyExecuteTool, s.handleExecuteProposal)
+	}
+
+	// Tool: suggest_action (was propose_action)
 	proposeTool := mcp.NewTool(
-		"propose_action",
-		mcp.WithDescription("Propose an action on an object (creates a proposal for approval)"),
+		ToolProposeAction,
+		mcp.WithDescription("Propose an action on an object"),
 		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the target object")),
 		mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target object")),
 		mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to propose")),
@@ -40,13 +50,38 @@ func (s *Server) registerActionTools() {
 	)
 	s.server.AddTool(proposeTool, s.handleProposeAction)
 
+	if isLegacyToolsEnabled() {
+		legacyProposeTool := mcp.NewTool(
+			LegacyProposeAction,
+			mcp.WithDescription("Propose an action on an object (creates a proposal for approval)"),
+			mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of the target object")),
+			mcp.WithString("object_id", mcp.Required(), mcp.Description("The ID of the target object")),
+			mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to propose")),
+			mcp.WithString("params", mcp.Description("Optional JSON-encoded parameters for the action")),
+			mcp.WithString("evidence_refs", mcp.Description("Optional JSON string array of evidence reference IDs")),
+			mcp.WithString("context_hash", mcp.Description("Optional hash of the context used for the decision")),
+			mcp.WithString("recipe_id", mcp.Description("Optional ID of the recipe that triggered the decision")),
+			mcp.WithString("decision_json", mcp.Description("Optional full agent decision JSON (creates an LLM decision record)")),
+		)
+		s.server.AddTool(legacyProposeTool, s.handleProposeAction)
+	}
+
 	// Tool: get_decision_context
 	contextTool := mcp.NewTool(
-		"get_decision_context",
+		ToolGetDecisionContext,
 		mcp.WithDescription("Get the full decision context for a case, including trigger, object, governance, evidence, and decision guidance recommendations"),
 		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to get context for")),
 	)
 	s.server.AddTool(contextTool, s.handleGetDecisionContext)
+
+	if isLegacyToolsEnabled() {
+		legacyContextTool := mcp.NewTool(
+			LegacyGetDecisionContext,
+			mcp.WithDescription("Get the full decision context for a case"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the case to get context for")),
+		)
+		s.server.AddTool(legacyContextTool, s.handleGetDecisionContext)
+	}
 }
 
 // handleProposeAction handles the propose_action tool.

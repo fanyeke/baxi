@@ -9,12 +9,21 @@ import (
 
 func (s *Server) registerContextTools() {
 	buildContextTool := mcp.NewTool(
-		"build_context",
-		mcp.WithDescription("Build an LLM-safe context envelope for a decision case using a ContextRecipe"),
-		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the decision case to build context for")),
+		ToolAnalyzeSituation,
+		mcp.WithDescription("Build an LLM-safe context envelope for analyzing a situation using a ContextRecipe"),
+		mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the evaluation to build context for")),
 		mcp.WithString("recipe_id", mcp.Description("Optional: specific recipe ID to use (otherwise matched by rule_id)")),
 	)
 	s.server.AddTool(buildContextTool, s.handleBuildContext)
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyBuildContext,
+			mcp.WithDescription("Build an LLM-safe context envelope for a decision case using a ContextRecipe"),
+			mcp.WithString("case_id", mcp.Required(), mcp.Description("The ID of the decision case to build context for")),
+			mcp.WithString("recipe_id", mcp.Description("Optional: specific recipe ID to use (otherwise matched by rule_id)")),
+		)
+		s.server.AddTool(legacyTool, s.handleBuildContext)
+	}
 }
 
 func (s *Server) handleBuildContext(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

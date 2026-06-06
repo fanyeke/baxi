@@ -7,22 +7,39 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// registerSchemaTools registers all action schema MCP tools.
+// registerSchemaTools registers all action type MCP tools.
 func (s *Server) registerSchemaTools() {
-	// Tool: list_action_schemas
+	// Tool: list_action_types (was list_action_schemas)
 	listTool := mcp.NewTool(
-		"list_action_schemas",
-		mcp.WithDescription("List all available action schemas"),
+		ToolListActionTypes,
+		mcp.WithDescription("List all available action types"),
 	)
 	s.server.AddTool(listTool, s.handleListActionSchemas)
 
-	// Tool: get_action_schema
+	if isLegacyToolsEnabled() {
+		legacyListActionTypesTool := mcp.NewTool(
+			LegacyListActionSchemas,
+			mcp.WithDescription("List all available action schemas"),
+		)
+		s.server.AddTool(legacyListActionTypesTool, s.handleListActionSchemas)
+	}
+
+	// Tool: get_action_type (was get_action_schema)
 	getTool := mcp.NewTool(
-		"get_action_schema",
-		mcp.WithDescription("Get the schema for a specific action type"),
-		mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to retrieve the schema for")),
+		ToolGetActionType,
+		mcp.WithDescription("Get the details for a specific action type"),
+		mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to retrieve")),
 	)
 	s.server.AddTool(getTool, s.handleGetActionSchema)
+
+	if isLegacyToolsEnabled() {
+		legacyGetActionTypeTool := mcp.NewTool(
+			LegacyGetActionSchema,
+			mcp.WithDescription("Get the schema for a specific action type"),
+			mcp.WithString("action_type", mcp.Required(), mcp.Description("The action type to retrieve the schema for")),
+		)
+		s.server.AddTool(legacyGetActionTypeTool, s.handleGetActionSchema)
+	}
 }
 
 // handleListActionSchemas handles the list_action_schemas tool.

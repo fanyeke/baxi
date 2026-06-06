@@ -75,10 +75,10 @@ func NewServer(
 	sandboxSvc SandboxService,
 ) (*Server, error) {
 	s := server.NewMCPServer(
-		"Baxi MCP Server",
-		"1.0.0",
+		getServerName(),
+		getServerVersion(),
 		server.WithToolCapabilities(false),
-		server.WithInstructions("E-commerce governance and decision platform"),
+		server.WithInstructions(getServerInstructions()),
 	)
 
 	srv := &Server{

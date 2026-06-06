@@ -9,16 +9,24 @@ import (
 
 // registerStatusTools registers all system status related MCP tools.
 func (s *Server) registerStatusTools() {
-	// Tool: get_system_status
+	// Tool: get_system_health
 	getStatusTool := mcp.NewTool(
-		"get_system_status",
-		mcp.WithDescription("Get the current system status including pipeline state, alert counts, table row counts, and recent errors"),
+		ToolGetSystemHealth,
+		mcp.WithDescription("Get the current system health including pipeline state, alert counts, and recent events"),
 	)
 	s.server.AddTool(getStatusTool, s.handleGetSystemStatus)
 
-	// Tool: search_objects
+	if isLegacyToolsEnabled() {
+		legacyGetStatusTool := mcp.NewTool(
+			LegacyGetSystemStatus,
+			mcp.WithDescription("Get the current system status including pipeline state, alert counts, table row counts, and recent errors"),
+		)
+		s.server.AddTool(legacyGetStatusTool, s.handleGetSystemStatus)
+	}
+
+	// Tool: search_records
 	searchObjectsTool := mcp.NewTool(
-		"search_objects",
+		ToolSearchRecords,
 		mcp.WithDescription("Search for objects by type and query string"),
 		mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to search for (e.g., 'order', 'seller', 'category')")),
 		mcp.WithString("query", mcp.Required(), mcp.Description("The search query string")),
@@ -26,6 +34,18 @@ func (s *Server) registerStatusTools() {
 		mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
 	)
 	s.server.AddTool(searchObjectsTool, s.handleSearchObjects)
+
+	if isLegacyToolsEnabled() {
+		legacySearchObjectsTool := mcp.NewTool(
+			LegacySearchObjects,
+			mcp.WithDescription("Search for objects by type and query string"),
+			mcp.WithString("object_type", mcp.Required(), mcp.Description("The type of object to search for (e.g., 'order', 'seller', 'category')")),
+			mcp.WithString("query", mcp.Required(), mcp.Description("The search query string")),
+			mcp.WithNumber("limit", mcp.Description("Maximum number of results to return (default 20)")),
+			mcp.WithNumber("offset", mcp.Description("Offset for pagination (default 0)")),
+		)
+		s.server.AddTool(legacySearchObjectsTool, s.handleSearchObjects)
+	}
 }
 
 // handleGetSystemStatus handles the get_system_status tool.

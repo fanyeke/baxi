@@ -91,7 +91,7 @@ func actionRegistryPathE2E() string {
 // ──── Ontology v2 E2E test ─────────────────────────────────────────────────
 
 // TestOntologyV2E2E validates the complete seller_late_delivery_alert workflow
-// via 8 E2E steps covering describe_ontology, get_object, get_linked_objects,
+// via 8 E2E steps covering describe_schema, get_record, get_related_records,
 // build_context, propose_action, approve_proposal, execute_proposal, and
 // execute_action rejection.
 //
@@ -129,11 +129,11 @@ func TestOntologyV2E2E(t *testing.T) {
 	var sharedProposalID string
 
 	// ────────────────────────────────────────────────────────────────────────
-	// Step 1 (T038): describe_ontology
+	// Step 1 (T038): describe_schema
 	// ────────────────────────────────────────────────────────────────────────
 	t.Run("Step1_DescribeOntology", func(t *testing.T) {
 		desc, err := ontSvc.DescribeOntology(ctx)
-		require.NoError(t, err, "describe_ontology should succeed")
+		require.NoError(t, err, "describe_schema should succeed")
 		require.NotEmpty(t, desc.ObjectTypes, "should return object types")
 
 		typeNames := make([]string, len(desc.ObjectTypes))
@@ -144,25 +144,25 @@ func TestOntologyV2E2E(t *testing.T) {
 		expectedTypes := []string{"seller", "order", "product", "metric_alert"}
 		for _, et := range expectedTypes {
 			require.Contains(t, typeNames, et,
-				"describe_ontology should include %q, got %v", et, typeNames)
+				"describe_schema should include %q, got %v", et, typeNames)
 		}
-		t.Logf("describe_ontology returned %d types: %v", len(desc.ObjectTypes), typeNames)
+		t.Logf("describe_schema returned %d types: %v", len(desc.ObjectTypes), typeNames)
 	})
 
 	// ────────────────────────────────────────────────────────────────────────
-	// Step 2 (T039): get_object(seller, SELLER_001)
+	// Step 2 (T039): get_record(seller, SELLER_001)
 	// ────────────────────────────────────────────────────────────────────────
 	t.Run("Step2_GetObject", func(t *testing.T) {
 		obj, err := ontSvc.GetObject(ctx, "seller", "SELLER_001")
-		require.NoError(t, err, "get_object should succeed for SELLER_001")
+		require.NoError(t, err, "get_record should succeed for SELLER_001")
 		require.Equal(t, "seller", obj.ObjectType)
 		require.Equal(t, "SELLER_001", obj.ObjectID)
 		require.NotEmpty(t, obj.Properties, "object should have non-empty properties")
-		t.Logf("get_object returned %d properties", len(obj.Properties))
+		t.Logf("get_record returned %d properties", len(obj.Properties))
 	})
 
 	// ────────────────────────────────────────────────────────────────────────
-	// Step 3 (T040): get_linked_objects(seller, SELLER_001, recent_orders)
+	// Step 3 (T040): get_related_records(seller, SELLER_001, recent_orders)
 	// ────────────────────────────────────────────────────────────────────────
 	t.Run("Step3_GetLinkedObjects", func(t *testing.T) {
 		if lr == nil {
@@ -170,7 +170,7 @@ func TestOntologyV2E2E(t *testing.T) {
 		}
 
 		result, err := ontSvc.GetLinkedObjects(ctx, "seller", "SELLER_001", "recent_orders", 1)
-		require.NoError(t, err, "get_linked_objects should succeed for recent_orders")
+		require.NoError(t, err, "get_related_records should succeed for recent_orders")
 
 		require.Len(t, result.Links, 1, "should have one link result")
 		link := result.Links[0]
@@ -179,7 +179,7 @@ func TestOntologyV2E2E(t *testing.T) {
 		require.GreaterOrEqual(t, len(link.Objects), 1,
 			"should have at least 1 linked order, got %d", len(link.Objects))
 
-		t.Logf("get_linked_objects returned %d orders for recent_orders", len(link.Objects))
+		t.Logf("get_related_records returned %d orders for recent_orders", len(link.Objects))
 		for _, o := range link.Objects {
 			t.Logf("  order: %s", o.ObjectID)
 		}

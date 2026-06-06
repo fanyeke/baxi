@@ -9,14 +9,24 @@ import (
 
 // registerPipelineTools registers all pipeline-related MCP tools.
 func (s *Server) registerPipelineTools() {
-	// Tool: run_pipeline
+	// Tool: process_data
 	runPipelineTool := mcp.NewTool(
-		"run_pipeline",
-		mcp.WithDescription("Run a data pipeline with the specified configuration"),
+		ToolProcessData,
+		mcp.WithDescription("Process data with the specified configuration"),
 		mcp.WithString("config", mcp.Required(), mcp.Description("The pipeline configuration name or path")),
-		mcp.WithString("data_dir", mcp.Description("Directory containing CSV data files. Defaults to ./data/raw relative to the baxi project root")),
+		mcp.WithString("data_dir", mcp.Description("Directory containing input data files")),
 	)
 	s.server.AddTool(runPipelineTool, s.handleRunPipeline)
+
+	if isLegacyToolsEnabled() {
+		legacyTool := mcp.NewTool(
+			LegacyRunPipeline,
+			mcp.WithDescription("Run a data pipeline with the specified configuration"),
+			mcp.WithString("config", mcp.Required(), mcp.Description("The pipeline configuration name or path")),
+			mcp.WithString("data_dir", mcp.Description("Directory containing CSV data files. Defaults to ./data/raw relative to the baxi project root")),
+		)
+		s.server.AddTool(legacyTool, s.handleRunPipeline)
+	}
 }
 
 // handleRunPipeline handles the run_pipeline tool.

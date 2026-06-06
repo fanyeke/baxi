@@ -17,7 +17,7 @@ func TestDecisionLifecycle(t *testing.T) {
 	defer cleanup()
 
 	t.Log("=== Step 1: Create decision case ===")
-	createResult := mcpCallTool(t, client, "create_decision_case", map[string]interface{}{
+	createResult := mcpCallTool(t, client, "evaluate_case", map[string]interface{}{
 		"alert_id":   "e2e-test-alert-1",
 		"created_by": "e2e-test",
 	})
@@ -125,7 +125,7 @@ func TestDecisionLifecycle(t *testing.T) {
 	}
 
 	t.Log("=== Step 9: Get system status ===")
-	statusResult := mcpCallTool(t, client, "get_system_status", nil)
+	statusResult := mcpCallTool(t, client, "get_system_health", nil)
 	var statusResp struct {
 		Database struct {
 			Connected bool `json:"connected"`
@@ -182,7 +182,7 @@ func TestDecisionAlternateFlows(t *testing.T) {
 	defer cleanup()
 
 	// Create a case first
-	createResult := mcpCallTool(t, client, "create_decision_case", map[string]interface{}{
+	createResult := mcpCallTool(t, client, "evaluate_case", map[string]interface{}{
 		"alert_id":   "e2e-alt-alert-1",
 		"created_by": "e2e-test",
 	})
