@@ -31,6 +31,7 @@ services:
       API_PORT: "8080"
       LOG_LEVEL: info
       TZ: UTC
+      API_BEARER_TOKEN: ${API_BEARER_TOKEN}
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -47,6 +48,7 @@ services:
       DATABASE_URL: postgres://baxi:baxi_dev@postgres:5432/baxi?sslmode=disable
       LOG_LEVEL: info
       TZ: UTC
+      API_BEARER_TOKEN: ${API_BEARER_TOKEN}
     restart: unless-stopped
 
 volumes:

@@ -48,7 +48,7 @@ objects:
         llm_readable: true
       avg_review_score:
         type: float
-        expression: "AVG(order_level.review_score)"
+        expression: "(SELECT AVG(review_score) FROM dwd.order_level WHERE order_id = dwd.item_level.order_id)"
         availability: virtual
         sensitivity: L0
         llm_readable: true
@@ -276,7 +276,7 @@ objects:
         llm_readable: true
       avg_review_score:
         type: float
-        expression: "AVG(order_level.review_score)"
+        expression: "(SELECT AVG(review_score) FROM dwd.order_level WHERE order_id = dwd.item_level.order_id)"
         availability: virtual
         sensitivity: L0
         llm_readable: true
@@ -839,7 +839,7 @@ objects:
         llm_readable: true
       avg_review_score:
         type: float
-        expression: "AVG(order_level.review_score)"
+        expression: "(SELECT AVG(review_score) FROM dwd.order_level WHERE order_id = dwd.item_level.order_id)"
         availability: virtual
         sensitivity: L0
         llm_readable: true
@@ -909,7 +909,7 @@ objects:
         filterable: true
       seller_count:
         type: int
-        expression: "COUNT(DISTINCT dwd.item_level.seller_id)"
+        expression: "(SELECT COUNT(DISTINCT seller_id) FROM dwd.item_level WHERE seller_state = dwd.order_level.customer_state)"
         availability: virtual
         sensitivity: L0
         llm_readable: true
