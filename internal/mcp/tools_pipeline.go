@@ -34,7 +34,7 @@ func (s *Server) registerPipelineTools() {
 			LegacyRunPipeline,
 			mcp.WithDescription("Run a data pipeline with the specified configuration"),
 			mcp.WithString("config", mcp.Required(), mcp.Description("The pipeline configuration name or path")),
-			mcp.WithString("data_dir", mcp.Description("Directory containing CSV data files. Defaults to ./data/raw relative to the baxi project root")),
+			mcp.WithString("data_dir", mcp.Description("Directory containing CSV data files. Defaults to ./data/raw")),
 		)
 		s.server.AddTool(legacyTool, s.handleRunPipeline)
 	}
