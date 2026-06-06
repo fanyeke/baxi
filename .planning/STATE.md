@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Phase 06 UI-SPEC approved
-last_updated: "2026-06-03T15:59:11.840Z"
-last_activity: 2026-06-03 -- Phase 06 marked complete
+milestone: v1.1
+milestone_name: MCP 信息收束
+status: planning
+last_updated: "2026-06-06T04:15:39.677Z"
+last_activity: 2026-06-06
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: Baxi
@@ -25,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 ## Current Position
 
-Phase: 06 — COMPLETE
-Plan: 1 of 4
-Status: Phase 06 complete
-Last activity: 2026-06-03 -- Phase 06 marked complete
-
-Progress: [░░░░░░░░░░] 0%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-06 — Milestone v1.1 started
 
 ## Performance Metrics
 
