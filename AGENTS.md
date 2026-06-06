@@ -156,6 +156,66 @@ make test            # go test ./... (Go only)
 cd frontend && npm run dev  # React dev server :5173
 ```
 
+## MCP 信息收束测试（Pi 非交互模式）
+
+使用 Pi CLI 的 `-p`（print/非交互）模式测试 MCP Server 暴露的信息量。关键参数：
+
+| 参数 | 作用 |
+|------|------|
+| `--no-context-files` | 阻止 Pi 读取 AGENTS.md/CLAUDE.md 等上下文文件 |
+| `--no-builtin-tools` | 禁用 bash/read/write 等内置工具，仅保留 MCP 工具 |
+| 从 `/tmp` 运行 | 防止 Agent 通过文件系统探索项目目录 |
+
+### 基础测试命令
+
+```bash
+cd /tmp && pi -p --no-context-files --no-builtin-tools "<测试提示词>"
+```
+
+`pi --version`: 0.78.0 | MCP 配置: `~/.pi/agent/mcp.json`
+
+### 四维测试提示词
+
+**维度一 — 服务器身份识别：**
+```bash
+cd /tmp && pi -p --no-context-files --no-builtin-tools "Describe the MCP server you are connected to. What is its name, version, and what does it say about itself?"
+```
+
+**维度二 — 工具命名与领域推断：**
+```bash
+cd /tmp && pi -p --no-context-files --no-builtin-tools "List all available MCP tools grouped by function. From these tool names, what business domains can you identify? What architecture can you infer?"
+```
+
+**维度三 — 架构与数据库结构推断：**
+```bash
+cd /tmp && pi -p --no-context-files --no-builtin-tools "Use describe_ontology to list all object types with their field details. What database schema can you infer from this? Then use get_system_status — what tables and row counts do you see?"
+```
+
+**维度四 — 数据穿透与关联遍历：**
+```bash
+cd /tmp && pi -p --no-context-files --no-builtin-tools "Use describe_ontology to find the 'order' object type. Then get_object on an actual order. What fields do you see? Now try to traverse from a seller to its linked orders and products."
+```
+
+### 基线 vs 验证对比流程
+
+```bash
+# 1. 基线测试（改造前）
+cd /tmp && pi -p --no-context-files --no-builtin-tools "Describe the MCP server..." > /tmp/mcp-baseline.txt
+
+# 2. ...改造代码...
+
+# 3. 重建 baxi-mcp 二进制
+cd /home/zzz/project/baxi && go build -o baxi-mcp ./cmd/baxi-mcp
+
+# 4. 验证测试（改造后）
+cd /tmp && pi -p --no-context-files --no-builtin-tools "Describe the MCP server..." > /tmp/mcp-after.txt
+
+# 5. 对比
+diff /tmp/mcp-baseline.txt /tmp/mcp-after.txt | head -50
+```
+
+重建 MCP 二进制后 Pi 会自动启动新版本（`lifecycle: lazy` 按需连接）。
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
