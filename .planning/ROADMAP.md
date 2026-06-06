@@ -11,12 +11,22 @@ This roadmap takes Baxi from a brownfield Go/PostgreSQL + React codebase with 6 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
+## Milestone v1.0 (已完成)
+
 - [x] **Phase 1: Core API Completion** - Implement all 6 API endpoints returning 501, plus OpenAPI schemas (completed 2026-06-03)
 - [x] **Phase 2: Error Handling & Observability** - Replace generic 500s with proper HTTP status codes and structured error responses (completed 2026-06-03)
 - [x] **Phase 3: Code Hygiene & Cleanup** - Remove Python/SQLite remnants, dead code, deprecated repositories (completed 2026-06-03)
 - [x] **Phase 4: Bug Fixes & Stability** - Fix silently ignored errors, marshaling failures, migration gaps, SQL injection risks (completed 2026-06-03)
 - [x] **Phase 5: Security Hardening** - Strengthen auth middleware, CORS validation, Docker Compose credentials (completed 2026-06-03)
 - [x] **Phase 6: Integration & End-to-End Demo** - Wire frontend to backend, pass all E2E tests, run full closed-loop demo (completed 2026-06-03)
+
+## Milestone v1.1 — MCP 信息收束
+
+- [ ] **Phase 7: Foundation — 服务器身份泛化 & 工具名抽象** - 泛化 MCP 服务器名称和 instructions，工具按业务能力重新分组命名
+- [ ] **Phase 8: Schema & Status 输出裁剪** - 移除 describe_ontology 和 get_system_status 中的架构细节泄露
+- [ ] **Phase 9: 对象数据字段级过滤** - get_object 和 get_linked_objects 利用 LLMReadable 标记做字段级过滤
+- [ ] **Phase 10: 输入加固 — Search & Pipeline** - search_objects 分页限制 + run_pipeline config allowlist
+- [ ] **Phase 11: 兼容性验证 & 错误信息净化** - Pi Agent 兼容验证、E2E 测试扩展、错误信息脱敏
 
 ## Phase Details
 
@@ -159,16 +169,98 @@ Plans:
 - [x] 06-03-PLAN.md — 前端测试断言修复（7 个测试文件）
 - [x] 06-04-PLAN.md — 演示验证（全测试套件 + 闭环确认）
 
+### Phase 7: Foundation — 服务器身份泛化 & 工具名抽象
+
+**Goal**: MCP 服务器暴露不可识别项目身份的通用身份信息，工具按业务能力命名（抹掉 internal 包映射）
+**Depends on**: Nothing (first phase of v1.1 milestone)
+**Requirements**: MCP-01, MCP-02
+**Success Criteria** (what must be TRUE):
+
+  1. `server.info` 中的服务器名称和 instructions 不包含 "Baxi"、项目名或任何可识别项目身份的文本
+  2. 所有 31+ MCP 工具使用业务能力名称（如 `describe_schema` 替代 `describe_ontology`），无 `internal/` 包映射痕迹
+  3. 通过 `MCP_ENABLE_LEGACY_TOOLS=true` 环境变量可启用旧名称兼容模式，旧工具名仍可调用
+  4. 默认工具列表仅显示新名称，不暴露旧名称
+
+**Plans**: TBD
+
+### Phase 8: Schema & Status 输出裁剪
+
+**Goal**: `describe_ontology` 和 `get_system_status` 不再暴露数据库架构细节
+**Depends on**: Phase 7
+**Requirements**: MCP-03, MCP-04
+**Success Criteria** (what must be TRUE):
+
+  1. `describe_ontology` 响应中不包含 SourceDescriptor（无 schema/table/primary_key 字段）
+  2. `describe_ontology` 中属性描述仅保留精简的 LLMReadable 字段，不暴露底层数据模型结构
+  3. `get_system_status` 响应中不包含 `table_counts`（无表名或行数信息）
+  4. `get_system_status` 仅展示聚合级别健康状态（alert_count 总量等），不暴露 schema 级细节
+  5. 创建 `output_filter.go` 集中管理所有过滤函数，包含 `FilterProperty()` / `FilterOntologyDescriptor()` / `FilterSystemStatus()` / `FilterSearchResult()`
+
+**Research flag**: 需要审计所有 31 个 handler 的输出结构，确保 LLMReadable 覆盖完整。某些属性可能未设置标记。
+
+**Plans**: TBD
+
+### Phase 9: 对象数据字段级过滤
+
+**Goal**: `get_object` 和 `get_linked_objects` 只返回允许 Agent 读取的属性
+**Depends on**: Phase 8 (复用 output_filter.go 的 FilterProperties)
+**Requirements**: MCP-05, MCP-06
+**Success Criteria** (what must be TRUE):
+
+  1. `get_object` 响应仅包含标记了 `LLMReadable: true` 的属性字段
+  2. `get_linked_objects` 默认 max_depth ≤ 1，防止深度遍历泄露关联数据
+  3. `get_linked_objects` 同对象字段级过滤与 get_object 一致，不会因关联查询跳过过滤
+  4. 通过 E2E 测试验证非 LLMReadable 属性的确不存在于响应中
+
+**Plans**: TBD
+
+### Phase 10: 输入加固 — Search & Pipeline
+
+**Goal**: `search_objects` 和 `run_pipeline` 只接受受约束和验证过的输入参数
+**Depends on**: Phase 8 (复用 output_filter.go 的 FilterSearchResult)
+**Requirements**: MCP-07, MCP-08
+**Success Criteria** (what must be TRUE):
+
+  1. `search_objects` 强制最大结果数限制和分页上限，超过时截断或拒绝
+  2. `search_objects` 搜索结果仅返回 ID/type/精简摘要，不返回完整对象
+  3. `run_pipeline` 的 config 参数仅接受预定义的 pipeline 类型枚举（allowlist），拒绝任意字符串
+  4. `run_pipeline` 的 data_dir 参数已移除或固定为内置路径，用户无法指定任意目录
+
+**Plans**: TBD
+
+### Phase 11: 兼容性验证 & 错误信息净化
+
+**Goal**: 所有改造已验证与 Pi Agent 兼容；错误路径不泄露内部架构细节
+**Depends on**: Phases 7-10
+**Requirements**: MCP-09
+**Success Criteria** (what must be TRUE):
+
+  1. 完整的 E2E 测试套件在新工具名称下通过（覆盖全部 31+ 工具）
+  2. Pi Agent 集成测试在旧名称兼容模式下通过
+  3. Pi 扩展 (`pi-extension/baxi-decision/index.ts`) 中的工具提示更新为意图描述（不再引用旧工具名）
+  4. 所有工具的 `NewToolResultError` 调用点完成错误信息脱敏——无 SQL、schema、架构细节泄露
+  5. 创建 `sanitizeError()` 辅助函数，统一处理错误文本中的 `schema.table` 模式和 SQL 关键词脱敏
+
+**Research flag**: 需要追溯 `internal/mcp/` 和 `cmd/baxi-mcp/main.go` 中所有 `fmt.Errorf` 和 `NewToolResultError` 调用点，约 15-20 处。
+
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+*Note: Phases 8, 9, 10 all depend on Phase 7 but are independent of each other — can be parallelized if needed.*
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core API Completion | 4/4 | Complete   | 2026-06-03 |
-| 2. Error Handling & Observability | 3/3 | Complete   | 2026-06-03 |
-| 3. Code Hygiene & Cleanup | 3/3 | Complete   | 2026-06-03 |
-| 4. Bug Fixes & Stability | 2/2 | Complete   | 2026-06-03 |
-| 5. Security Hardening | 1/1 | Complete   | 2026-06-03 |
-| 6. Integration & End-to-End Demo | 4/4 | Complete   | 2026-06-03 |
+| 1. Core API Completion | 4/4 | Complete | 2026-06-03 |
+| 2. Error Handling & Observability | 3/3 | Complete | 2026-06-03 |
+| 3. Code Hygiene & Cleanup | 3/3 | Complete | 2026-06-03 |
+| 4. Bug Fixes & Stability | 2/2 | Complete | 2026-06-03 |
+| 5. Security Hardening | 1/1 | Complete | 2026-06-03 |
+| 6. Integration & End-to-End Demo | 4/4 | Complete | 2026-06-03 |
+| 7. Foundation — 身份 & 命名 | 0/TBD | Not started | - |
+| 8. Schema & Status 输出裁剪 | 0/TBD | Not started | - |
+| 9. 对象数据字段级过滤 | 0/TBD | Not started | - |
+| 10. 输入加固 — Search & Pipeline | 0/TBD | Not started | - |
+| 11. 兼容性验证 & 错误净化 | 0/TBD | Not started | - |

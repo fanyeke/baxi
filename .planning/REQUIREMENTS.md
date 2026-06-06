@@ -89,19 +89,19 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MCP-01 | TBD | Pending |
-| MCP-02 | TBD | Pending |
-| MCP-03 | TBD | Pending |
-| MCP-04 | TBD | Pending |
-| MCP-05 | TBD | Pending |
-| MCP-06 | TBD | Pending |
-| MCP-07 | TBD | Pending |
-| MCP-08 | TBD | Pending |
-| MCP-09 | TBD | Pending |
+| MCP-01 | Phase 7 | Pending |
+| MCP-02 | Phase 7 | Pending |
+| MCP-03 | Phase 8 | Pending |
+| MCP-04 | Phase 8 | Pending |
+| MCP-05 | Phase 9 | Pending |
+| MCP-06 | Phase 9 | Pending |
+| MCP-07 | Phase 10 | Pending |
+| MCP-08 | Phase 10 | Pending |
+| MCP-09 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 9 total
-- Mapped to phases: 0
+- Mapped to phases: 9/9 ✓
 
 ---
 *Requirements defined: 2026-06-06*
