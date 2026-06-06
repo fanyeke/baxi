@@ -42,5 +42,8 @@
         "template": "- Product owner approval pending for {phase_name}."
       }
     ]
+  },
+  "graphify": {
+    "enabled": true
   }
 }

@@ -259,7 +259,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Bug Fixes & Stability | 2/2 | Complete | 2026-06-03 |
 | 5. Security Hardening | 1/1 | Complete | 2026-06-03 |
 | 6. Integration & End-to-End Demo | 4/4 | Complete | 2026-06-03 |
-| 7. Foundation — 身份 & 命名 | 0/TBD | Not started | - |
+| 7. Foundation — 身份 & 命名 | 1/1 | Complete | 2026-06-06 |
 | 8. Schema & Status 输出裁剪 | 0/TBD | Not started | - |
 | 9. 对象数据字段级过滤 | 0/TBD | Not started | - |
 | 10. 输入加固 — Search & Pipeline | 0/TBD | Not started | - |
