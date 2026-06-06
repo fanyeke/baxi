@@ -78,20 +78,11 @@ func (s *Server) handleGetSystemStatus(ctx context.Context, req mcp.CallToolRequ
 		result["pipeline_run"] = pipelineMap
 	}
 
-	if len(status.TableCounts) > 0 {
-		tables := make([]map[string]interface{}, len(status.TableCounts))
-		for i, tc := range status.TableCounts {
-			tables[i] = map[string]interface{}{
-				"table_name": tc.TableName,
-				"row_count":  tc.RowCount,
-			}
-		}
-		result["table_counts"] = tables
-	}
+	// Omit table_counts — they expose database schema names and table structures.
+	// Aggregate alert_count is sufficient for health monitoring.
+	// (Table counts removed in Phase 8 for information containment.)
 
-	if len(status.RecentErrors) > 0 {
-		result["recent_errors"] = status.RecentErrors
-	}
+	FilterSystemStatus(result)
 
 	return mcp.NewToolResultJSON(result)
 }
