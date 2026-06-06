@@ -735,11 +735,29 @@ func (a *ontologyServiceAdapter) GetObject(ctx context.Context, objectType, obje
 		return nil, fmt.Errorf("get object %s %s: %w", objectType, objectID, err)
 	}
 
+	// Filter properties to only include LLMReadable fields
+	props := a.filterProperties(objectType, obj.Properties)
+
 	return &mcp.ObjectContext{
 		ObjectType: obj.ObjectType,
 		ObjectID:   obj.ObjectID,
-		Properties: obj.Properties,
+		Properties: props,
 	}, nil
+}
+
+// filterLLMReadableProperties filters a properties map to only include
+// fields marked as LLMReadable in the ontology registry.
+func (a *ontologyServiceAdapter) filterProperties(objectType string, props map[string]interface{}) map[string]interface{} {
+	if a.registry == nil {
+		return props
+	}
+	filtered := make(map[string]interface{}, len(props))
+	for k, v := range props {
+		if a.registry.IsLLMReadable(objectType, k) {
+			filtered[k] = v
+		}
+	}
+	return filtered
 }
 
 func (a *ontologyServiceAdapter) GetObjectMetrics(ctx context.Context, objectType, objectID string) (map[string]float64, error) {
@@ -823,10 +841,11 @@ func (a *ontologyServiceAdapter) getLinkedObjectsV2(ctx context.Context, objectT
 		if len(plan.Columns) > 0 {
 			objID = fmt.Sprintf("%v", props[plan.Columns[0]])
 		}
+		filteredProps := a.filterProperties(plan.TargetType, props)
 		objects = append(objects, mcp.ObjectContext{
 			ObjectType: plan.TargetType,
 			ObjectID:   objID,
-			Properties: props,
+			Properties: filteredProps,
 		})
 	}
 
@@ -895,10 +914,11 @@ func (a *ontologyServiceAdapter) getLinkedObjectsV1(ctx context.Context, objectT
 			if viaStr != "" {
 				targetObj, err := a.querySvc.BuildObjectContext(ctx, link.TargetType, viaStr)
 				if err == nil {
+					filteredProps := a.filterProperties(link.TargetType, targetObj.Properties)
 					linkResult.Objects = append(linkResult.Objects, mcp.ObjectContext{
 						ObjectType: targetObj.ObjectType,
 						ObjectID:   targetObj.ObjectID,
-						Properties: targetObj.Properties,
+						Properties: filteredProps,
 					})
 				}
 			}
