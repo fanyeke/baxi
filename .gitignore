@@ -67,6 +67,13 @@ vendor/
 .pi/
 .sisyphus/
 
+# Graphify build output
+graphify-out/
+.codegraph/
+
+# Generated docs
+docs/docx/
+
 # Test coverage and results
 frontend/coverage/
 frontend/test-results/
